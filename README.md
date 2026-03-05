@@ -1,6 +1,6 @@
 # Research Paper
-* Name:
-* Semester:
+* Name: Arsh Singh
+* Semester: Spr 2026
 * Topic:
 
 
