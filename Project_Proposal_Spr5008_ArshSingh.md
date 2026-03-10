@@ -23,7 +23,7 @@ The RANSAC technique proceeds as follows:
 
 At the graduate level, Computer Vision is fundamentally concerned with recovering structure, geometry, and correspondence from images — tasks almost always complicated by noise, occlusion, and erroneous measurements. RANSAC sits at the heart of this challenge. RANSAC appears in virtually every classical geometric vision pipeline, from homography estimation to 3-D reconstruction. 
 
-It is not merely a practical tool but a conceptual framework for robust estimation: the idea that a reliable solution can be recovered even when a large fraction of the data is corrupted. Studying RANSAC also builds intuition about probabilistic reasoning, specifically how to trade determinism for confidence guarantees, a mode of thinking that recurs throughout computer vision research. It also provides an essential baseline: many modern estimation methods are benchmarked against RANSAC-based pipelines.
+It is not merely a practical tool but a conceptual framework for robust estimation: the idea that a reliable solution can be recovered even when a large fraction of the data is corrupted. Studying RANSAC also builds intuition about probabilistic reasoning, specifically how to trade determinism for confidence intervals - a mode of thinking that is essential for computer vision research. It also provides an essential baseline since many modern estimation methods are benchmarked against RANSAC-based pipelines.
 
 ## Long View
 
@@ -43,15 +43,13 @@ Under optimization,  bundle adjustment — the global refinement step in Structu
 
 Rather than working with actual images, this project may work entirely with 2-D point correspondences — pairs of (x, y) coordinates, say 2-D or even 3-D graphs, representing matched points between two hypothetical views. This will abstract the underlying image stitching of pixel. Keeping the data as cartesian points eliminates image I/O and warping complexity, allowing me to focus entirely on the algorithm and its theory. This will also allow me to make graphs and visually represent the efficacy with varying threshold `t` and iterations `k` for the same model (fixed `n`).
 
-As outlined in the timeline - I plan on starting small and grow slowly and I am allowing myself double the time (4 weeks) than the exclusive project time in the course module (2-weeks). I plan on making both parts of the project a Test Driven Development (TDD). Each task will be broken down until it is as simple as possible to write and test. Doing this will also allow me to make the project DRY (Don't Repeat Yourself). The many small tested functions will glued to do the larger task.
+As outlined in the timeline - I plan on starting small and grow slowly and I am allowing myself double the time (4 weeks) than the exclusive project time in the course module (2-weeks). I plan on making this a truly Test Driven Development (TDD). Think about edge cases, write function signatures, then design tests, then write code and test it frequently. Each task will be broken down until it is as simple as possible to write and test. Doing this will also allow me to make the project DRY (Don't Repeat Yourself). The many small tested functions will glued to do the larger task.
 
-I learnt from the mid-term project that developing algorithms from pseudocode is very simple in Python. So, I will first develop a Python project with an clear idea that it is to be translated to C.  will try as much as possible to not depend on packages not available in C. 
+I learnt from the mid-term project that developing algorithms from pseudocode is very simple in Python. So, I will first develop a Python project with an clear idea that it is to be translated to C.  will try as much as possible to not depend on packages not available in C. Then I will translate it into C test-by-test and function-by-function. 
 
-Then I will translate it into C test-by-test and function-by-function. 
+Like the helper bash functions in assignments or the Python helper function for midterm, I will create methods to build and test from terminal. Then using these, I will collect data for the empirical research and analysis. 
 
-Like the helper bash functions in assignments or the Python helper function for midterm, I will create methods to build and test from terminal. 
-
-Then using these, I will do the 
+For the empirical analysis and making graphs, I intend to use pandas in the jupyter notebook environment - I used MS Excel for mid-terms, but that was a dissatisfying set-up with manual writing for axes names and taking screenshots for images. I would much rather write all the axes names in code and have code update the images that are included in the report. 
 
 
 ## Resources Found
