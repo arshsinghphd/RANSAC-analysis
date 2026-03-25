@@ -11,17 +11,16 @@
 - Provide an introduction to the rest of the paper. 
 -->
 
-The Algorithm that I want to focus on is called Random Sample Consesus or its acronym RANSAC. The method was introduced by Martin Fischler and Robert Bolles in 1981 [1]. It is a method (the authors call it a paradigm [1]) for fitting a predtermined model to experimental data with sizeable number of outliers due to gross errors. Gross errors are defined as measurement-related errors - perhaps human causes or other random errors - that introduce large outliers in data. 
+The Algorithm that I want to focus on is called Random Sample Consesus (RANSAC). The method was introduced by Martin Fischler and Robert Bolles in 1981 [1]. It is a method for fitting a predetermined model to experimental data with sizeable number of outliers or noise.
 
-<!--[Example of data outliers due to gross error - the one in the paper.] -->
+<!-- Motivate the discussion with an example create a noisy line genarator over three different graphs with different but over lapping ranges of x -->
+To motivate its usefulness and effectiveness, I will use an example.
 
-The original paper demonstrated the application of RANSAC in *location determination problem* in computer vision. RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and data fitting, particularly in 2-D image stitching and structure from motion. It works by repeatedly attempting to identify a set of inliers from the data until the quality of fit surpasses a given criterion. The method has now been applied to a wide array of other problems [2, 3, 4]. I will disuss these in the section [Applications](#application). 
 
-<!-- [Show example of location determination - the one in the paper.] -->
-
+<!-- Formal Definition -->
 The RANSAC paradigm is more formally stated [1] as follows.
 
-**Given**: a model that requires a minimum of $n$ data points to instantiate its free parameters (for example, 2 for a line), and a set of data points $P$ such that the number of points in $P$ is greater than $n$; $(size(P)\ge n)$.
+**Given**: a model that requires a minimum of $n$ data points to instantiate its free parameters and a set of data points $P$ such that the number of points in $P$ is greater than $n$; $(size(P)\ge n)$.
 
 1. Randomly select a subset $S1$ of $n$ data points from $P$ and instantiate the model. Use the instantiated model $M1$ to determine the subset $S1*$ of points in $P$ that are within some error tolerance of $M1$. The set $S1$* is called the consensus set of $S1$.
 
@@ -31,6 +30,8 @@ The RANSAC paradigm is more formally stated [1] as follows.
 
 4. If, after some predetermined number of trials, no consensus set with $t$ or more members has been found, either solve the model with the largest consensus set found, or terminate in failure.
 
+<!-- [Show example of location determination - the one in the paper.] -->
+The original paper demonstrated the application of RANSAC in *location determination problem* in computer vision. RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and data fitting, particularly in 2-D image stitching and structure from motion. It works by repeatedly attempting to identify a set of inliers from the data until the quality of fit surpasses a given criterion. The method has now been applied to a wide array of other problems [2, 3, 4]. I will disuss these in the section [Applications](#application). 
 
 The rest of the paper is organized as follows: 
 
@@ -60,6 +61,11 @@ Make sure to include the following:
 <!-- 
 - What is the empirical analysis?
 - Provide specific examples / data.
+
+HIGHLIGHTS:
+1. Abstracting away from image complexities by using 2-D points instead of pixels. 
+2. Keeping cartesian points also allows me to represent my analysis using simple and easy to interpret graphs.
+3. 
 -->
 
 ## Application
@@ -88,8 +94,8 @@ In image stitching, the goal is to align two or more overlapping images by estim
 HIGHLIGHTS:
 
 1. Abstracting away from image complexities by using 2-D points instead of pixels. 
-2. 
-
+2. Keeping cartesian points also allows me to represent my analysis using simple and easy to interpret graphs.
+3.  
 -->
 
 
@@ -99,12 +105,15 @@ HIGHLIGHTS:
 - What did you learn?
 -->
 
+
 ## LLM Use Disclosure 
-I did not any LLM to write any part of the code. I implemented my codes using pseudocodes presented in the texts in the reference section.
+I did not any LLM to write any part of the code. I implemented my codes using pseudocodes presented in the texts in the reference section. I used MS Word for checking the report for syntax and grammar.
 
-I used Calude to create a 4-week study plan to study this topic using the seminal paper [1] and standard open source textbooks [2, 3, 4], implement the methods, and conduct the empirical analysis. I also used Claude to add doc strings at the end. 
+Claude: I used Calude for planning a 4-week time-line. I also used Claude to add doc strings at the end. 
 
-I used MS Word for spell checking the document. 
+Google Gemini: I used Google Gemini to look up many unknown terms when I encountered them in the text books.
+
+
 
 
 ## References
