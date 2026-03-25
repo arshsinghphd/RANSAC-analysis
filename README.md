@@ -4,19 +4,20 @@
 * Topic: Random Sample Consensus (RANSAC) Algorithm
 
 ## Introduction
-<!- What is the algorithm/datastructure?>
-<!- What is the problem it solves?>
-<!- Provide a brief history of the algorithm/datastructure. (make sure to cite sources)>
-
-[//]: # - Provide an introduction to the rest of the paper. 
+<!-- 
+- What is the algorithm/datastructure?
+- What is the problem it solves?
+- Provide a brief history of the algorithm/datastructure. (make sure to cite sources)
+- Provide an introduction to the rest of the paper. 
+-->
 
 The Algorithm that I want to focus on is called Random Sample Consesus or its acronym RANSAC. The method was introduced by Martin Fischler and Robert Bolles in 1981 [1]. It is a method (the authors call it a paradigm [1]) for fitting a predtermined model to experimental data with sizeable number of outliers due to gross errors. Gross errors are defined as measurement-related errors - perhaps human causes or other random errors - that introduce large outliers in data. 
 
-[//]: # [Example of data outliers due to gross error - the one in the paper.]
+<!--[Example of data outliers due to gross error - the one in the paper.] -->
 
-The original paper demonstrated the application of RANSAC in *location determination problem* in computer vision. The method has now been applied to a wide array of problems [2, 3, 4]. I will disuss these in the section [Applications](#application).
+The original paper demonstrated the application of RANSAC in *location determination problem* in computer vision. RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and data fitting, particularly in 2-D image stitching and structure from motion. It works by repeatedly attempting to identify a set of inliers from the data until the quality of fit surpasses a given criterion. The method has now been applied to a wide array of other problems [2, 3, 4]. I will disuss these in the section [Applications](#application). 
 
-[//]: # [Show example of location determination - the one in the paper.]
+<!-- [Show example of location determination - the one in the paper.] -->
 
 The RANSAC paradigm is more formally stated [1] as follows.
 
@@ -45,44 +46,66 @@ In conlusion, I will present a [Summary](#summary) of my findings and lessons I 
 
 
 ## Analysis of Algorithm/Datastructure 
+<!-- 
 Make sure to include the following:
-[//]: # - Time Complexity
-[//]: # - Space Complexity
-[//]: # - General analysis of the algorithm/datastructure
-
-[//]: # [Linear model]
-
-[//]: # [Quadratic model]
-
-[//]: # [Classification in n groups]
+ - Time Complexity
+ - Space Complexity
+ - General analysis of the algorithm/datastructure
+ - [Linear model]
+ - [Quadratic model]
+ - [Classification in n groups]
+-->
 
 ## Empirical Analysis
+<!-- 
 - What is the empirical analysis?
 - Provide specific examples / data.
-
+-->
 
 ## Application
+<!-- 
 - What is the algorithm/datastructure used for?
 - Provide specific examples
 - Why is it useful / used in that field area?
 - Make sure to provide sources for your information.
+-->
+
+RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and data fitting, particularly in image stitching and structure from motion. Allow me to motivate its need and define image stitching. 
+
+Many real-world computer vision tasks require a field of view far wider than what a single camera can capture. Many smart-phone owners may be familiar with the features of camera such as panoramic imaged, and video stabilization. Image stitching is also needed in industrial applications such as satellite and aerial imaging, medical imaging, autonomous navigation, and augmented reality — anywhere a spatial context is needed that a single image cannot provide.
+
+In image stitching, the goal is to align two or more overlapping images by estimating a geometric transformation — such as a homography — that maps points from one image to corresponding points in another. This requires finding reliable feature correspondences between images. However, automated feature matching is inherently noisy: many matched point pairs will be incorrect, either due to repetitive textures, illumination differences etc. These incorrect matches, or outliers, is exactly what are handled gracefully and efficiently by RANSAC.
 
 
 ## Implementation
+<!-- 
 - What language did you use?
 - What libraries did you use?
 - What were the challenges you faced?
 - Provide key points of the algorithm/datastructure implementation, discuss the code.
 - If you found code in another language, and then implemented in your own language that is fine - but make sure to document that.
 
+HIGHLIGHTS:
+
+1. Abstracting away from image complexities by using 2-D points instead of pixels. 
+2. 
+
+-->
+
 
 ## Summary
+<!-- 
 - Provide a summary of your findings
 - What did you learn?
-
+-->
 
 ## LLM Use Disclosure 
-I used Calude to create a 4-week study plan to study this topic using the seminal paper and standard open source textbooks. 
+I did not any LLM to write any part of the code. I implemented my codes using pseudocodes presented in the texts in the reference section.
+
+I used Calude to create a 4-week study plan to study this topic using the seminal paper [1] and standard open source textbooks [2, 3, 4], implement the methods, and conduct the empirical analysis. I also used Claude to add doc strings at the end. 
+
+I used MS Word for spell checking the document. 
+
 
 ## References
 
