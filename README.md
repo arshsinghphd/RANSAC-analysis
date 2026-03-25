@@ -4,11 +4,9 @@
 * Topic: Random Sample Consensus (RANSAC) Algorithm
 
 ## Introduction
-[//]: # - What is the algorithm/datastructure?
-
-[//]: # - What is the problem it solves? 
-
-[//]: # - Provide a brief history of the algorithm/datastructure. (make sure to cite sources)
+<!- What is the algorithm/datastructure?>
+<!- What is the problem it solves?>
+<!- Provide a brief history of the algorithm/datastructure. (make sure to cite sources)>
 
 [//]: # - Provide an introduction to the rest of the paper. 
 
