@@ -9,7 +9,19 @@
 - Provide a brief history of the algorithm/datastructure. (make sure to cite sources)
 - Provide an introduction to the rest of the paper. 
 
-The Algorithm that I want to focus on is called Random Sample Consesus or its acronym RANSAC. RANSAC is a method (the authors call it a paradigm [1]) for fitting a model to experimental data with sizeable gross (measurement-related) errors.
+The Algorithm that I want to focus on is called Random Sample Consesus or its acronym RANSAC. RANSAC is a method (the authors call it a paradigm [1]) for fitting a predtermined model to experimental data with sizeable number of outliers due to gross (measurement-related) errors. The original paper demonstrated its application in *location determination problem* in computer vision, but the method has now been applied to a wide array of problems [2, 3, 4].
+
+The RANSAC paradigm is more formally stated as follows [1]:
+
+**Given**: a model that requires a minimum of $n$ data points to instantiate its free parameters (for example, 2 for a line), and a set of data points $P$ such that the number of points in $P$ is greater than $n$; $(size(P)\ge n)$.
+
+1. Randomly select a subset $S1$ of $n$ data points from $P$ and instantiate the model. Use the instantiated model $M1$ to determine the subset $S1*$ of points in $P$ that are within some error tolerance of $M1$. The set $S1$* is called the consensus set of $S1$.
+
+2. If $size(S1*)$ is greater than some threshold $t$, which is a function of the estimate of the number of gross errors in $P$, use $S1*$ to compute (possibly using least squares) a new model $M1*$.
+
+3. If $size(S1*)$ is less than $t$, randomly select a new subset $S2$ and repeat the above process.
+
+4. If, after some predetermined number of trials, no consensus set with $t$ or more members has been found, either solve the model with the largest consensus set found, or terminate in failure.
 
 
 ## Analysis of Algorithm/Datastructure
@@ -17,6 +29,8 @@ Make sure to include the following:
 - Time Complexity
 - Space Complexity
 - General analysis of the algorithm/datastructure
+
+
 
 ## Empirical Analysis
 - What is the empirical analysis?
