@@ -4,14 +4,23 @@
 * Topic: Random Sample Consensus (RANSAC) Algorithm
 
 ## Introduction
-- What is the algorithm/datastructure?
-- What is the problem it solves? 
-- Provide a brief history of the algorithm/datastructure. (make sure to cite sources)
-- Provide an introduction to the rest of the paper. 
+[//]: # - What is the algorithm/datastructure?
 
-The Algorithm that I want to focus on is called Random Sample Consesus or its acronym RANSAC. RANSAC is a method (the authors call it a paradigm [1]) for fitting a predtermined model to experimental data with sizeable number of outliers due to gross (measurement-related) errors. The original paper demonstrated its application in *location determination problem* in computer vision, but the method has now been applied to a wide array of problems [2, 3, 4].
+[//]: # - What is the problem it solves? 
 
-The RANSAC paradigm is more formally stated as follows [1]:
+[//]: # - Provide a brief history of the algorithm/datastructure. (make sure to cite sources)
+
+[//]: # - Provide an introduction to the rest of the paper. 
+
+The Algorithm that I want to focus on is called Random Sample Consesus or its acronym RANSAC. The method was introduced by Martin Fischler and Robert Bolles in 1981 [1]. It is a method (the authors call it a paradigm [1]) for fitting a predtermined model to experimental data with sizeable number of outliers due to gross errors. Gross errors are defined as measurement-related errors - perhaps human causes or other random errors - that introduce large outliers in data. 
+
+[//]: # [Example of data outliers due to gross error - the one in the paper.]
+
+The original paper demonstrated the application of RANSAC in *location determination problem* in computer vision. The method has now been applied to a wide array of problems [2, 3, 4]. I will disuss these in the section [Applications](#application).
+
+[//]: # [Show example of location determination - the one in the paper.]
+
+The RANSAC paradigm is more formally stated [1] as follows.
 
 **Given**: a model that requires a minimum of $n$ data points to instantiate its free parameters (for example, 2 for a line), and a set of data points $P$ such that the number of points in $P$ is greater than $n$; $(size(P)\ge n)$.
 
@@ -24,13 +33,30 @@ The RANSAC paradigm is more formally stated as follows [1]:
 4. If, after some predetermined number of trials, no consensus set with $t$ or more members has been found, either solve the model with the largest consensus set found, or terminate in failure.
 
 
-## Analysis of Algorithm/Datastructure
+The rest of the paper is organized as follows: 
+
+In the next section, [Analysis of Algorithm/Datastructure](#analysis-of-algorithmdatastructure), I will present the theoretical analysis of the RANSAC algorithm tryting to fit a linear and a quadratic model. [Maybe: I will also generalize this to a k-neighbors classification problem.] I will present the time and space complexity in the case of the specified models. 
+
+In the section [Empirical Analysis](#empirical-analysis), I will present the empirical run time of the methods I implement in Python [Maybe: and C]. I will do a comparative analysis based on the models and the three variables for RANSAC. 
+
+In the section [Application](#application) I will take a deeper dive into the various applications of RANSAC. 
+
+In the section [Implementation](#implementation) I will present code snippets of my final implementation [maybe C, else Python]. I willdo a walk through and present a commentary on my design choices.
+
+In conlusion, I will present a [Summary](#summary) of my findings and lessons I learnt.
+
+
+## Analysis of Algorithm/Datastructure 
 Make sure to include the following:
-- Time Complexity
-- Space Complexity
-- General analysis of the algorithm/datastructure
+[//]: # - Time Complexity
+[//]: # - Space Complexity
+[//]: # - General analysis of the algorithm/datastructure
 
+[//]: # [Linear model]
 
+[//]: # [Quadratic model]
+
+[//]: # [Classification in n groups]
 
 ## Empirical Analysis
 - What is the empirical analysis?
@@ -56,8 +82,9 @@ Make sure to include the following:
 - Provide a summary of your findings
 - What did you learn?
 
-## LLM Use Disclosure 
 
+## LLM Use Disclosure 
+I used Calude to create a 4-week study plan to study this topic using the seminal paper and standard open source textbooks. 
 
 ## References
 
