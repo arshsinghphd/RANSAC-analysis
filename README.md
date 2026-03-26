@@ -14,16 +14,18 @@
 The Algorithm that I want to focus on is called Random Sample Consesus (RANSAC). The method was introduced by Martin Fischler and Robert Bolles in 1981 [1]. It is a method for fitting a predetermined model to experimental data with sizeable number of outliers or noise.
 
 <!-- Motivate the discussion with an example create a noisy line genarator over three different graphs with different but over lapping ranges of x -->
-To motivate its usefulness and effectiveness, I will use a toy example to show how one of most popular fitting models - the least squares model is not robust to outliers.
+To motivate a good idea of the problem this algorithm solves, its usefulness and effectiveness, I will use a toy example to show how one of most popular fitting models - the least squares model is not robust to outliers.
 
-For the sake of the following few paragraphs, assume that we are assigned the task of stitching the two graphs together and then deduce the true underlying model that created the data (apart from the noise). It is known that these two graphs are built from the same linear model, but over different ranges of $x$ and are noisy with three kinds of errors.
+For the sake of the following few paragraphs, assume that we are assigned the task of stitching the two graphs together and then deduce the true underlying model that created the data (apart from the noise). It is known that the following two graphs are built from the same linear model, but over different ranges of $x$ and are noisy with three kinds of errors.
 
-For ease of understanding let's assume we are measuring temperature of a place every 10 minutes and record it in degree Fahrenheit (with aplogies to the metric system absolutists). One person records from 7 am to 10:30 and another person records from 9:30 to 12:00 (noon). They have 10 thermometers that they randomly pick from. Unbeknownst to the scientists, one of these thermometers is broken and shows 5 deg above the true reading. First scientists (7am - 10:30 one), is senstive to cold and can reduce a few degrees in the reading if the tempearure is below 75, unable to believe it is warmer than they feel. The other (9:30 - Noon one) is sensitive to heat, and is prone to add a few degrees when temperature exceeds 90 based on their "feels-like". So to summarize there are three kinds of errors in the data:
+These are grphs of the data of temperature measurements of a place recorded every 10 minutes in degree Fahrenheit (with aplogies to the metric system absolutists). The following is the way this fictional data was collected. One fictional research assistant took measurements every 10 mins from 7 am to 10:30 and another one from 9:30 to 12:00 (noon), with a one hour overlap. They measured the temparature using the same 10 thermometers by picking one at random. Unbeknownst to them, one of these thermometers is broken and shows 5 deg above the true reading. . To summarize there are three kinds of errors in the data:
 
 1. There is random error in each data point (this may happen due to clouds passing overhead randomly and unpredictably).
-2. There is some systematic bias (the broken thermometer).
-3. Structured — not random but not simple bias either (the temperature sensitivity of the two scientists)
+2. There is some systematic bias (the broken thermometer) but that appears only with a probability of low probability (10%).
 
+But there is no appreciable range of $x$ with only systematic bias - this is an assumption RANSAC makes. It assumes that within the data there are some clean point with only random errors that will have net zero effect on the average. 
+
+RANSAC inverts the logic of least squares: instead of fitting all the data first and cleaning up afterward, it starts with the smallest possible sample, finds a model, then recruits only the points that agree with it.
 
 <!-- Formal Definition -->
 The RANSAC paradigm is more formally stated [1] as follows.
@@ -38,8 +40,10 @@ The RANSAC paradigm is more formally stated [1] as follows.
 
 4. If, after some predetermined number of trials, no consensus set with $t$ or more members has been found, either solve the model with the largest consensus set found, or terminate in failure.
 
+RANSAC has three parameters that must be configured: the error tolerance that decides whether a point fits a model, the number of random subsets to sample, and a consensus threshold that determines when enough points agree to declare a model correct.
+
 <!-- [Show example of location determination - the one in the paper.] -->
-The original paper demonstrated the application of RANSAC in *location determination problem* in computer vision. RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and data fitting, particularly in 2-D image stitching and structure from motion. It works by repeatedly attempting to identify a set of inliers from the data until the quality of fit surpasses a given criterion. The method has now been applied to a wide array of other problems [2, 3, 4]. I will disuss these in the section [Applications](#application). 
+The original paper demonstrated the application of RANSAC in *location determination problem* in computer vision. Today, RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and data fitting, particularly in 2-D image stitching and structure from motion. The method has now been applied to a wide array of other problems [2, 3, 4]. I will disuss these in the section [Applications](#application). 
 
 The rest of the paper is organized as follows: 
 
