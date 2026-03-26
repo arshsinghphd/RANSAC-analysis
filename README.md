@@ -14,7 +14,15 @@
 The Algorithm that I want to focus on is called Random Sample Consesus (RANSAC). The method was introduced by Martin Fischler and Robert Bolles in 1981 [1]. It is a method for fitting a predetermined model to experimental data with sizeable number of outliers or noise.
 
 <!-- Motivate the discussion with an example create a noisy line genarator over three different graphs with different but over lapping ranges of x -->
-To motivate its usefulness and effectiveness, I will use an example.
+To motivate its usefulness and effectiveness, I will use a toy example to show how one of most popular fitting models - the least squares model is not robust to outliers.
+
+For the sake of the following few paragraphs, assume that we are assigned the task of stitching the two graphs together and then deduce the true underlying model that created the data (apart from the noise). It is known that these two graphs are built from the same linear model, but over different ranges of $x$ and are noisy with three kinds of errors.
+
+For ease of understanding let's assume we are measuring temperature of a place every 10 minutes and record it in degree Fahrenheit (with aplogies to the metric system absolutists). One person records from 7 am to 10:30 and another person records from 9:30 to 12:00 (noon). They have 10 thermometers that they randomly pick from. Unbeknownst to the scientists, one of these thermometers is broken and shows 5 deg above the true reading. First scientists (7am - 10:30 one), is senstive to cold and can reduce a few degrees in the reading if the tempearure is below 75, unable to believe it is warmer than they feel. The other (9:30 - Noon one) is sensitive to heat, and is prone to add a few degrees when temperature exceeds 90 based on their "feels-like". So to summarize there are three kinds of errors in the data:
+
+1. There is random error in each data point (this may happen due to clouds passing overhead randomly and unpredictably).
+2. There is some systematic bias (the broken thermometer).
+3. Structured — not random but not simple bias either (the temperature sensitivity of the two scientists)
 
 
 <!-- Formal Definition -->
