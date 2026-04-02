@@ -11,7 +11,7 @@ def make_inliers(data_x, data_y, n_inliers, slope, intercept, x_min, x_max):
         intercept   float, intercept of the line
         x_min       float, lower limit of x
         x_max       float, upper limit of x
-        
+
     Returns:
         None.
     """
@@ -21,7 +21,7 @@ def make_inliers(data_x, data_y, n_inliers, slope, intercept, x_min, x_max):
 def add_gaussian_noise(data_y, n_inliers, std):
     """ 
     Adds zero mean gaussian noise to data_y inplace based on user's inputs.
-    
+
     Params: 
         data_y      a list of floats
         n_inliers   int, number of inliers to be modified
