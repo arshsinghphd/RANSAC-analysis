@@ -40,21 +40,20 @@ class TestMakeInliers(unittest.TestCase):
         slope =  0, intercept = 0 should create two lists of [0, ... , 0] (n times)
 
     Edges:
-        n = 0 should return an empty list
-        n = 1 should return an empty list
+        n = 0 should return -1
+        n = 1 should return -1
         if x_min = x_max,
-            return empty list
+            return -1
     """
     
     def test_unit_slope_zero_intercept(self):
         """
-        slope =  1, intercept = 0, x_min = 0, x_max = n, y_min = 0, y_max = n
+        slope = 1, intercept = 0, x_min = 0, x_max = n - 1
             should create two identical list of n points [0, .. n],
             corresponding to points (0, 0), ... , (n, n)
         Tests:
             should creates n_points points
             all x should be within x_min and x_max
-            all y should be within y_min and y_max
         """
         # initiate all arguments
         n_inliers = 10
