@@ -110,6 +110,18 @@ HIGHLIGHTS:
 3.  
 -->
 
+Salient Design Decisions:
+
+Python:
+* C correspondence:
+  * separate `data_x` and `data_y` arrays
+  * functions that modify these in-place
+  * return -1 for error and 0 for success 
+
+* Separate lists of x and y rather than tuples for mutability.
+* `return_array` layout for ransac() with an eye for a future C struct
+* Different kind of noise as separate functions to allow testing the efficacy of RANSAC with different kind of errors. 
+
 
 ## Summary
 <!-- 
