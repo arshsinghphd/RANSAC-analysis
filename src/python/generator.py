@@ -1,3 +1,5 @@
+import numpy
+
 def make_inliers(data_x, data_y, n_inliers, slope, intercept, x_min, x_max):
     """ 
     Fills the lists inliers_x, inliers_y in place based on input.
@@ -13,9 +15,19 @@ def make_inliers(data_x, data_y, n_inliers, slope, intercept, x_min, x_max):
         x_max       float, upper limit of x
 
     Returns:
-        None.
+        0 for success
+        -1 for error
     """
-    pass
+    
+    if n_inliers < 2 or x_min == x_max:
+        return -1   # error code
+    
+    # infer the increment of x
+    step = (x_max - x_min) / (n_inliers - 1)
+    for i in range(n_inliers):
+        data_x[i] = x_min + i * step
+        data_y[i] = slope * data_x[i] + intercept    
+    return 0        # success
 
 
 def add_gaussian_noise(data_y, n_inliers, std):
@@ -28,7 +40,8 @@ def add_gaussian_noise(data_y, n_inliers, std):
         std         float, standard deviation of gaussian noise
 
     Returns:
-        None
+        0 for success
+        -1 for error
     """
     pass
 
@@ -43,7 +56,8 @@ def add_laplace_noise(data_y, n_inliers, scale_noise):
         scale_noise float, spread, decides how fat the tail will be
 
     Returns:
-        None
+        0 for success
+        -1 for error
     """
     pass
 
@@ -62,7 +76,8 @@ def add_structural_bias(data_y, data_x, n_inliers, bias_fn):
                     lambda x: math.sin(x)   # periodic structural bias
 
     Returns:
-        None
+        0 for success
+        -1 for error
     """
     pass
 
@@ -84,7 +99,8 @@ def add_outliers(data_x, data_y, n_inliers, n_outliers, x_min, x_max, y_min, y_m
         y_max       float, upper limit of y
 
     Returns:
-        None
+        0 for success
+        -1 for error
     """
     pass
 
