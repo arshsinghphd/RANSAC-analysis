@@ -10,7 +10,7 @@ def count_inliers(distances, n_points, threshold):
                     an inlier        
 
     Returns:
-        int, num of inliers.
+        int         num of inliers
     """
     pass
 
@@ -18,9 +18,10 @@ def count_inliers(distances, n_points, threshold):
 def model_error(slope, intercept, true_slope, true_intercept):
     """
     This function measures the distance between the true model and the model
-    estimated by RAANSAC. It is measured as:
+    estimated by RANSAC. It is measured as:
+
         math.sqrt((slope - true_slope)**2 + (intercept - true_intercept)**2)
-    
+
     Params:
         slope           float, estimated slope
         intercept       float, estimated intercept
