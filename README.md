@@ -16,16 +16,10 @@ The Algorithm that I want to focus on is called Random Sample Consesus (RANSAC).
 <!-- Motivate the discussion with an example create a noisy line genarator over three different graphs with different but over lapping ranges of x -->
 To motivate a good idea of the problem this algorithm solves, its usefulness and effectiveness, I will use a toy example to show how one of most popular fitting models - the least squares model is not robust to outliers.
 
-For the sake of the following few paragraphs, assume that we are assigned the task of stitching the two graphs together and then deduce the true underlying model that created the data (apart from the noise). It is known that the following two graphs are built from the same linear model, but over different ranges of $x$ and are noisy with three kinds of errors.
-
-These are grphs of the data of temperature measurements of a place recorded every 10 minutes in degree Fahrenheit (with aplogies to the metric system absolutists). The following is the way this fictional data was collected. One fictional research assistant took measurements every 10 mins from 7 am to 10:30 and another one from 9:30 to 12:00 (noon), with a one hour overlap. They measured the temparature using the same 10 thermometers by picking one at random. Unbeknownst to them, one of these thermometers is broken and shows 5 deg above the true reading. . To summarize there are three kinds of errors in the data:
-
-1. There is random error in each data point (this may happen due to clouds passing overhead randomly and unpredictably).
-2. There is some systematic bias (the broken thermometer) but that appears only with a probability of low probability (10%).
-
-But there is no appreciable range of $x$ with only systematic bias - this is an assumption RANSAC makes. It assumes that within the data there are some clean point with only random errors that will have net zero effect on the average. 
+For the sake of the following few paragraphs, assume that we are assigned the task of stitching the two graphs together and then deduce the true underlying model that created the data (apart from the noise). It is known that the following two graphs are built from the same linear model, but over different ranges of $x$ and are noisy with two possible kinds of errors: random noise (zero mean) and heavy-tailed noise (also mean zero). But there is no appreciable range of $x$ with only systematic bias. RANSAC assumes that within the data there are some clean points that lie within threshold distance of the correct model's prediction.
 
 RANSAC inverts the logic of least squares: instead of fitting all the data first and cleaning up afterward, it starts with the smallest possible sample, finds a model, then recruits only the points that agree with it.
+
 
 <!-- Formal Definition -->
 The RANSAC paradigm is more formally stated [1] as follows.
@@ -139,8 +133,6 @@ Claude: I used Calude for planning a 4-week time-line. I also used Claude to add
 Google Gemini: I used Google Gemini to look up many unknown terms when I encountered them in the text books.
 
 
-
-
 ## References
 
 [1] Fischler, M. A. and Bolles, R. C. 1981. Random sample consensus: a paradigm for model fitting with applications to image analysis and automated cartography. Commun. ACM 24, 6 (June 1981), 381–395. https://doi.org/10.1145/358669.358692.
@@ -150,3 +142,18 @@ Google Gemini: I used Google Gemini to look up many unknown terms when I encount
 [3] Davies, E. R. 2012. Computer and Machine Vision: Theory, Algorithms, Practicalities (4th ed.). Academic Press. ISBN 978-0-12-386908-1.
 
 [4] Richard Hartley and Andrew Zisserman. 2004. Multiple View Geometry in Computer Vision. Cambridge University Press.
+
+
+<!-- Time Line
+Days 1-3  (now-Apr 5):   finish generate.py + model.py
+Days 4-6  (Apr 6-8):     ransac.py + evaluate.py
+Days 7-9  (Apr 9-11):    end-to-end test + experiments
+Days 10-12(Apr 12-14):   empirical analysis + plots
+Days 13-15(Apr 15-17):   report writing + cleanup
+
+Good to do:
+Days 13-15(Apr 18-20):   Translate to C
+Days 10-12(Apr 21-):   empirical analysis + plots
+Days 13-15(Apr 15-17):   report writing + cleanup
+
+-->
