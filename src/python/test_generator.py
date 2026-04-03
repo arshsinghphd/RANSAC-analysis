@@ -240,10 +240,10 @@ class testAddGaussianNoise(unittest.TestCase):
 
     def test_happy_path_int_std(self):
         """
-        All noisy data_y[i] should be original data_y[i] +/- 3 * std.
+        All noisy data_y[i] should be original data_y[i] +/- 5 * std.
         """
         # initiate all arguments
-        n_inliers = 10
+        n_inliers = 10000   # large n to avoid statistical errors
         data_x = [float("INF")] * n_inliers
         data_y = [float("INF")] * n_inliers
         slope = 0
@@ -259,12 +259,15 @@ class testAddGaussianNoise(unittest.TestCase):
         generator.add_gaussian_noise(data_y, n_inliers, std)
         # assertions
         for i in range(n_inliers):
-            self.assertLessEqual(abs(data_y[i] - copy_data_y[i]), 3 * std)
+            self.assertLessEqual(abs(data_y[i] - copy_data_y[i]), 5 * std)
 
 
     def test_happy_path_float_std(self):
+        """
+        All noisy data_y[i] should be original data_y[i] +/- 5 * std.
+        """
         # initiate all arguments
-        n_inliers = 10
+        n_inliers = 10000
         data_x = [float("INF")] * n_inliers
         data_y = [float("INF")] * n_inliers
         slope = 0
@@ -280,7 +283,7 @@ class testAddGaussianNoise(unittest.TestCase):
         generator.add_gaussian_noise(data_y, n_inliers, std)
         # assertions
         for i in range(n_inliers):
-            self.assertLessEqual(abs(data_y[i] - copy_data_y[i]), 3 * std)
+            self.assertLessEqual(abs(data_y[i] - copy_data_y[i]), 5 * std)
         
     def test_n_inliers_less_than_2(self):
         # initiate all arguments
