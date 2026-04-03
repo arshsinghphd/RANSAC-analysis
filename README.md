@@ -116,7 +116,12 @@ Python:
 * Separate lists of x and y rather than tuples for mutability.
 * `return_array` layout for ransac() with an eye for a future C struct
 * Different kind of noise as separate functions to allow testing the efficacy of RANSAC with different kind of errors. 
-
+* Using Box-Muller for gaussian noise. https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+* Why laplace noise?
+  * Gaussian:  tails decay as exp(-x²)
+  * Laplace:   tails decay as exp(-|x|), slower decay and heavier tails
+  * The Laplace distribution looks like two exponential curves back to back, centered at a mean (0 in case of noise).
+  * noise drawn from Laplace distribution has a higher probability of generating points far from the mean than Gaussian with the same scale. This makes it a good model for measurement errors that occasionally produce large deviations — more realistic than pure Gaussian.
 
 ## Summary
 <!-- 

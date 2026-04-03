@@ -34,14 +34,24 @@ def make_inliers(data_x, data_y, n_inliers, slope, intercept, x_min, x_max):
 
 def box_muller(sigma):
     """
-    Returns a random number from a mean 0 distribution with standard
-    deviation of sigma.
+    This function returns a random number drawn from a bell shaped distribution
+    with mean 0 and standard deviation of sigma. It employs Box-Muller
+    transform.
 
-    Param:
+    Background: The Box-Muller transform is a mathematical method for generating pairs of
+    independent, standard normally distributed (Gaussian) random numbers from
+    two uniformly distributed random numbers between 0 and 1. It transforms
+    uniform samples using logarithmic and trigonometric functions to map them
+    onto a bell curve, offering a computationally efficient alternative to
+    inverse transform sampling.
+    Source: https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+
+    Params:
         sigma, float
 
     Returns:
-        float, a random number picked from gaussian distribution
+        float, a random number from a mean 0 distribution with standard
+        deviation of sigma.
     """
     u1 = random.random()
     u2 = random.random()
@@ -73,6 +83,13 @@ def add_laplace_noise(data_y, n_inliers, scale_noise):
     """
     Adds zero-mean laplacean noise to the data inplace based on user's inputs.
 
+    Background:
+        Gaussian distribution:  tails decay as exp(-x²)
+        Laplace distribution:   tails decay as exp(-|x|), slower decay
+        Laplace distribution has a higher probability of generating points far
+        from the mean than Gaussian with the same scale. This makes it a good
+        model for measurement errors that occasionally produce large deviations
+        — more realistic than pure Gaussian.
     Params:
         data_y      a list of floats
         n_inliers   int, number of inliers to be modified
