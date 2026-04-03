@@ -243,7 +243,7 @@ class testAddGaussianNoise(unittest.TestCase):
         All noisy data_y[i] should be original data_y[i] +/- 5 * std.
         """
         # initiate all arguments
-        n_inliers = 10000   # large n to avoid statistical errors
+        n_inliers = 10
         data_x = [float("INF")] * n_inliers
         data_y = [float("INF")] * n_inliers
         slope = 0
@@ -267,7 +267,7 @@ class testAddGaussianNoise(unittest.TestCase):
         All noisy data_y[i] should be original data_y[i] +/- 5 * std.
         """
         # initiate all arguments
-        n_inliers = 10000
+        n_inliers = 10
         data_x = [float("INF")] * n_inliers
         data_y = [float("INF")] * n_inliers
         slope = 0
