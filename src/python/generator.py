@@ -1,15 +1,18 @@
+import math
 import numpy
+import random
+
 
 def make_inliers(data_x, data_y, n_inliers, slope, intercept, x_min, x_max):
-    """ 
+    """
     Fills the lists inliers_x, inliers_y in place based on input.
 
     Params:
-        data_x      a list of floats of size >= n_points    
+        data_x      a list of floats of size >= n_points
                     # size od data_x, data_y = n_inliers + n_outliers
         data_y      a list of floats of size >= n_points
         n_inliers   int, number of inlier points to be added
-        slope       float, slope of the line 
+        slope       float, slope of the line
         intercept   float, intercept of the line
         x_min       float, lower limit of x
         x_max       float, upper limit of x
@@ -18,23 +21,39 @@ def make_inliers(data_x, data_y, n_inliers, slope, intercept, x_min, x_max):
         0 for success
         -1 for error
     """
-    
     if n_inliers < 2 or x_min == x_max:
         return -1   # error code
-    
+
     # infer the increment of x
     step = (x_max - x_min) / (n_inliers - 1)
     for i in range(n_inliers):
         data_x[i] = x_min + i * step
-        data_y[i] = slope * data_x[i] + intercept    
+        data_y[i] = slope * data_x[i] + intercept
     return 0        # success
 
 
+def box_muller(sigma):
+    """
+    Returns a random number from a mean 0 distribution with standard
+    deviation of sigma.
+
+    Param:
+        sigma, float
+
+    Returns:
+        float, a random number picked from gaussian distribution
+    """
+    u1 = random.random()
+    u2 = random.random()
+    z = math.sqrt(-2 * math.log(u1)) * math.cos(2 * math.pi * u2)
+    return z * sigma
+
+
 def add_gaussian_noise(data_y, n_inliers, std):
-    """ 
+    """
     Adds zero mean gaussian noise to data_y inplace based on user's inputs.
 
-    Params: 
+    Params:
         data_y      a list of floats
         n_inliers   int, number of inliers to be modified
         std         float, standard deviation of gaussian noise
@@ -43,12 +62,16 @@ def add_gaussian_noise(data_y, n_inliers, std):
         0 for success
         -1 for error
     """
-    pass
+    if n_inliers < 2:
+        return -1
+    for i in range(n_inliers):
+        data_y[i] += box_muller(std)
+    return 0
 
 
 def add_laplace_noise(data_y, n_inliers, scale_noise):
-    """ 
-    Adds zero-mean laplacean noise to the data inplace based on user's inputs. 
+    """
+    Adds zero-mean laplacean noise to the data inplace based on user's inputs.
 
     Params:
         data_y      a list of floats
@@ -84,7 +107,7 @@ def add_structural_bias(data_y, data_x, n_inliers, bias_fn):
 
 def add_outliers(data_x, data_y, n_inliers, n_outliers, x_min, x_max, y_min, y_max):
     """
-    Adds outliers to the data_x and data_y inplace. 
+    Adds outliers to the data_x and data_y inplace.
     Outliers are classification or gross error.
     This adds n_outlier points drawn uniformly from the space to data.
 
@@ -103,4 +126,3 @@ def add_outliers(data_x, data_y, n_inliers, n_outliers, x_min, x_max, y_min, y_m
         -1 for error
     """
     pass
-
