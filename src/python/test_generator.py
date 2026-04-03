@@ -346,5 +346,109 @@ class testAddGaussianNoise(unittest.TestCase):
         self.assertEqual(ret, -1)
 
 
+class TestAddLaplaceNoise(unittest.TestCase):
+    """
+    Tests happy path and edge cases for add_laplace_noise.
+    Happy path:
+        all noisy values should be original data_y[i] +/- 8 * scale_noise
+    Edge cases:
+        n_inliers < 2, should return -1
+        scale_noise <= 0, should return -1
+        scale_noise == 0, should return -1
+    """
+    def test_happy_path(self):
+        """
+        All noisy data_y[i] should be original data_y[i] +/- 8 * scale_noise.
+        """
+        # initiate all arguments
+        n_inliers = 10
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 0
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        # fill data_x, data_y, passing them to make_inliers
+        generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        copy_data_y = data_y.copy()
+        # add laplace noice
+        scale_noise = 1.5
+        generator.add_laplace_noise(data_y, n_inliers, scale_noise)
+        # assertions
+        for i in range(n_inliers):
+            self.assertLessEqual(abs(data_y[i] - copy_data_y[i]),
+                                 8 * scale_noise)
+
+
+    def test_n_inliers_less_than_2(self):
+        """
+        If n_inliers < 2, should return -1.
+        """
+        # initiate all arguments
+        n_inliers = 1
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 0
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        # fill data_x, data_y, passing them to make_inliers
+        generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        copy_data_y = data_y.copy()
+        # add laplace noice
+        scale_noise = 1.5
+        ret = generator.add_laplace_noise(data_y, n_inliers, scale_noise)
+        # assertion
+        self.assertEqual(ret, -1)
+
+
+    def test_scale_noise_zero(self):
+        """
+        If scale_noise == 0, should return -1.
+        """
+        # initiate all arguments
+        n_inliers = 10
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 0
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        # fill data_x, data_y, passing them to make_inliers
+        generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        copy_data_y = data_y.copy()
+        # add laplace noice
+        scale_noise = 0
+        ret = generator.add_laplace_noise(data_y, n_inliers, scale_noise)
+        # assertion
+        self.assertEqual(ret, -1)
+
+
+    def test_scale_noise_negative(self):
+        """
+        If scale_noise < 0, should return -1.
+        """
+        # initiate all arguments
+        n_inliers = 10
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 0
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        # fill data_x, data_y, passing them to make_inliers
+        generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        copy_data_y = data_y.copy()
+        # add laplace noice
+        scale_noise = -1.5
+        ret = generator.add_laplace_noise(data_y, n_inliers, scale_noise)
+        # assertion
+        self.assertEqual(ret, -1)  
+
+
 if __name__ == '__main__':
     unittest.main()

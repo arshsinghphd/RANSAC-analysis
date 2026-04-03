@@ -78,18 +78,42 @@ def add_gaussian_noise(data_y, n_inliers, std):
         data_y[i] += box_muller(std)
     return 0
 
+def add_outliers(data_x, data_y, n_inliers, n_outliers, x_min, x_max, y_min, y_max):
+    """
+    Adds outliers to the data_x and data_y inplace.
+    Outliers are classification or gross error.
+    This adds n_outlier points drawn uniformly from the space to data.
+
+    Params:
+        data_x      a list of floats
+        data_y      a list of floats
+        n_inliers   size of existing valid points in data
+        n_outliers  int, no. of outliers to add starting at index n_inliers
+        x_min       float, lower limit of x
+        x_max       float, upper limit of x
+        y_min       float, lower limit of y
+        y_max       float, upper limit of y
+
+    Returns:
+        0 for success
+        -1 for error
+    """
+    pass
 
 def add_laplace_noise(data_y, n_inliers, scale_noise):
     """
     Adds zero-mean laplacean noise to the data inplace based on user's inputs.
 
     Background:
+    
         Gaussian distribution:  tails decay as exp(-x²)
         Laplace distribution:   tails decay as exp(-|x|), slower decay
         Laplace distribution has a higher probability of generating points far
         from the mean than Gaussian with the same scale. This makes it a good
         model for measurement errors that occasionally produce large deviations
         — more realistic than pure Gaussian.
+        
+        
     Params:
         data_y      a list of floats
         n_inliers   int, number of inliers to be modified
@@ -99,7 +123,14 @@ def add_laplace_noise(data_y, n_inliers, scale_noise):
         0 for success
         -1 for error
     """
-    pass
+    if n_inliers < 2 or scale_noise <= 0:
+        return -1
+    for i in range(n_inliers):
+        u = random.uniform(-0.5, 0.5)
+        # map u on to CDF of Laplace
+        z = -scale_noise * (-1 if u < 0 else 1) * math.log(1 - 2 * abs(u))
+        data_y[i] += z
+    return 0
 
 
 def add_structural_bias(data_y, data_x, n_inliers, bias_fn):
@@ -122,24 +153,4 @@ def add_structural_bias(data_y, data_x, n_inliers, bias_fn):
     pass
 
 
-def add_outliers(data_x, data_y, n_inliers, n_outliers, x_min, x_max, y_min, y_max):
-    """
-    Adds outliers to the data_x and data_y inplace.
-    Outliers are classification or gross error.
-    This adds n_outlier points drawn uniformly from the space to data.
 
-    Params:
-        data_x      a list of floats
-        data_y      a list of floats
-        n_inliers   size of existing valid points in data
-        n_outliers  int, no. of outliers to add starting at index n_inliers
-        x_min       float, lower limit of x
-        x_max       float, upper limit of x
-        y_min       float, lower limit of y
-        y_max       float, upper limit of y
-
-    Returns:
-        0 for success
-        -1 for error
-    """
-    pass
