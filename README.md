@@ -117,6 +117,7 @@ Python:
   * separate `data_x` and `data_y` arrays
   * functions that modify these in-place
   * return -1 for error and 0 for success 
+  * use only rand() and create gaussian noise manually
 
 * Separate lists of x and y rather than tuples for mutability.
 * `return_array` layout for ransac() with an eye for a future C struct
