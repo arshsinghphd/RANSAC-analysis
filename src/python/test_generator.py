@@ -67,7 +67,7 @@ class TestMakeInliers(unittest.TestCase):
         # fill data_x, data_y, passing them to make_inliers
         generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
                               x_min, x_max)
-
+            
         # expected values
         exp_x = [float(i) for i in range(n_inliers)]
         exp_y = [float(i) for i in range(n_inliers)]      
@@ -76,6 +76,22 @@ class TestMakeInliers(unittest.TestCase):
         for i in range(n_inliers):
             self.assertAlmostEqual(data_x[i], exp_x[i])
             self.assertAlmostEqual(data_y[i], exp_y[i])
+
+
+    def test_n_less_than_2(self):
+        """
+        n < 2, should return -1
+        """
+        n_inliers = 1
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 1
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        ret = generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        self.assertEqual(ret, -1)
 
 
 if __name__ == '__main__':
