@@ -63,19 +63,19 @@ def estimate_std(distances, n_points, mean):
     return math.sqrt(variance / n_points)
 
 
-def estimate_epsilon(points_x, points_y, n_points, slope, intercept):
+def estimate_epsilon(points_x, points_y, n_points):
     """
     Estimates the outlier fraction epsilon from the residual distribution of
-    a preliminary least squares fit. Computes the perpendicular distance of
-    each point from the line defined by slope and intercept, then returns the
-    fraction of points whose distance exceeds mean + 2 * std of all distances.
+    a preliminary least squares fit computed from the data itself. Fits a
+    line to all points using least squares, computes the perpendicular
+    distance of each point from that line, then returns the fraction of
+    points whose distance exceeds mean + 2 * std of all distances.
 
     This estimate is a rough first guess only. It is unreliable at high
-    outlier fractions because outliers inflate the mean and std of the
-    distance distribution, raising the threshold and causing the function
-    to undercount outliers. This is a known limitation of using a least
-    squares preliminary fit on corrupted data — the same problem RANSAC
-    is designed to solve. A more robust approach is iterative refinement:
+    outlier fractions because outliers corrupt the preliminary least squares
+    fit, inflating mean and std and causing the function to undercount
+    outliers. This is a known limitation — the same problem RANSAC is
+    designed to solve. A more robust approach is iterative refinement:
     start with a conservative epsilon such as 0.5, run RANSAC, observe
     the inlier fraction of the best model, update epsilon, and repeat
     until convergence. This is left as future work.
@@ -88,8 +88,6 @@ def estimate_epsilon(points_x, points_y, n_points, slope, intercept):
         points_x    a list of n_points floats
         points_y    a list of n_points floats
         n_points    int, number of points
-        slope       float, slope of the preliminary model
-        intercept   float, intercept of the preliminary model
 
     Returns:
         float, estimated outlier fraction in [0, 1], rough estimate only
@@ -97,42 +95,55 @@ def estimate_epsilon(points_x, points_y, n_points, slope, intercept):
     """
     if n_points < 2:
         return -1
-    # initiate distances
-    distances = [-1] * n_points 
+
+    list_slopes = [0.0]
+    list_intercepts = [0.0]
+    ret = model.fit_line(points_x, points_y, n_points,
+                         list_slopes, list_intercepts, 0)
+    if ret == -1:
+        return -1
+
+    slope = list_slopes[0]
+    intercept = list_intercepts[0]
+
+    distances = [0.0] * n_points
     model.points_to_line_distances(points_x, points_y, n_points,
-                                               slope, intercept, distances)
+                                   slope, intercept, distances)
+
     mean = estimate_mean(distances, n_points)
     std = estimate_std(distances, n_points, mean)
+    threshold = mean + 2 * std
+
     count_outliers = 0
     for i in range(n_points):
-        if distances[i] > mean + 2 * std:
+        if distances[i] > threshold:
             count_outliers += 1
 
-    print(f"mean={mean:.3f}, std={std:.3f}, threshold={mean + 2*std:.3f}")
-    print(f"min_dist={min(distances):.3f}, max_dist={max(distances):.3f}")
-        
-    return count_outliers/n_points
+    return count_outliers / n_points
 
 
-def compute_t(points_x, points_y, n_points, slope, intercept):
+def compute_t(points_x, points_y, n_points):
     """
     Estimates the inlier threshold t from the residual distribution of a
-    preliminary least squares fit. If error is the perpendicular distances from
-    all points to the line, Sets t = mean + 2 * std of error, consistent with
-    the recommendation of Fischler and Bolles (1981).
+    preliminary least squares fit computed from the data itself. Fits a line
+    to all points using least squares, computes the perpendicular distance of
+    each point from that line, then returns mean + 2 * std of all distances,
+    consistent with the recommendation of Fischler and Bolles (1981).
+
+    Like estimate_epsilon, this estimate is a rough first guess only. At high
+    outlier fractions the preliminary least squares fit is corrupted, inflating
+    mean and std and producing an overly large threshold that may accept
+    outliers as inliers. It should be treated as a starting point only.
 
     Params:
         points_x    a list of n_points floats
         points_y    a list of n_points floats
         n_points    int, number of points
-        slope       float, slope of the preliminary model
-        intercept   float, intercept of the preliminary model
 
     Returns:
-        float, estimated threshold t
+        float, estimated inlier threshold t
         -1 for error if n_points < 2
     """
-    pass
 
 
 def compute_k(epsilon, n_params, failure_prob=0.01):

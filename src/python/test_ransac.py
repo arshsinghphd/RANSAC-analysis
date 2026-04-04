@@ -93,25 +93,55 @@ class TestEstimateEpsilon(unittest.TestCase):
     def test_clean_data(self):
         """
         Clean data with no outliers. Estimated epsilon should be exactly 0.0
-        since all distances are zero and no point exceeds the threshold.
+        allowing for floating error.
         """
-        pass
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        true_epsilon = 0.0
+        self._make_line(points_x, points_y, self.true_slope, self.true_intercept)
+        n_points = len(points_x)
+        epsilon = ransac.estimate_epsilon(points_x, points_y,
+                                          n_points)
+        self.assertAlmostEqual(epsilon, true_epsilon)
 
 
     def test_low_outlier_fraction(self):
         """
         20 percent outliers. estimate_epsilon is a rough guess only.
-        Asserts epsilon is within 0.4 of true value 0.20.
+        Asserts epsilon is within delta of true_epsilon.
         """
-        pass
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        true_epsilon = 0.2
+        self._make_line(points_x, points_y,
+                        self.true_slope, self.true_intercept)
+
+        self._add_outliers(points_x, points_y,
+                           self.true_slope, self.true_intercept,
+                           self.noise_std, true_epsilon)
+        n_points = len(points_x)
+        epsilon = ransac.estimate_epsilon(points_x, points_y,
+                                          n_points)
+        self.assertAlmostEqual(epsilon, true_epsilon, delta = true_epsilon)
 
 
     def test_medium_outlier_fraction(self):
         """
         40 percent outliers. estimate_epsilon is a rough guess only.
-        Asserts epsilon is within 0.4 of true value 0.40.
+        Asserts epsilon is within delta of true_epsilon.
         """
-        pass
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        true_epsilon = 0.4
+        self._make_line(points_x, points_y,
+                        self.true_slope, self.true_intercept)
+        self._add_outliers(points_x, points_y,
+                           self.true_slope, self.true_intercept,
+                           self.noise_std, true_epsilon)
+        n_points = len(points_x)
+        epsilon = ransac.estimate_epsilon(points_x, points_y,
+                                          n_points)
+        self.assertAlmostEqual(epsilon, true_epsilon, delta = true_epsilon)
 
 
     def test_high_outlier_fraction(self):
@@ -120,14 +150,36 @@ class TestEstimateEpsilon(unittest.TestCase):
         corrupted at this fraction. Asserts only that the returned value
         is a valid epsilon in [0, 1).
         """
-        pass
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        true_epsilon = 0.6
+        self._make_line(points_x, points_y,
+                        self.true_slope, self.true_intercept)
+        self._add_outliers(points_x, points_y,
+                           self.true_slope, self.true_intercept,
+                           self.noise_std, true_epsilon)
+        n_points = len(points_x)    
+        epsilon = ransac.estimate_epsilon(points_x, points_y,
+                                          n_points)
+        self.assertAlmostEqual(epsilon - true_epsilon, 0, delta = 1)
 
 
     def test_n_points_less_than_2(self):
         """
         n_points = 1, should return -1.
         """
-        pass
+        points_x = [float("inf")] * 1
+        points_y = [float("inf")] * 1
+        true_epsilon = 0.6
+        self._make_line(points_x, points_y,
+                        self.true_slope, self.true_intercept, 1)
+        self._add_outliers(points_x, points_y,
+                           self.true_slope, self.true_intercept,
+                           self.noise_std, true_epsilon, 1)
+        n_points = len(points_x)
+        epsilon = ransac.estimate_epsilon(points_x, points_y,
+                                          n_points)
+        self.assertEqual(epsilon, -1)
 
 
 class TestComputeT(unittest.TestCase):
