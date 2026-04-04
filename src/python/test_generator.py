@@ -12,7 +12,9 @@ Run from terminal as follows:
 
 import generator
 
+import math
 import unittest
+
 
 class TestMakeInliers(unittest.TestCase):
     """
@@ -364,7 +366,7 @@ class TestAddLaplaceNoise(unittest.TestCase):
         n_inliers = 10
         data_x = [float("INF")] * n_inliers
         data_y = [float("INF")] * n_inliers
-        slope = 0
+        slope = 1
         intercept = 0
         x_min = 0
         x_max = n_inliers - 1
@@ -389,7 +391,7 @@ class TestAddLaplaceNoise(unittest.TestCase):
         n_inliers = 1
         data_x = [float("INF")] * n_inliers
         data_y = [float("INF")] * n_inliers
-        slope = 0
+        slope = 1
         intercept = 0
         x_min = 0
         x_max = n_inliers - 1
@@ -412,7 +414,7 @@ class TestAddLaplaceNoise(unittest.TestCase):
         n_inliers = 10
         data_x = [float("INF")] * n_inliers
         data_y = [float("INF")] * n_inliers
-        slope = 0
+        slope = 1
         intercept = 0
         x_min = 0
         x_max = n_inliers - 1
@@ -435,7 +437,7 @@ class TestAddLaplaceNoise(unittest.TestCase):
         n_inliers = 10
         data_x = [float("INF")] * n_inliers
         data_y = [float("INF")] * n_inliers
-        slope = 0
+        slope = 1
         intercept = 0
         x_min = 0
         x_max = n_inliers - 1
@@ -448,6 +450,164 @@ class TestAddLaplaceNoise(unittest.TestCase):
         ret = generator.add_laplace_noise(data_y, n_inliers, scale_noise)
         # assertion
         self.assertEqual(ret, -1)  
+
+
+class TestAddStructuralBias(unittest.TestCase):
+    """
+    Tests happy paths and edge cases for add_structural_bias.
+    Happy paths:
+        bias_fn = lambda x: 0,           each data_y[i] unchanged
+        bias_fn = lambda x: 1.0,         each data_y[i] increased by 1.0
+        bias_fn = lambda x: 0.5 * x,     each data_y[i] increased by 0.5 * data_x[i]
+        bias_fn = lambda x: math.sin(x), each data_y[i] increased by sin(data_x[i])
+    Edge cases:
+        n_inliers < 2, should return -1
+        bias_fn is None, should return -1
+    """
+
+    def test_zero_bias(self):
+        """
+        bias_fn = lambda x: 0, data_y should be unchanged.
+        """
+        # initiate all arguments
+        n_inliers = 10
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 1
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        # fill data_x, data_y, passing them to make_inliers
+        generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        copy_data_y = data_y.copy()
+        # add structural bias
+        bias_fn = lambda x: 0
+        ret = generator.add_structural_bias(data_y, data_x, n_inliers, bias_fn)
+        # assertion
+        for i in range(n_inliers):
+            self.assertAlmostEqual(abs(data_y[i] - copy_data_y[i]), 0)
+
+
+    def test_constant_bias(self):
+        """
+        bias_fn = lambda x: 1.0, all data_y[i] should increase by 1.0.
+        """
+        # initiate all arguments
+        n_inliers = 10
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 1
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        # fill data_x, data_y, passing them to make_inliers
+        generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        copy_data_y = data_y.copy()
+        # add structural bias
+        bias_fn = lambda x: 1.0
+        ret = generator.add_structural_bias(data_y, data_x, n_inliers, bias_fn)
+        # assertion
+        for i in range(n_inliers):
+            self.assertAlmostEqual(abs(data_y[i] - copy_data_y[i]), 1)
+
+
+    def test_linear_bias(self):
+        """
+        bias_fn = lambda x: 0.5 * x, data_y[i] should increase by 0.5 * data_x[i].
+        """
+        # initiate all arguments
+        n_inliers = 10
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 1
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        # fill data_x, data_y, passing them to make_inliers
+        generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        copy_data_y = data_y.copy()
+        # add structural bias
+        bias_fn = lambda x: 0.5 * x
+        ret = generator.add_structural_bias(data_y, data_x, n_inliers, bias_fn)
+        # assertion
+        for i in range(n_inliers):
+            self.assertAlmostEqual(abs(data_y[i] - copy_data_y[i]),
+                                   abs(0.5 * data_x[i]))
+
+
+    def test_periodic_bias(self):
+        """
+        bias_fn = lambda x: math.sin(x), data_y[i] should increase by sin(data_x[i]).
+        """
+        # initiate all arguments
+        n_inliers = 10
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 1
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        # fill data_x, data_y, passing them to make_inliers
+        generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        copy_data_y = data_y.copy()
+        # add structural bias
+        bias_fn = lambda x: math.sin(x)
+        ret = generator.add_structural_bias(data_y, data_x, n_inliers, bias_fn)
+        # assertion
+        for i in range(n_inliers):
+            self.assertAlmostEqual(abs(data_y[i] - copy_data_y[i]),
+                                   abs(math.sin(data_x[i])))
+
+
+
+    def test_n_inliers_less_than_2(self):
+        """
+        If n_inliers < 2, should return -1.
+        """
+        # initiate all arguments
+        n_inliers = 1
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 1
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        # fill data_x, data_y, passing them to make_inliers
+        generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        copy_data_y = data_y.copy()
+        # add structural bias
+        bias_fn = lambda x: 1
+        ret = generator.add_structural_bias(data_y, data_x, n_inliers, bias_fn)
+        # assertion
+        self.assertEqual(ret, -1)
+
+
+    def test_bias_fn_none(self):
+        """
+        If bias_fn is None, should return -1.
+        """
+        # initiate all arguments
+        n_inliers = 10
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 1
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        # fill data_x, data_y, passing them to make_inliers
+        generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        copy_data_y = data_y.copy()
+        # add structural bias
+        bias_fn = None
+        ret = generator.add_structural_bias(data_y, data_x, n_inliers, bias_fn)
+        # assertion
+        self.assertEqual(ret, -1)
 
 
 if __name__ == '__main__':

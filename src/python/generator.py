@@ -78,6 +78,7 @@ def add_gaussian_noise(data_y, n_inliers, std):
         data_y[i] += box_muller(std)
     return 0
 
+
 def add_outliers(data_x, data_y, n_inliers, n_outliers, x_min, x_max, y_min, y_max):
     """
     Adds outliers to the data_x and data_y inplace.
@@ -99,6 +100,7 @@ def add_outliers(data_x, data_y, n_inliers, n_outliers, x_min, x_max, y_min, y_m
         -1 for error
     """
     pass
+
 
 def add_laplace_noise(data_y, n_inliers, scale_noise):
     """
@@ -150,7 +152,9 @@ def add_structural_bias(data_y, data_x, n_inliers, bias_fn):
         0 for success
         -1 for error
     """
-    pass
-
-
+    if n_inliers < 2 or bias_fn == None:
+        return -1
+    for i in range(n_inliers):
+        data_y[i] += bias_fn(data_x[i])
+    return 0
 
