@@ -115,35 +115,63 @@ def add_laplace_noise(data_y, n_inliers, scale_noise):
     return 0
 
 
-def add_outliers(data_x, data_y, n_inliers, n_outliers, x_min, x_max,
-                 y_min, y_max):
+def add_outliers(data_x, data_y, n_inliers, n_outliers,
+                 slope, intercept, noise_std):
     """
-    Adds outliers to the data_x and data_y inplace.
-    Outliers are classification or gross error.
-    This adds n_outlier points drawn uniformly from the space of points.
+    Adds n_outliers points to data_x and data_y in place, guaranteeing that
+    every added point is a true classification error — that is, it lies
+    outside the inlier band defined by the true model. The inlier band is
+    defined as points within 2 * noise_std of the true line. Outliers are
+    placed in a region guaranteed to be far from the inlier band by drawing
+    from a range that is twice the data range above or below the data,
+    chosen randomly. This guarantees that all n_outliers points are actual
+    outliers and not accidental inliers.
 
     Params:
-        data_x      a list of floats
-        data_y      a list of floats
-        n_inliers   size of existing valid points in data
-        n_outliers  int, no. of outliers to add starting at index n_inliers
-        x_min       float, lower limit of x
-        x_max       float, upper limit of x
-        y_min       float, lower limit of y
-        y_max       float, upper limit of y
+        data_x      a list of floats of size n_inliers, modified in place
+        data_y      a list of floats of size n_inliers, modified in place
+        n_inliers   int, size of existing valid points in data
+        n_outliers  int, number of outliers to add
+        slope       float, slope of the true model
+        intercept   float, intercept of the true model
+        noise_std   float, standard deviation of inlier noise, used to
+                    define the inlier band as 2 * noise_std from the line
 
     Returns:
         0 for success
-        -1 for error
+        -1 for error if n_inliers < 0
+        -1 for error if n_outliers < 0
+        -1 for error if n_inliers + n_outliers < 2
+        -1 for error if noise_std <= 0
     """
-    if (n_inliers < 0 or n_outliers < 0 or n_inliers + n_outliers < 2 or
-        x_min == x_max or y_min == y_max):
+    if (n_inliers < 0 or n_outliers < 0 or
+            n_inliers + n_outliers < 2 or noise_std <= 0):
         return -1
+
+    x_min_data = min(data_x[:n_inliers])
+    x_max_data = max(data_x[:n_inliers])
+    x_range = x_max_data - x_min_data if x_max_data != x_min_data else 1.0
+    x_offset = 2 * x_range
+
+    inlier_band = 2 * noise_std * math.sqrt(1 + slope * slope)
+
     for i in range(n_outliers):
-        x = random.uniform(x_min, x_max)
-        y = random.uniform(y_min, y_max)
+        if random.random() < 0.5:
+            x = random.uniform(x_max_data + x_range, x_max_data + x_offset)
+        else:
+            x = random.uniform(x_min_data - x_offset, x_min_data - x_range)
+
+        y_on_line = slope * x + intercept
+        if random.random() < 0.5:
+            y = random.uniform(y_on_line + inlier_band,
+                               y_on_line + inlier_band + x_offset)
+        else:
+            y = random.uniform(y_on_line - inlier_band - x_offset,
+                               y_on_line - inlier_band)
+
         data_x.append(x)
         data_y.append(y)
+
     return 0
 
 
