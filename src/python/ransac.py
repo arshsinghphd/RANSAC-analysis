@@ -183,7 +183,7 @@ def compute_k(epsilon, n_params, failure_prob=0.01):
     if (epsilon <= 0 or epsilon >= 1 or n_params < 2 or
         failure_prob <= 0 or failure_prob >= 1):
         return -1
-    return int(math.og(failure_prob) / math.log(1 - (1 - epsilon)**n_params))
+    return math.ceil(math.log(failure_prob) / math.log(1 - (1 - epsilon)**n_params))
 
 
 def compute_d(epsilon, n_points):

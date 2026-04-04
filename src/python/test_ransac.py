@@ -287,30 +287,52 @@ class TestComputeK(unittest.TestCase):
 
     def test_epsilon_10pc(self):
         """
-        epsilon = 0.10, n_params = 2, failure_prob = 0.01. k should equal 2.
+        epsilon = 0.10, n_params = 2, failure_prob = 0.01. k should equal 3.
         """
-        
+        epsilon = .10
+        n_params = 2
+        k = ransac.compute_k(epsilon, n_params, failure_prob=0.01)
+        self.assertEqual(k, 3)
 
 
     def test_epsilon_30pc(self):
         """
         epsilon = 0.30, n_params = 2, failure_prob = 0.01. k should equal 7.
         """
-        pass
+        epsilon = .30
+        n_params = 2
+        k = ransac.compute_k(epsilon, n_params, failure_prob=0.01)
+        self.assertEqual(k, 7)
 
 
     def test_epsilon_50pc(self):
         """
         epsilon = 0.50, n_params = 2, failure_prob = 0.01. k should equal 17.
         """
-        pass
+        epsilon = .50
+        n_params = 2
+        k = ransac.compute_k(epsilon, n_params, failure_prob=0.01)
+        self.assertEqual(k, 17)
 
 
     def test_epsilon_70pc(self):
         """
-        epsilon = 0.70, n_params = 2, failure_prob = 0.01. k should equal 74.
+        epsilon = 0.70, n_params = 2, failure_prob = 0.01. k should equal 49.
         """
-        pass
+        epsilon = .70
+        n_params = 2
+        k = ransac.compute_k(epsilon, n_params, failure_prob=0.01)
+        self.assertEqual(k, 49)
+
+
+    def test_epsilon_90pc(self):
+        """
+        epsilon = 0.90, n_params = 2, failure_prob = 0.01. k should equal 459.
+        """
+        epsilon = .90
+        n_params = 2
+        k = ransac.compute_k(epsilon, n_params, failure_prob=0.01)
+        self.assertEqual(k, 459)
 
 
     def test_custom_failure_prob(self):
@@ -318,21 +340,31 @@ class TestComputeK(unittest.TestCase):
         epsilon = 0.30, n_params = 2, failure_prob = 0.05.
         k should be less than at failure_prob = 0.01.
         """
-        pass
+        epsilon = .70
+        n_params = 2
+        k1 = ransac.compute_k(epsilon, n_params, failure_prob=0.05)
+        k2 = ransac.compute_k(epsilon, n_params, failure_prob=0.01)
+        self.assertLess(k1, k2)
 
 
     def test_epsilon_zero(self):
         """
         epsilon = 0, should return -1.
         """
-        pass
+        epsilon = 0
+        n_params = 2
+        k = ransac.compute_k(epsilon, n_params, failure_prob=0.01)
+        self.assertEqual(k, -1)
 
 
     def test_epsilon_one(self):
         """
         epsilon = 1, should return -1.
         """
-        pass
+        epsilon = 1
+        n_params = 2
+        k = ransac.compute_k(epsilon, n_params, failure_prob=0.01)
+        self.assertEqual(k, -1)
 
 
     def test_n_params_less_than_2(self):
@@ -346,14 +378,20 @@ class TestComputeK(unittest.TestCase):
         """
         failure_prob = 0, should return -1.
         """
-        pass
+        epsilon = 0.5
+        n_params = 2
+        k = ransac.compute_k(epsilon, n_params, failure_prob=0.0)
+        self.assertEqual(k, -1)
 
 
     def test_failure_prob_one(self):
         """
         failure_prob = 1, should return -1.
         """
-        pass
+        epsilon = 0.5
+        n_params = 2
+        k = ransac.compute_k(epsilon, n_params, failure_prob=1.0)
+        self.assertEqual(k, -1)
 
 
 class TestComputeD(unittest.TestCase):
