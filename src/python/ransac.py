@@ -25,12 +25,64 @@ import random
 import model
 
 
+def estimate_mean(distances, n_points):
+    """
+    Computes the population mean of distances.
+
+    Params:
+        distances   a list of n_points floats
+        n_points    int, number of distances to process
+
+    Returns:
+        float, mean of distances
+    """
+    mean = 0.0
+    for i in range(n_points):
+        mean += distances[i]
+    return mean / n_points
+
+
+def estimate_std(distances, n_points, mean):
+    """
+    Computes the population standard deviation of distances given a
+    precomputed mean. Uses population standard deviation dividing by
+    n_points rather than n_points - 1, which is appropriate for threshold
+    estimation as recommended by Fischler and Bolles (1981).
+
+    Params:
+        distances   a list of n_points floats
+        n_points    int, number of distances to process
+        mean        float, precomputed mean of distances
+
+    Returns:
+        float, population standard deviation of distances
+    """
+    variance = 0.0
+    for i in range(n_points):
+        variance += (distances[i] - mean) * (distances[i] - mean)
+    return math.sqrt(variance / n_points)
+
+
 def estimate_epsilon(points_x, points_y, n_points, slope, intercept):
     """
     Estimates the outlier fraction epsilon from the residual distribution of
     a preliminary least squares fit. Computes the perpendicular distance of
     each point from the line defined by slope and intercept, then returns the
-    fraction of points whose residual exceeds mean + 2 * std.
+    fraction of points whose distance exceeds mean + 2 * std of all distances.
+
+    This estimate is a rough first guess only. It is unreliable at high
+    outlier fractions because outliers inflate the mean and std of the
+    distance distribution, raising the threshold and causing the function
+    to undercount outliers. This is a known limitation of using a least
+    squares preliminary fit on corrupted data — the same problem RANSAC
+    is designed to solve. A more robust approach is iterative refinement:
+    start with a conservative epsilon such as 0.5, run RANSAC, observe
+    the inlier fraction of the best model, update epsilon, and repeat
+    until convergence. This is left as future work.
+
+    In this project epsilon is known exactly from the synthetic data
+    generation process, so this function is provided for completeness
+    and for use in real-world scenarios where the true epsilon is unknown.
 
     Params:
         points_x    a list of n_points floats
@@ -40,10 +92,26 @@ def estimate_epsilon(points_x, points_y, n_points, slope, intercept):
         intercept   float, intercept of the preliminary model
 
     Returns:
-        float, estimated outlier fraction in [0, 1]
+        float, estimated outlier fraction in [0, 1], rough estimate only
         -1 for error if n_points < 2
     """
-    pass
+    if n_points < 2:
+        return -1
+    # initiate distances
+    distances = [-1] * n_points 
+    model.points_to_line_distances(points_x, points_y, n_points,
+                                               slope, intercept, distances)
+    mean = estimate_mean(distances, n_points)
+    std = estimate_std(distances, n_points, mean)
+    count_outliers = 0
+    for i in range(n_points):
+        if distances[i] > mean + 2 * std:
+            count_outliers += 1
+
+    print(f"mean={mean:.3f}, std={std:.3f}, threshold={mean + 2*std:.3f}")
+    print(f"min_dist={min(distances):.3f}, max_dist={max(distances):.3f}")
+        
+    return count_outliers/n_points
 
 
 def compute_t(points_x, points_y, n_points, slope, intercept):

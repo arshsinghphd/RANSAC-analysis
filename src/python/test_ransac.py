@@ -1,11 +1,28 @@
 """
-Tests for ransac.py function: ransac.
+Tests for ransac.py functions:
+    estimate_epsilon
+    compute_t
+    compute_k
+    compute_d
+    ransac
 
-ransac finds the best fitting linear model from noisy data containing
-outliers using the Random Sample Consensus algorithm. It randomly samples
-n_params points, fits a model, counts inliers within threshold distance,
-and repeats k_resample times or until expected_inliers are found.
-Results are stored in return_array in place.
+estimate_epsilon estimates the outlier fraction from the residual distribution
+of a preliminary least squares fit.
+
+compute_t estimates the inlier threshold as mean + 2 * std of residuals,
+consistent with the recommendation of Fischler and Bolles (1981).
+
+compute_k computes the required number of RANSAC iterations from epsilon and
+n_params using the analytical formula at failure probability p = 0.01.
+
+compute_d computes the expected inlier count as floor((1 - epsilon) * n_points),
+consistent with the same epsilon used to compute k.
+
+ransac finds the best fitting linear model from noisy data containing outliers
+using the Random Sample Consensus algorithm. It randomly samples n_params
+points, fits a model, counts inliers within threshold distance, and repeats
+k_resample times or until expected_inliers are found. Results are stored in
+return_array in place.
 
 return_array layout:
     return_array[0]     n_points
@@ -28,16 +45,297 @@ import ransac
 import math
 import unittest
 
+
+class TestEstimateEpsilon(unittest.TestCase):
+    """
+    Tests for estimate_epsilon which estimates the outlier fraction from the
+    residual distribution of a preliminary least squares fit.
+
+    estimate_epsilon is a rough first guess only. At low outlier fractions
+    the estimate may be reasonably close to the true value. At high outlier
+    fractions the preliminary least squares fit is corrupted, inflating mean
+    and std and causing the function to undercount outliers. Tests reflect
+    this limitation by using loose deltas at low fractions and asserting
+    only a valid range at high fractions.
+
+    Happy paths:
+        clean data no outliers      epsilon should be exactly 0.0
+        outlier fraction 0.20       epsilon should be within 0.4 of 0.20
+        outlier fraction 0.40       epsilon should be within 0.4 of 0.40
+        outlier fraction 0.60       epsilon should be in valid range [0, 1)
+                                    accuracy not expected at this fraction
+
+    Edge cases:
+        n_points < 2, should return -1
+    """
+
+    def setUp(self):
+        self.n = 100
+        self.x_min = 0
+        self.x_max = self.n - 1
+        self.true_slope = 2.0
+        self.true_intercept = 5.0
+        self.noise_std = 0.5
+
+    def _make_line(self, points_x, points_y, slope, intercept, n=None):
+        n = n if n else self.n
+        generator.make_inliers(points_x, points_y, n, slope, intercept,
+                               self.x_min, self.x_max)
+
+    def _add_outliers(self, points_x, points_y, slope, intercept,
+                      noise_std, epsilon, n=None):
+        n = n if n else self.n
+        n_outliers = int(n * epsilon)
+        generator.add_outliers(points_x, points_y, n, n_outliers,
+                               slope, intercept, noise_std)
+
+
+    def test_clean_data(self):
+        """
+        Clean data with no outliers. Estimated epsilon should be exactly 0.0
+        since all distances are zero and no point exceeds the threshold.
+        """
+        pass
+
+
+    def test_low_outlier_fraction(self):
+        """
+        20 percent outliers. estimate_epsilon is a rough guess only.
+        Asserts epsilon is within 0.4 of true value 0.20.
+        """
+        pass
+
+
+    def test_medium_outlier_fraction(self):
+        """
+        40 percent outliers. estimate_epsilon is a rough guess only.
+        Asserts epsilon is within 0.4 of true value 0.40.
+        """
+        pass
+
+
+    def test_high_outlier_fraction(self):
+        """
+        60 percent outliers. Least squares preliminary fit is heavily
+        corrupted at this fraction. Asserts only that the returned value
+        is a valid epsilon in [0, 1).
+        """
+        pass
+
+
+    def test_n_points_less_than_2(self):
+        """
+        n_points = 1, should return -1.
+        """
+        pass
+
+
+class TestComputeT(unittest.TestCase):
+    """
+    Tests for compute_t which estimates the inlier threshold t as
+    mean + 2 * std of the perpendicular distances from all points to
+    the preliminary model line.
+
+    Happy paths:
+        clean data no noise, t should be near 0.0
+        gaussian noise with known std, t should be near 2 * std
+
+    Edge cases:
+        n_points < 2, should return -1
+    """
+
+    def setUp(self):
+        self.n = 100
+        self.x_min = 0
+        self.x_max = self.n - 1
+        self.true_slope = 2.0
+        self.true_intercept = 5.0
+
+
+    def test_clean_data(self):
+        """
+        Clean data with no noise. t should be near 0.0.
+        """
+        pass
+
+
+    def test_gaussian_noise(self):
+        """
+        Gaussian noise with std = 0.5. t should be near 2 * std = 1.0.
+        """
+        pass
+
+
+    def test_n_points_less_than_2(self):
+        """
+        n_points = 1, should return -1.
+        """
+        pass
+
+
+class TestComputeK(unittest.TestCase):
+    """
+    Tests for compute_k which computes the required number of RANSAC iterations
+    using the formula k = ceil(log(p) / log(1 - (1 - epsilon)^n_params))
+    with default failure probability p = 0.01.
+
+    Happy paths:
+        epsilon = 0.10, n_params = 2, k should equal 2
+        epsilon = 0.30, n_params = 2, k should equal 7
+        epsilon = 0.50, n_params = 2, k should equal 17
+        epsilon = 0.70, n_params = 2, k should equal 74
+        custom failure_prob = 0.05, k should be less than at p = 0.01
+
+    Edge cases:
+        epsilon <= 0,       should return -1
+        epsilon >= 1,       should return -1
+        n_params < 2,       should return -1
+        failure_prob <= 0,  should return -1
+        failure_prob >= 1,  should return -1
+    """
+
+    def test_epsilon_10pc(self):
+        """
+        epsilon = 0.10, n_params = 2, failure_prob = 0.01. k should equal 2.
+        """
+        pass
+
+
+    def test_epsilon_30pc(self):
+        """
+        epsilon = 0.30, n_params = 2, failure_prob = 0.01. k should equal 7.
+        """
+        pass
+
+
+    def test_epsilon_50pc(self):
+        """
+        epsilon = 0.50, n_params = 2, failure_prob = 0.01. k should equal 17.
+        """
+        pass
+
+
+    def test_epsilon_70pc(self):
+        """
+        epsilon = 0.70, n_params = 2, failure_prob = 0.01. k should equal 74.
+        """
+        pass
+
+
+    def test_custom_failure_prob(self):
+        """
+        epsilon = 0.30, n_params = 2, failure_prob = 0.05.
+        k should be less than at failure_prob = 0.01.
+        """
+        pass
+
+
+    def test_epsilon_zero(self):
+        """
+        epsilon = 0, should return -1.
+        """
+        pass
+
+
+    def test_epsilon_one(self):
+        """
+        epsilon = 1, should return -1.
+        """
+        pass
+
+
+    def test_n_params_less_than_2(self):
+        """
+        n_params = 1, should return -1.
+        """
+        pass
+
+
+    def test_failure_prob_zero(self):
+        """
+        failure_prob = 0, should return -1.
+        """
+        pass
+
+
+    def test_failure_prob_one(self):
+        """
+        failure_prob = 1, should return -1.
+        """
+        pass
+
+
+class TestComputeD(unittest.TestCase):
+    """
+    Tests for compute_d which computes the expected inlier count as
+    floor((1 - epsilon) * n_points).
+
+    Happy paths:
+        epsilon = 0.20, n_points = 100, d should equal 80
+        epsilon = 0.40, n_points = 100, d should equal 60
+        epsilon = 0.50, n_points = 200, d should equal 100
+
+    Edge cases:
+        epsilon <= 0,   should return -1
+        epsilon >= 1,   should return -1
+        n_points < 2,   should return -1
+    """
+
+    def test_epsilon_20pc(self):
+        """
+        epsilon = 0.20, n_points = 100. d should equal 80.
+        """
+        pass
+
+
+    def test_epsilon_40pc(self):
+        """
+        epsilon = 0.40, n_points = 100. d should equal 60.
+        """
+        pass
+
+
+    def test_epsilon_50pc_n200(self):
+        """
+        epsilon = 0.50, n_points = 200. d should equal 100.
+        """
+        pass
+
+
+    def test_epsilon_zero(self):
+        """
+        epsilon = 0, should return -1.
+        """
+        pass
+
+
+    def test_epsilon_one(self):
+        """
+        epsilon = 1, should return -1.
+        """
+        pass
+
+
+    def test_n_points_less_than_2(self):
+        """
+        n_points = 1, should return -1.
+        """
+        pass
+
+
 class TestRansac(unittest.TestCase):
     """
+    Tests for ransac which finds the best fitting linear model from noisy
+    data containing outliers using Random Sample Consensus.
+
     Happy paths:
         clean data no outliers              recovers true slope and intercept
-        majority inliers minority outliers  recovers true slope and intercept
-        high outlier fraction               may fail, documents RANSAC limits
-        vary k_resample                     more iterations improves recovery
-        vary threshold                      too tight - misses inliers,
-                                            too loose - accepts outliers
-    Edge cases
+        majority inliers low outliers       recovers true slope and intercept
+        majority inliers medium outliers    recovers true slope and intercept
+        high outlier fraction               documents RANSAC limits
+        early stop triggered                iterations run less than k_resample
+
+    Edge cases:
         n_points < 2                        return -1
         n_params < 2                        return -1
         k_resample < 1                      return -1
@@ -54,9 +352,32 @@ class TestRansac(unittest.TestCase):
         self.true_intercept = 5.0
         self.n_params = 2
         self.k_resample = 100
-        self.threshold = 1.0
-        self.expected_inliers = int(0.9 * self.n)
+        self.noise_std = 0.5
         self.return_array = [0.0] * 9
+
+
+    def _make_data(self, n_inliers, n_outliers, noise_std=None):
+        """
+        Generates noisy inlier data and appends outliers.
+        Returns points_x, points_y, threshold, expected_inliers.
+        """
+        noise_std = noise_std if noise_std else self.noise_std
+        points_x = [float("inf")] * n_inliers
+        points_y = [float("inf")] * n_inliers
+        generator.make_inliers(points_x, points_y, n_inliers,
+                               self.true_slope, self.true_intercept,
+                               self.x_min, self.x_max)
+        generator.add_gaussian_noise(points_y, n_inliers, noise_std)
+        y_min = min(points_y)
+        y_max = max(points_y)
+        generator.add_outliers(points_x, points_y, n_inliers, n_outliers,
+                               self.x_min, self.x_max, y_min, y_max)
+        epsilon = n_outliers / (n_inliers + n_outliers)
+        threshold = ransac.compute_t(points_x, points_y,
+                                     n_inliers + n_outliers,
+                                     self.true_slope, self.true_intercept)
+        expected_inliers = ransac.compute_d(epsilon, n_inliers + n_outliers)
+        return points_x, points_y, threshold, expected_inliers
 
 
     def test_clean_data_no_outliers(self):
@@ -83,9 +404,17 @@ class TestRansac(unittest.TestCase):
         pass
 
 
+    def test_high_outlier_fraction(self):
+        """
+        40 inliers with gaussian noise, 60 outliers (60 percent).
+        Documents RANSAC limits at high outlier fraction.
+        """
+        pass
+
+
     def test_early_stop(self):
         """
-        expected_inliers set low enough to trigger early stop.
+        expected_inliers set to 10 percent of n to trigger early stop.
         Iterations actually run should be less than k_resample.
         """
         pass
@@ -142,4 +471,3 @@ class TestRansac(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
