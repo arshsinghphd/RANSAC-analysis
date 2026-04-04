@@ -116,7 +116,7 @@ Python:
 * Separate lists of x and y rather than tuples for mutability.
 * `return_array` layout for ransac() with an eye for a future C struct
 * Different kind of noise as separate functions to allow testing the efficacy of RANSAC with different kind of errors. 
-* Using Box-Muller for gaussian noise. https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+* Using Box-Muller for gaussian noise. https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform [5]
 * Why laplace noise?
   * Gaussian:  tails decay as exp(-x²)
   * Laplace:   tails decay as exp(-|x|), slower decay and heavier tails
@@ -148,6 +148,7 @@ Google Gemini: I used Google Gemini to look up many unknown terms when I encount
 
 [4] Richard Hartley and Andrew Zisserman. 2004. Multiple View Geometry in Computer Vision. Cambridge University Press.
 
+[5] Box, G. E. P. and Muller, M. E. 1958. A note on the generation of random normal deviates. The Annals of Mathematical Statistics 29, 2, 610–611.
 
 <!-- Time Line
 Days 1-3  (now-Apr 5):   finish generate.py + model.py
