@@ -45,9 +45,9 @@ def box_muller(sigma):
     onto a bell curve, offering a computationally efficient alternative to
     inverse transform sampling.
 
-    Source: Box, G. E. P. and Muller, M. E. 1958. A note on the generation of
-            random normal deviates. The Annals of Mathematical Statistics 29,
-            2, 610–611.
+    Source:
+        Box, G. E. P. and Muller, M. E. 1958. A note on the generation of random
+        normal deviates. The Annals of Mathematical Statistics 29, 2, 610–611.
 
     Params:
         sigma, float
