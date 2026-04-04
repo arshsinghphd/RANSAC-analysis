@@ -414,42 +414,60 @@ class TestComputeD(unittest.TestCase):
         """
         epsilon = 0.20, n_points = 100. d should equal 80.
         """
-        pass
+        epsilon = 0.20
+        n_points = 100
+        d = ransac.compute_d(epsilon, n_points)
+        self.assertEqual(d, 80)
 
 
     def test_epsilon_40pc(self):
         """
         epsilon = 0.40, n_points = 100. d should equal 60.
         """
-        pass
+        epsilon = 0.40
+        n_points = 100
+        d = ransac.compute_d(epsilon, n_points)
+        self.assertEqual(d, 60)
 
 
     def test_epsilon_50pc_n200(self):
         """
-        epsilon = 0.50, n_points = 200. d should equal 100.
+        epsilon = 0.50, n_points = 100. d should equal 50.
         """
-        pass
+        epsilon = 0.50
+        n_points = 100
+        d = ransac.compute_d(epsilon, n_points)
+        self.assertEqual(d, 50)
 
 
     def test_epsilon_zero(self):
         """
         epsilon = 0, should return -1.
         """
-        pass
+        epsilon = 0.0
+        n_points = 100
+        d = ransac.compute_d(epsilon, n_points)
+        self.assertEqual(d, -1)
 
 
     def test_epsilon_one(self):
         """
         epsilon = 1, should return -1.
         """
-        pass
+        epsilon = 1.0
+        n_points = 100
+        d = ransac.compute_d(epsilon, n_points)
+        self.assertEqual(d, -1)
 
 
     def test_n_points_less_than_2(self):
         """
         n_points = 1, should return -1.
         """
-        pass
+        epsilon = 0.2
+        n_points = 1
+        d = ransac.compute_d(epsilon, n_points)
+        self.assertEqual(d, -1)
 
 
 class TestRansac(unittest.TestCase):
@@ -483,30 +501,51 @@ class TestRansac(unittest.TestCase):
         self.k_resample = 100
         self.noise_std = 0.5
         self.return_array = [0.0] * 9
+        self.points_x = [float("inf")] * self.n
+        self.points_y = [float("inf")] * self.n
 
 
-    def _make_data(self, n_inliers, n_outliers, noise_std=None):
+    def _make_data(self, points_x, points_y, n_inliers, n_outliers,
+               noise_std=None):
         """
-        Generates noisy inlier data and appends outliers.
-        Returns points_x, points_y, threshold, expected_inliers.
+        Generates noisy inlier data and appends outliers in place.
+        Uses add_outliers which guarantees every added point is a true
+        classification error outside the inlier band defined by the true
+        model and noise_std. Computes threshold t and expected inliers d
+        from the data using compute_t and compute_d.
+
+        Params:
+            points_x    a list of floats, modified in place
+            points_y    a list of floats, modified in place
+            n_inliers   int, number of inlier points to generate
+            n_outliers  int, number of outlier points to add
+            noise_std   float, standard deviation of gaussian noise,
+                        defaults to self.noise_std. If 0, no noise is added
+                        and no outliers are generated since the inlier band
+                        has zero width. Pass 0 only when testing clean data
+                        with no outliers.
+
+        Returns:
+            threshold           float, estimated inlier threshold t
+            expected_inliers    int, expected inlier count d
         """
-        noise_std = noise_std if noise_std else self.noise_std
-        points_x = [float("inf")] * n_inliers
-        points_y = [float("inf")] * n_inliers
+        noise_std = noise_std if noise_std is not None else self.noise_std
         generator.make_inliers(points_x, points_y, n_inliers,
                                self.true_slope, self.true_intercept,
                                self.x_min, self.x_max)
-        generator.add_gaussian_noise(points_y, n_inliers, noise_std)
-        y_min = min(points_y)
-        y_max = max(points_y)
-        generator.add_outliers(points_x, points_y, n_inliers, n_outliers,
-                               self.x_min, self.x_max, y_min, y_max)
-        epsilon = n_outliers / (n_inliers + n_outliers)
-        threshold = ransac.compute_t(points_x, points_y,
-                                     n_inliers + n_outliers,
-                                     self.true_slope, self.true_intercept)
-        expected_inliers = ransac.compute_d(epsilon, n_inliers + n_outliers)
-        return points_x, points_y, threshold, expected_inliers
+        if noise_std > 0:
+            generator.add_gaussian_noise(points_y, n_inliers, noise_std)
+            if n_outliers > 0:
+                generator.add_outliers(points_x, points_y,
+                                       n_inliers, n_outliers,
+                                       self.true_slope, self.true_intercept,
+                                       noise_std)
+        n_points = n_inliers + n_outliers
+        epsilon = n_outliers / n_points
+        threshold = ransac.compute_t(points_x, points_y, n_points)
+        expected_inliers = n_points if epsilon == 0 \
+                           else ransac.compute_d(epsilon, n_points)
+        return threshold, expected_inliers
 
 
     def test_clean_data_no_outliers(self):
@@ -514,8 +553,21 @@ class TestRansac(unittest.TestCase):
         Clean data with no noise and no outliers.
         Should recover true slope and intercept exactly.
         """
-        pass
-
+        n_outliers = 0
+        std_error = 0 
+        _, d = self._make_data(self.points_x, self.points_y, self.n,
+                               n_outliers, std_error)
+        t = 1e-6    # we know t will be 0, so override with small positive
+        n_points = self.n + n_outliers
+        epsilon = n_outliers/n_points
+        n_params = 2
+        k = 1       # since no noise or outliers, 1 is enough
+        return_array = [float("inf")] * 9
+        ransac.ransac(self.points_x, self.points_y, n_points, n_params,
+                      k, t, d, return_array)
+        self.assertAlmostEqual(self.true_slope, return_array[5])
+        self.assertAlmostEqual(self.true_intercept, return_array[6])
+        
 
     def test_low_outlier_fraction(self):
         """

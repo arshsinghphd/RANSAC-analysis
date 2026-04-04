@@ -202,7 +202,9 @@ def compute_d(epsilon, n_points):
         -1 for error if epsilon <= 0 or epsilon >= 1
         -1 for error if n_points < 2
     """
-    pass
+    if epsilon <= 0 or epsilon >= 1 or n_points < 2:
+        return -1
+    return math.floor((1 - epsilon) * n_points)
 
 
 def ransac(points_x, points_y, n_points, n_params, k_resample, threshold,
@@ -245,4 +247,25 @@ def ransac(points_x, points_y, n_points, n_params, k_resample, threshold,
         -1 for error if expected_inliers > n_points
         -1 for error if n_points < n_params
     """
-    pass
+    if (n_points < 2 or n_params < 2 or k_resample < 1 or
+        threshold <= 0 or expected_inliers > n_points or
+        n_points < n_params):
+    return -1
+
+    best_inliers = 0
+    best_slope = 0.0
+    best_intercept = 0.0
+    iterations_run = 0
+
+    for i in range(k_resample):
+        # sample n_params random indices
+        # fit line to sample
+        # compute distances to candidate line
+        # count inliers
+        # update best if improved
+        # early stop if expected_inliers reached
+        iterations_run += 1
+
+    # refit on all inliers of best model
+    # fill return_array
+    return 0
