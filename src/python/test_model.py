@@ -161,7 +161,7 @@ class TestFitLine(unittest.TestCase):
                              self.list_slopes, self.list_intercepts, self.pos)
         self.assertEqual(ret, -1)
 
-'''
+
 class TestPointsToLineDistances(unittest.TestCase):
     """
     Tests for points_to_line_distances which computes perpendicular distance
@@ -173,12 +173,15 @@ class TestPointsToLineDistances(unittest.TestCase):
                        / sqrt(1 + slope^2)
 
     Happy paths:
-        all points on the line      → all distances = 0.0
-        point 1 unit above line     → distance = 1 / sqrt(1 + slope^2)
-        slope = 0, point above line → distance = vertical distance
-        negative slope              → distances still positive (absolute value)
+        all points on the line      all distances = 0.0
+        point 1 unit above line     distance = 1 / sqrt(1 + slope^2)
+        slope = 0, point above line distance = vertical distance
+        negative slope              distances still positive (absolute value)
 
     Edge cases:
-        n_points < 1                → return -1
+        n_points < 1                return -1
     """
-'''
+
+
+if __name__ == '__main__':
+    unittest.main()
