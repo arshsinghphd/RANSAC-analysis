@@ -65,7 +65,7 @@ Make sure to include the following:
 ```mermaid
 flowchart TD
     A([Start]) --> B
-    
+
     B["Step 1: 
     randomly sample n points
     n = min points to fit model"]
@@ -116,6 +116,50 @@ HIGHLIGHTS:
 2. Keeping cartesian points also allows me to represent my analysis using simple and easy to interpret graphs.
 3. 
 -->
+
+
+## RANSAC Parameters
+
+RANSAC is governed by three parameters that jointly determine both the quality of the estimated model and the computational cost of finding it. These are the threshold distance $t$, the number of iterations $k$, and the expected inlier count $d$.
+
+
+### Threshold distance $t$
+
+The threshold $t$ defines the boundary between inliers and outliers. A point is classified as an inlier if its perpendicular distance from the candidate model falls below $t$. Setting $t$ too small causes RANSAC to reject points that are legitimate inliers corrupted by small measurement noise, starving the consensus set. Setting $t$ too large causes it to accept outliers as inliers, corrupting the consensus set from the other direction. In practice, $t$ is derived from the data itself rather than set in advance. Fischler and Bolles suggest setting $t$ at one or two standard deviations beyond the measured average residual error, that is $t = \bar{e} + \sigma$ or $t = \bar{e} + 2\sigma$, where $\bar{e}$ is the mean residual and $\sigma$ is its standard deviation computed over the full point set.
+
+
+### Iteration count $k$
+
+The iteration count $k$ controls how many independent random samples are drawn. Each sample of $n$ points defines a candidate model, and $k$ determines how thoroughly the space of candidate models is explored. The probability that at least one of the $k$ samples is drawn entirely from inliers — and therefore yields a good model — can be derived analytically. If $\epsilon$ is the outlier fraction and $n$ is the minimum sample size, then the probability of drawing a clean sample in a single trial is $(1 - \epsilon)^n$. The probability that all $k$ trials fail is therefore $[1 - (1-\epsilon)^n]^k$. Setting this equal to a desired failure probability $p$ and solving for $k$ gives:
+
+$$k = \frac{\log(p)}{\log(1 - (1 - \epsilon)^n)}$$
+
+This formula makes explicit the dependence of $k$ on the outlier fraction and the model complexity. As the outlier fraction grows or the minimum sample size increases, $k$ must grow rapidly to maintain the same confidence level.
+
+Fischler and Bolles suggest a failure probability of $p = 0.01$, meaning RANSAC is given a 99 percent chance of finding at least one clean sample across all $k$ iterations. This is the standard practical choice in the literature. Substituting $p = 0.01$ into the formula above, the required number of iterations for line fitting where $n = 2$ grows rapidly with the outlier
+fraction $\epsilon$:
+
+| Outlier fraction $\epsilon$ | Required iterations $k$ at 99% confidence |
+|---|---|
+| 0.10 | 2 |
+| 0.30 | 7 |
+| 0.50 | 17 |
+| 0.70 | 74 |
+| 0.90 | 1163 |
+
+This exponential growth motivates the early stop parameter $d$ — at high outlier fractions, running all $k$ iterations is computationally expensive, and terminating early when a sufficiently good model is found provides significant practical savings.
+
+
+### Expected inlier count $d$
+
+The expected inlier count $d$ serves as an early stopping criterion. Once a candidate model achieves a consensus set of size at least $d$, the search terminates immediately without exhausting all $k$ iterations. The practical importance of $d$ is made clear by the table above — at an outlier fraction of 0.90, the required iteration count reaches 1163. In such cases, running all $k$ iterations every time is computationally expensive, and terminating as soon as a sufficiently good model is found provides significant savings. 
+
+The parameter $d$ is typically set as a fraction of the total point count $N$, reflecting the expected proportion of inliers. For example, if the outlier fraction is expected to be at most 0.30, then $d = 0.70 \times N$ is a reasonable choice. Setting $d$ too conservatively — close to $N$ — causes RANSAC to always run all $k$ iterations, forgoing the computational savings. Setting it too aggressively — close to $n$, the minimum sample size — risks accepting a suboptimal model that happens to accumulate enough inliers by chance.
+
+In practice $\epsilon$ is rarely known precisely. Three approaches are common. First, domain knowledge — if the feature matcher is known to produce roughly 30 percent false matches, set $\epsilon = 0.30$ and $d = 0.70 \times N$. Second, consistency between $k$ and $d$ — use the same $\epsilon$, ensuring the two parameters reflect a coherent assumption about the data. Third, a pilot run — run RANSAC once with a conservative $d$ such as $0.5 \times N$, observe how many inliers the best model finds, and use that count to calibrate $d$ for subsequent runs. 
+
+The parameters $k$ and $d$ have opposing roles: $k$ is a safety net that pushes the iteration count up to guarantee confidence, while $d$ is an exit condition that pulls it down as soon as a good enough model is found. The actual number of iterations run sits somewhere between 1 and $k$, determined by how quickly a model exceeding $d$ inliers is found. Because both parameters depend on the same assumption about the data, the choice of $d$ should be consistent with the outlier fraction $\epsilon$ used to compute $k$. If $\epsilon$ is the estimated outlier fraction and $N$ is the total point count, then a principled choice is $d = (1 - \epsilon) \times N$. Thus of the three apporaches described above, the second approach is the most principled and is the one adopted in this project.
+
 
 ## Application
 <!-- 
@@ -169,6 +213,27 @@ Python:
   * noise drawn from Laplace distribution has a higher probability of generating points far from the mean than Gaussian with the same scale. This makes it a good model for measurement errors that occasionally produce large deviations — more realistic than pure Gaussian.
 * `fit_line` uses least squares - write formulae
 * `points_to_line_distances` uses geometric (perpendicular) distance - write formula
+
+
+### Least Squares Line Fitting
+
+Given $n$ points $(x_i, y_i)$, the slope $m$ and intercept $b$ of the best fitting line $y = mx + b$ are estimated by minimizing the sum of squared residuals. The closed form solution is:
+
+$$m = \frac{n \sum x_i y_i - \sum x_i \sum y_i}{n \sum x_i^2 - \left(\sum x_i\right)^2}$$
+
+$$b = \frac{\sum y_i - m \sum x_i}{n}$$
+
+The denominator $n \sum x_i^2 - \left(\sum x_i\right)^2$ is zero when all $x_i$ are equal, corresponding to a vertical line whose slope is undefined. This case is detected and rejected as an error in the implementation.
+
+
+### Perpendicular Distance from a Point to a Line
+
+Given a line defined by slope $m$ and intercept $b$, written in general form as $mx - y + b = 0$, the perpendicular distance from a point $(x_i, y_i)$ to the line is:
+
+$$d_i = \frac{|m x_i - y_i + b|}{\sqrt{1 + m^2}}$$
+
+This is the geometric distance — the length of the shortest path from the point to the line, which is always perpendicular to it. The absolute value ensures the distance is non-negative regardless of which side of the line the point lies on. RANSAC uses this distance to classify each point as an inlier if $d_i < t$, or an outlier otherwise.
+
 
 ## Summary
 <!-- 
