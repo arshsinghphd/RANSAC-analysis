@@ -43,23 +43,21 @@ class TestFitLine(unittest.TestCase):
     """
 
     def setUp(self):
-        self.n_points = 10
+        self.n = 10
         self.x_min = 0
-        self.x_max = self.n_points - 1
+        self.x_max = self.n - 1
         self.pos = 3
         self.list_slopes = [float("inf")] * (self.pos + 1)
         self.list_intercepts = [float("inf")] * (self.pos + 1)
-        self.points_x = [float("inf")] * self.n_points
-        self.points_y = [float("inf")] * self.n_points
 
-
-    def _make_line(self, slope, intercept, n_points=None):
-        n = n_points if n_points else self.n_points
-        points_x = [float("inf")] * n
-        points_y = [float("inf")] * n
+    def _make_line(self, points_x, points_y, slope, intercept, n=None):
+        n = n if n else self.n
         generator.make_inliers(points_x, points_y, n, slope, intercept,
                                self.x_min, self.x_max)
-        return points_x, points_y
+
+    def _assert_fit(self, slope, intercept):
+        self.assertAlmostEqual(self.list_slopes[self.pos], slope)
+        self.assertAlmostEqual(self.list_intercepts[self.pos], intercept)
 
 
     def test_unit_slope_zero_intercept(self):
@@ -67,12 +65,12 @@ class TestFitLine(unittest.TestCase):
         slope = 1, intercept = 0, n_points = 10, clean data.
         fit_line should recover slope = 1, intercept = 0 exactly.
         """
-        slope, intercept = 1, 0
-        points_x, points_y = self._make_line(slope, intercept)
-        model.fit_line(points_x, points_y, self.n_points,
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        self._make_line(points_x, points_y, 1, 0)
+        model.fit_line(points_x, points_y, self.n,
                        self.list_slopes, self.list_intercepts, self.pos)
-        self.assertAlmostEqual(self.list_slopes[self.pos], slope)
-        self.assertAlmostEqual(self.list_intercepts[self.pos], intercept)
+        self._assert_fit(1, 0)
 
 
     def test_negative_slope(self):
@@ -80,12 +78,12 @@ class TestFitLine(unittest.TestCase):
         slope = -1, intercept = 5, n_points = 10, clean data.
         fit_line should recover slope = -1, intercept = 5 exactly.
         """
-        slope, intercept = -1, 5
-        points_x, points_y = self._make_line(slope, intercept)
-        model.fit_line(points_x, points_y, self.n_points,
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        self._make_line(points_x, points_y, -1, 5)
+        model.fit_line(points_x, points_y, self.n,
                        self.list_slopes, self.list_intercepts, self.pos)
-        self.assertAlmostEqual(self.list_slopes[self.pos], slope)
-        self.assertAlmostEqual(self.list_intercepts[self.pos], intercept)
+        self._assert_fit(-1, 5)
 
 
     def test_zero_slope(self):
@@ -93,12 +91,12 @@ class TestFitLine(unittest.TestCase):
         slope = 0, intercept = 3, n_points = 10, clean data.
         fit_line should recover slope = 0, intercept = 3 exactly.
         """
-        slope, intercept = 0, 3
-        points_x, points_y = self._make_line(slope, intercept)
-        model.fit_line(points_x, points_y, self.n_points,
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        self._make_line(points_x, points_y, 0, 3)
+        model.fit_line(points_x, points_y, self.n,
                        self.list_slopes, self.list_intercepts, self.pos)
-        self.assertAlmostEqual(self.list_slopes[self.pos], slope)
-        self.assertAlmostEqual(self.list_intercepts[self.pos], intercept)
+        self._assert_fit(0, 3)
 
 
     def test_fractional_slope(self):
@@ -106,12 +104,12 @@ class TestFitLine(unittest.TestCase):
         slope = 0.5, intercept = 0, n_points = 10, clean data.
         fit_line should recover slope = 0.5, intercept = 0 exactly.
         """
-        slope, intercept = 0.5, 0
-        points_x, points_y = self._make_line(slope, intercept)
-        model.fit_line(points_x, points_y, self.n_points,
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        self._make_line(points_x, points_y, 0.5, 0)
+        model.fit_line(points_x, points_y, self.n,
                        self.list_slopes, self.list_intercepts, self.pos)
-        self.assertAlmostEqual(self.list_slopes[self.pos], slope)
-        self.assertAlmostEqual(self.list_intercepts[self.pos], intercept)
+        self._assert_fit(0.5, 0)
 
 
     def test_minimum_points(self):
@@ -120,21 +118,22 @@ class TestFitLine(unittest.TestCase):
         fit_line should recover slope = 1, intercept = 0 exactly
         at minimum sample size.
         """
-        slope, intercept = 1, 0
-        points_x, points_y = self._make_line(slope, intercept, n_points=2)
+        points_x = [float("inf")] * 2
+        points_y = [float("inf")] * 2
+        self._make_line(points_x, points_y, 1, 0, n=2)
         model.fit_line(points_x, points_y, 2,
                        self.list_slopes, self.list_intercepts, self.pos)
-        self.assertAlmostEqual(self.list_slopes[self.pos], slope)
-        self.assertAlmostEqual(self.list_intercepts[self.pos], intercept)
+        self._assert_fit(1, 0)
 
 
     def test_pos_negative(self):
         """
         pos < 0, should return -1.
         """
-        slope, intercept = 1, 0
-        points_x, points_y = self._make_line(slope, intercept)
-        ret = model.fit_line(points_x, points_y, self.n_points,
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        self._make_line(points_x, points_y, 1, 0)
+        ret = model.fit_line(points_x, points_y, self.n,
                              self.list_slopes, self.list_intercepts, -1)
         self.assertEqual(ret, -1)
 
@@ -143,8 +142,9 @@ class TestFitLine(unittest.TestCase):
         """
         n_points = 1, should return -1.
         """
-        slope, intercept = 1, 0
-        points_x, points_y = self._make_line(slope, intercept)
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        self._make_line(points_x, points_y, 1, 0)
         ret = model.fit_line(points_x, points_y, 1,
                              self.list_slopes, self.list_intercepts, self.pos)
         self.assertEqual(ret, -1)
@@ -155,9 +155,9 @@ class TestFitLine(unittest.TestCase):
         all x values equal, vertical line, slope undefined.
         should return -1.
         """
-        points_x = [1.0] * self.n_points
-        points_y = [float(i) for i in range(self.n_points)]
-        ret = model.fit_line(points_x, points_y, self.n_points,
+        points_x = [1.0] * self.n
+        points_y = [float(i) for i in range(self.n)]
+        ret = model.fit_line(points_x, points_y, self.n,
                              self.list_slopes, self.list_intercepts, self.pos)
         self.assertEqual(ret, -1)
 
@@ -170,17 +170,111 @@ class TestPointsToLineDistances(unittest.TestCase):
 
     The geometric distance formula used is:
         distances[i] = |slope * points_x[i] - points_y[i] + intercept|
-                       / sqrt(1 + slope^2)
+                       / sqrt(1 + slope squared)
 
     Happy paths:
-        all points on the line      all distances = 0.0
-        point 1 unit above line     distance = 1 / sqrt(1 + slope^2)
-        slope = 0, point above line distance = vertical distance
-        negative slope              distances still positive (absolute value)
+        all points on the line, all distances equal 0.0
+        points 1 unit above the line, distance equals 1 / sqrt(1 + slope squared)
+        slope = 0, points 2 units above line, distance equals 2.0
+        slope = -1, points 1 unit above line, distances positive due to absolute value
 
     Edge cases:
-        n_points < 1                return -1
+        n_points = 0, should return -1
     """
+
+    def setUp(self):
+        self.n = 10
+        self.x_min = 0
+        self.x_max = self.n - 1
+        self.distances = [float("inf")] * self.n
+
+    def _make_line(self, points_x, points_y, slope, intercept, n=None):
+        n = n if n else self.n
+        generator.make_inliers(points_x, points_y, n, slope, intercept,
+                               self.x_min, self.x_max)
+
+    def _assert_distances(self, distances, expected, n=None):
+        n = n if n else self.n
+        for i in range(n):
+            self.assertAlmostEqual(distances[i], expected)
+
+
+    def test_points_on_line(self):
+        """
+        All points lie exactly on the line.
+        All distances should equal 0.0.
+        """
+        slope, intercept = 1, 0
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        self._make_line(points_x, points_y, slope, intercept)
+        model.points_to_line_distances(points_x, points_y, self.n,
+                                       slope, intercept, self.distances)
+        self._assert_distances(self.distances, 0.0)
+
+
+    def test_points_one_unit_above_line(self):
+        """
+        All points shifted 1 unit above the line.
+        Each distance should equal 1 / sqrt(1 + slope squared).
+        """
+        slope, intercept = 1, 0
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        self._make_line(points_x, points_y, slope, intercept)
+        for i in range(self.n):
+            points_y[i] += 1.0
+        model.points_to_line_distances(points_x, points_y, self.n,
+                                       slope, intercept, self.distances)
+        expected = 1.0 / math.sqrt(1 + slope * slope)
+        self._assert_distances(self.distances, expected)
+
+
+    def test_zero_slope_points_above_line(self):
+        """
+        slope = 0, intercept = 0. Points shifted 2 units above.
+        Each distance should equal 2.0.
+        """
+        slope, intercept = 0, 0
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        self._make_line(points_x, points_y, slope, intercept)
+        for i in range(self.n):
+            points_y[i] += 2.0
+        model.points_to_line_distances(points_x, points_y, self.n,
+                                       slope, intercept, self.distances)
+        self._assert_distances(self.distances, 2.0)
+
+
+    def test_negative_slope_points_above_line(self):
+        """
+        slope = -1, intercept = 0. Points shifted 1 unit above.
+        Distances should be positive due to absolute value in formula.
+        """
+        slope, intercept = -1, 0
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        self._make_line(points_x, points_y, slope, intercept)
+        for i in range(self.n):
+            points_y[i] += 1.0
+        model.points_to_line_distances(points_x, points_y, self.n,
+                                       slope, intercept, self.distances)
+        expected = 1.0 / math.sqrt(1 + slope * slope)
+        self._assert_distances(self.distances, expected)
+
+
+    def test_n_points_less_than_1(self):
+        """
+        n_points = 0, should return -1.
+        """
+        points_x = []
+        points_y = []
+        distances = []
+        n_points = 0
+        slope, intercept = 1, 0
+        ret = model.points_to_line_distances(points_x, points_y, n_points,
+                                             slope, intercept, distances)
+        self.assertEqual(ret, -1)
 
 
 if __name__ == '__main__':

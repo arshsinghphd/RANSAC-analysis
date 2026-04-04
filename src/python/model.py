@@ -1,3 +1,5 @@
+import math
+
 def fit_line(points_x, points_y, n_points, list_slopes, list_intercepts, pos):
     """
     This functions takes two lists of size n_points and estimates two parameters
@@ -7,9 +9,9 @@ def fit_line(points_x, points_y, n_points, list_slopes, list_intercepts, pos):
 
     slope = ((n * sum(points_x[i] * [points_y[i]) - sum(points_x) * sum(points_y))
             / (n * sum(points_x[i]**2) - (sum(points_x[i]))**2)
-            
+
     intercept = ((sum(points_y) - slope * sum(points_x))/n)
-    
+
     It does so my minimizing the squared errors and adds these to the
     list_slopes and list_intercepts, respectively, at the indices pos in place.
 
@@ -33,7 +35,7 @@ def fit_line(points_x, points_y, n_points, list_slopes, list_intercepts, pos):
     sum_x_sum_y = sum_x * sum_y
     sum_x2 = sum([points_x[i] * points_x[i] for i in range(n_points)])
     sum_x_2 = sum_x * sum_x
-    
+
     list_slopes[pos] = ( (n_points * sum_xy - sum_x_sum_y)/
                          (n_points * sum_x2 - sum_x_2))
     list_intercepts[pos] = (sum_y - list_slopes[pos] * sum_x) / n_points
@@ -47,7 +49,7 @@ def points_to_line_distances(points_x, points_y, n_points, slope, intercept,
     point represented by points_x and points_y from the linear model using the
     geometric formula and fills the list distances in place.
 
-    𝑑istances[i] =  abs((slope * points_x[i] - points_y[i] + intercept
+    𝑑istances[i] =  abs((slope * points_x[i] - points_y[i] + intercept)/
                         (math.sqrt(1 + slope * slope)))
 
     Params:
@@ -61,4 +63,9 @@ def points_to_line_distances(points_x, points_y, n_points, slope, intercept,
     Returns:
         None
     """
-    pass
+    if n_points <= 0:
+        return -1
+    for i in range(n_points):
+        distances[i] = abs((slope * points_x[i] - points_y[i] + intercept)/
+                        (math.sqrt(1 + slope * slope)))
+    return 0
