@@ -79,29 +79,6 @@ def add_gaussian_noise(data_y, n_inliers, std):
     return 0
 
 
-def add_outliers(data_x, data_y, n_inliers, n_outliers, x_min, x_max, y_min, y_max):
-    """
-    Adds outliers to the data_x and data_y inplace.
-    Outliers are classification or gross error.
-    This adds n_outlier points drawn uniformly from the space to data.
-
-    Params:
-        data_x      a list of floats
-        data_y      a list of floats
-        n_inliers   size of existing valid points in data
-        n_outliers  int, no. of outliers to add starting at index n_inliers
-        x_min       float, lower limit of x
-        x_max       float, upper limit of x
-        y_min       float, lower limit of y
-        y_max       float, upper limit of y
-
-    Returns:
-        0 for success
-        -1 for error
-    """
-    pass
-
-
 def add_laplace_noise(data_y, n_inliers, scale_noise):
     """
     Adds zero-mean laplacean noise to the data inplace based on user's inputs.
@@ -132,6 +109,38 @@ def add_laplace_noise(data_y, n_inliers, scale_noise):
         # map u on to CDF of Laplace
         z = -scale_noise * (-1 if u < 0 else 1) * math.log(1 - 2 * abs(u))
         data_y[i] += z
+    return 0
+
+
+def add_outliers(data_x, data_y, n_inliers, n_outliers, x_min, x_max,
+                 y_min, y_max):
+    """
+    Adds outliers to the data_x and data_y inplace.
+    Outliers are classification or gross error.
+    This adds n_outlier points drawn uniformly from the space of points.
+
+    Params:
+        data_x      a list of floats
+        data_y      a list of floats
+        n_inliers   size of existing valid points in data
+        n_outliers  int, no. of outliers to add starting at index n_inliers
+        x_min       float, lower limit of x
+        x_max       float, upper limit of x
+        y_min       float, lower limit of y
+        y_max       float, upper limit of y
+
+    Returns:
+        0 for success
+        -1 for error
+    """
+    if (n_inliers < 0 or n_outliers < 0 or n_inliers + n_outliers < 2 or
+        x_min == x_max or y_min == y_max):
+        return -1
+    for i in range(n_outliers):
+        x = random.uniform(x_min, x_max)
+        y = random.uniform(y_min, y_max)
+        data_x.append(x)
+        data_y.append(y)
     return 0
 
 

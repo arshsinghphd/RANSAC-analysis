@@ -610,5 +610,203 @@ class TestAddStructuralBias(unittest.TestCase):
         self.assertEqual(ret, -1)
 
 
+class TestAddOutliers(unittest.TestCase):
+    """
+    Tests happy paths and edge cases for add_outliers.
+    Happy paths:
+        n_outliers points added starting at index n_inliers
+        all added x values within [x_min, x_max]
+        all added y values within [y_min, y_max]
+        total length of data_x == n_inliers + n_outliers
+    Special case:
+        n_outliers == 0, should return 0, data unchanged
+    Edge cases:
+        n_outliers < 0, should return -1
+        n_inliers + n_outliers < 2, should return -1
+        x_min == x_max, should return -1
+        y_min == y_max, should return -1
+    """
+
+
+    def test_happy_path(self):
+        """
+        n_outliers points added starting at index n_inliers.
+        Tests:
+            All added x within [x_min, x_max].
+            All added y within [y_min, y_max].
+            Total length == n_inliers + n_outliers.
+        """
+        # initiate all arguments
+        n_inliers = 100
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 1
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        # fill data_x, data_y, passing them to make_inliers
+        generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        copy_data_x = data_x.copy()
+        copy_data_y = data_y.copy()
+        # add outliers
+        n_outliers = n_inliers // 10
+        y_min = min(data_y)
+        y_max = max(data_y)
+        ret = generator.add_outliers(data_x, data_y, n_inliers, n_outliers,
+                                     x_min, x_max, y_min, y_max)
+        # assertions
+        self.assertEqual(len(data_y), n_inliers + n_outliers)
+        for i in range(n_inliers + n_outliers):
+            if i < n_inliers:  # test original data is unchanged
+                self.assertAlmostEqual(data_x[i], copy_data_x[i])
+                self.assertAlmostEqual(data_y[i], copy_data_y[i])
+                continue
+            # test added data is from the space x_min, y_min, x_max, y_max
+            self.assertLessEqual(data_x[i], x_max)
+            self.assertGreaterEqual(data_x[i], x_min)
+            self.assertLessEqual(data_y[i], y_max)
+            self.assertGreaterEqual(data_y[i], y_min)
+
+
+    def test_zero_outliers(self):
+        """
+        n_outliers == 0, data_x and data_y should be unchanged, return 0.
+        """
+        # initiate all arguments
+        n_inliers = 100
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 1
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        # fill data_x, data_y, passing them to make_inliers
+        generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        copy_data_x = data_x.copy()
+        copy_data_y = data_y.copy()
+        # add outliers
+        n_outliers = 0
+        y_min = min(data_y)
+        y_max = max(data_y)
+        ret = generator.add_outliers(data_x, data_y, n_inliers, n_outliers,
+                                     x_min, x_max, y_min, y_max)
+        # assertions
+        self.assertEqual(len(data_y), n_inliers + n_outliers)
+        for i in range(n_inliers + n_outliers):
+            if i < n_inliers:  # test original data is unchanged
+                self.assertAlmostEqual(data_x[i], copy_data_x[i])
+                self.assertAlmostEqual(data_y[i], copy_data_y[i])
+                continue
+            # test added data is from the space x_min, y_min, x_max, y_max
+            self.assertLessEqual(data_x[i], x_max)
+            self.assertGreaterEqual(data_x[i], x_min)
+            self.assertLessEqual(data_y[i], y_max)
+            self.assertGreaterEqual(data_y[i], y_min)
+
+
+    def test_n_outliers_negative(self):
+        """
+        If n_outliers < 0, should return -1.
+        """
+        # initiate all arguments
+        n_inliers = 100
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 1
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        # fill data_x, data_y, passing them to make_inliers
+        generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        copy_data_x = data_x.copy()
+        copy_data_y = data_y.copy()
+        # add outliers
+        n_outliers = -10
+        y_min = min(data_y)
+        y_max = max(data_y)
+        ret = generator.add_outliers(data_x, data_y, n_inliers, n_outliers,
+                                     x_min, x_max, y_min, y_max)
+        # assertions
+        self.assertEqual(ret, -1)
+
+
+    def test_final_n_less_than_2(self):
+        """
+        If n_inliers + n_outliers < 2, should return -1.
+        """
+        # initiate all arguments for add_outliers
+        data_y = []
+        data_x = []
+        n_inliers = 0
+        n_outliers = 1
+        # min/max incorrect, but kept to test the final_n_less_than_2 in isolation
+        x_min = 0  
+        x_max = 1
+        y_min = 0
+        y_max = 1
+        ret = generator.add_outliers(data_x, data_y, n_inliers, n_outliers,
+                                     x_min, x_max, y_min, y_max)
+        # assertions
+        self.assertEqual(ret, -1)
+
+
+    def test_x_min_equals_x_max(self):
+        """
+        If x_min == x_max, should return -1.
+        """
+        # initiate all arguments
+        n_inliers = 100
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 1
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        # fill data_x, data_y, passing them to make_inliers
+        generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        copy_data_x = data_x.copy()
+        copy_data_y = data_y.copy()
+        # add outliers
+        n_outliers = -10
+        y_min = min(data_y)
+        y_max = max(data_y)
+        x_max = n_inliers - 1 # override x_max for the test
+        ret = generator.add_outliers(data_x, data_y, n_inliers, n_outliers,
+                                     x_min, x_max, y_min, y_max)
+         # assertions
+        self.assertEqual(ret, -1)
+
+
+    def test_y_min_equals_y_max(self):
+        """
+        If y_min == y_max, should return -1.
+        """
+        # initiate all arguments
+        n_inliers = 100
+        data_x = [float("INF")] * n_inliers
+        data_y = [float("INF")] * n_inliers
+        slope = 1
+        intercept = 0
+        x_min = 0
+        x_max = n_inliers - 1
+        # fill data_x, data_y, passing them to make_inliers
+        generator.make_inliers(data_x, data_y, n_inliers, slope, intercept,
+                              x_min, x_max)
+        copy_data_x = data_x.copy()
+        copy_data_y = data_y.copy()
+        # add outliers
+        n_outliers = -10
+        y_min = min(data_y)
+        y_max = y_min       # for testsing
+        ret = generator.add_outliers(data_x, data_y, n_inliers, n_outliers,
+                                     x_min, x_max, y_min, y_max)
+         # assertions
+        self.assertEqual(ret, -1)
+
+
 if __name__ == '__main__':
     unittest.main()
