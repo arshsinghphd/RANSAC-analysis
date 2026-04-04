@@ -158,7 +158,7 @@ class TestEstimateEpsilon(unittest.TestCase):
         self._add_outliers(points_x, points_y,
                            self.true_slope, self.true_intercept,
                            self.noise_std, true_epsilon)
-        n_points = len(points_x)    
+        n_points = len(points_x)
         epsilon = ransac.estimate_epsilon(points_x, points_y,
                                           n_points)
         self.assertAlmostEqual(epsilon - true_epsilon, 0, delta = 1)
@@ -204,31 +204,70 @@ class TestComputeT(unittest.TestCase):
         self.true_intercept = 5.0
 
 
+    def _make_line(self, points_x, points_y, slope, intercept, n=None):
+        n = n if n else self.n
+        generator.make_inliers(points_x, points_y, n, slope, intercept,
+                               self.x_min, self.x_max)
+
+
+    def _add_outliers(self, points_x, points_y, slope, intercept,
+                      noise_std, epsilon, n=None):
+        n = n if n else self.n
+        n_outliers = int(n * epsilon)
+        generator.add_outliers(points_x, points_y, n, n_outliers,
+                               slope, intercept, noise_std)
+
+
     def test_clean_data(self):
         """
         Clean data with no noise. t should be near 0.0.
         """
-        pass
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        true_epsilon = 0.0
+        self._make_line(points_x, points_y, self.true_slope, self.true_intercept)
+        n_points = len(points_x)
+        t = ransac.compute_t(points_x, points_y,
+                                          n_points)
+        self.assertAlmostEqual(t, 0)
 
 
-    def test_gaussian_noise(self):
+    def test_gaussian_noise_data(self):
         """
-        Gaussian noise with std = 0.5. t should be near 2 * std = 1.0.
+        Gaussian noise with std = 0.5. t should be small, near mean = 0,
+        within 2 * std.
         """
-        pass
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        true_epsilon = 0.0
+        self._make_line(points_x, points_y, self.true_slope,
+                        self.true_intercept)
+        std = 0.5
+        generator.add_gaussian_noise(points_y, self.n, std)
+        n_points = len(points_x)
+        t = ransac.compute_t(points_x, points_y, n_points)
+        self.assertAlmostEqual(t, 0, delta = 2 * std)
 
 
     def test_n_points_less_than_2(self):
         """
         n_points = 1, should return -1.
         """
-        pass
+        points_x = [float("inf")] * self.n
+        points_y = [float("inf")] * self.n
+        true_epsilon = 0.0
+        self._make_line(points_x, points_y, self.true_slope,
+                        self.true_intercept)
+        n_points = 1 # override for test
+        t = ransac.compute_t(points_x, points_y, n_points)
+        self.assertEqual(t, -1)
 
 
 class TestComputeK(unittest.TestCase):
     """
-    Tests for compute_k which computes the required number of RANSAC iterations
-    using the formula k = ceil(log(p) / log(1 - (1 - epsilon)^n_params))
+    Tests for compute_k which computes the required number of RANSAC
+    iterations using the formula
+        k = ceil(log(p) / log(1 - (1 - epsilon)^n_params))
     with default failure probability p = 0.01.
 
     Happy paths:
@@ -250,7 +289,7 @@ class TestComputeK(unittest.TestCase):
         """
         epsilon = 0.10, n_params = 2, failure_prob = 0.01. k should equal 2.
         """
-        pass
+        
 
 
     def test_epsilon_30pc(self):

@@ -144,6 +144,21 @@ def compute_t(points_x, points_y, n_points):
         float, estimated inlier threshold t
         -1 for error if n_points < 2
     """
+    if n_points < 2:
+        return -1
+    # estimate a regression line model
+    list_slopes = [float("inf")]
+    list_intercepts = [float("inf")]
+    pos = 0
+    model.fit_line(points_x, points_y, n_points, list_slopes, list_intercepts, pos)
+    # find distances of points from estimated line
+    distances = [float("inf")] * n_points
+    model.points_to_line_distances(points_x, points_y, n_points,
+                                   list_slopes[pos], list_intercepts[pos],
+                                   distances)
+    mean = estimate_mean(distances, n_points)
+    std = estimate_std(distances, n_points, mean)
+    return mean + 2 * std
 
 
 def compute_k(epsilon, n_params, failure_prob=0.01):
@@ -165,8 +180,11 @@ def compute_k(epsilon, n_params, failure_prob=0.01):
         -1 for error if n_params < 2
         -1 for error if failure_prob <= 0 or failure_prob >= 1
     """
-    pass
-
+    if (epsilon <= 0 or epsilon >= 1 or n_params < 2 or
+        failure_prob <= 0 or failure_prob >= 1):
+        return -1
+    return int(lmath.og(failure_prob) / math.log(1 - (1 - epsilon)^n_params))
+    
 
 def compute_d(epsilon, n_points):
     """
