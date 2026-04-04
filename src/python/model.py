@@ -1,12 +1,12 @@
 def fit_line(points_x, points_y, n_points, list_slopes, list_intercepts, pos):
     """
     This functions takes two lists of size n_points and estimates two parameters
-     Slope and intercept for the model:
+    Slope and intercept for the model:
 
-        points_y[i] = slope * points_x[i] + intercept 
+        points_y[i] = slope * points_x[i] + intercept; 
 
-    by minimizing the squared errors and adds these to the list_slopes and 
-    list_intercepts, respectively, at the indices pos.
+    It does so my minimizing the squared errors and adds these to the
+    list_slopes and list_intercepts, respectively, at the indices pos.
 
     Params:
         points_x    a list of n_points floats
@@ -21,6 +21,7 @@ def fit_line(points_x, points_y, n_points, list_slopes, list_intercepts, pos):
         None
     """
     pass
+
 
 def points_to_line_distances(points_x, points_y, n_points, slope, intercept, 
         distances):
