@@ -1,2 +1,4 @@
 works/
 .DS_Store
+
+*.pyc
