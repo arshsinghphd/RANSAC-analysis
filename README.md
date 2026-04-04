@@ -144,8 +144,8 @@ fraction $\epsilon$:
 | 0.10 | 2 |
 | 0.30 | 7 |
 | 0.50 | 17 |
-| 0.70 | 74 |
-| 0.90 | 1163 |
+| 0.70 | 49 |
+| 0.90 | 459 |
 
 This exponential growth motivates the early stop parameter $d$ — at high outlier fractions, running all $k$ iterations is computationally expensive, and terminating early when a sufficiently good model is found provides significant practical savings.
 
