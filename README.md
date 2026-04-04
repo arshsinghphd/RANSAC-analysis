@@ -110,18 +110,22 @@ Python:
 * C correspondence:
   * separate `data_x` and `data_y` arrays
   * functions that modify these in-place
-  * return -1 for error and 0 for success 
-  * use only rand() and create gaussian noise manually
+  * all functions return -1 for error and 0 for success 
+  * use only rand() 
+  * do not use any other python packages - create gaussian noise manually using Box-Muller[5]
+
 
 * Separate lists of x and y rather than tuples for mutability.
 * `return_array` layout for ransac() with an eye for a future C struct
 * Different kind of noise as separate functions to allow testing the efficacy of RANSAC with different kind of errors. 
-* Using Box-Muller for gaussian noise. https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform [5]
+* Using Box-Muller for gaussian noise [5].
 * Why laplace noise?
   * Gaussian:  tails decay as exp(-x²)
   * Laplace:   tails decay as exp(-|x|), slower decay and heavier tails
   * The Laplace distribution looks like two exponential curves back to back, centered at a mean (0 in case of noise).
   * noise drawn from Laplace distribution has a higher probability of generating points far from the mean than Gaussian with the same scale. This makes it a good model for measurement errors that occasionally produce large deviations — more realistic than pure Gaussian.
+* `fit_line` uses least squares - write formulae
+* `points_to_line_distances` uses geometric (perpendicular) distance - write formula
 
 ## Summary
 <!-- 
