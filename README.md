@@ -62,6 +62,49 @@ Make sure to include the following:
  - [Quadratic model]
  - [Classification in n groups]
 -->
+```mermaid
+flowchart TD
+    A([Start]) --> B
+    
+    B["Step 1: 
+    randomly sample n points
+    n = min points to fit model"]
+    B --> C
+
+    C["Step 2: 
+    fit model to sample
+    fit_line(points_x, points_y, n)"]
+    C --> D
+
+    D["Step 3: 
+    compute distances to model
+    points_to_line_distances(...)"]
+    D --> E
+
+    E["Step 4: 
+    count inliers
+    distance less than threshold t"]
+    E --> F
+    F{"Best model so far?
+    inlier count greater than current best"}
+
+    F -- yes --> G["Update best model"]
+    F -- no --> H
+    G --> H
+
+    H{"Inliers greater than expected?
+    early stop condition"}
+    H -- yes --> J
+    H -- no --> I
+
+    I{"k iterations done?"}
+    I -- no --> B
+    I -- yes --> J
+
+    J["Refit on all inliers
+    return best model"]
+    J --> K([End])
+```
 
 ## Empirical Analysis
 <!-- 
