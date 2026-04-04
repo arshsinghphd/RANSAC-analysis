@@ -38,12 +38,12 @@ def box_muller(sigma):
     with mean 0 and standard deviation of sigma. It employs Box-Muller
     transform.
 
-    Background: The Box-Muller transform is a mathematical method for generating pairs of
-    independent, standard normally distributed (Gaussian) random numbers from
-    two uniformly distributed random numbers between 0 and 1. It transforms
-    uniform samples using logarithmic and trigonometric functions to map them
-    onto a bell curve, offering a computationally efficient alternative to
-    inverse transform sampling.
+    Background: The Box-Muller transform is a mathematical method for generating
+    pairs of independent, standard normally distributed (Gaussian) random
+    numbers from two uniformly distributed random numbers between 0 and 1. It
+    transforms uniform samples using logarithmic and trigonometric functions to
+    map them onto a bell curve, offering a computationally efficient
+    alternative to inverse transform sampling.
 
     Source:
         Box, G. E. P. and Muller, M. E. 1958. A note on the generation of random
