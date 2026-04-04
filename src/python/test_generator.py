@@ -340,53 +340,72 @@ class TestAddStructuralBias(unittest.TestCase):
 class TestAddOutliers(unittest.TestCase):
     """
     Tests happy paths and edge cases for add_outliers.
+
+    add_outliers add points that are true classification errors
+    by placing outliers outside the inlier band defined by the true model.
+    The inlier band is:
+        (slope * x + intercept) +/- 2 * noise_std * sqrt(1 + slope^2).
+
     Happy paths:
-        n_outliers points appended starting at index n_inliers
-        all added x within [x_min, x_max]
-        all added y within [y_min, y_max]
+        n_outliers points appended, all outside the inlier band
         total length equals n_inliers + n_outliers
+        inlier points unchanged after call
+
     Special case:
         n_outliers == 0, data unchanged, return 0
+
     Edge cases:
-        n_outliers < 0, should return -1
+        n_inliers < 0,              should return -1
+        n_outliers < 0,             should return -1
         n_inliers + n_outliers < 2, should return -1
-        x_min == x_max, should return -1
-        y_min == y_max, should return -1
+        noise_std <= 0,             should return -1
     """
 
     def setUp(self):
         self.n = 100
         self.x_min = 0
         self.x_max = self.n - 1
+        self.slope = 1.0
+        self.intercept = 0.0
+        self.noise_std = 0.5
         self.points_x = [float("inf")] * self.n
         self.points_y = [float("inf")] * self.n
-        generator.make_inliers(self.points_x, self.points_y, self.n, 1, 0,
+        generator.make_inliers(self.points_x, self.points_y, self.n,
+                               self.slope, self.intercept,
                                self.x_min, self.x_max)
-        self.y_min = min(self.points_y)
-        self.y_max = max(self.points_y)
+        generator.add_gaussian_noise(self.points_y, self.n, self.noise_std)
 
-    def _assert_outliers_in_range(self, n_outliers, orig_x, orig_y):
+    def _assert_outliers_outside_band(self, n_outliers, orig_x, orig_y):
+        """
+        Asserts total length is correct, inliers are unchanged, and every
+        added point lies outside the inlier band.
+        """
         self.assertEqual(len(self.points_x), self.n + n_outliers)
         for i in range(self.n):
             self.assertAlmostEqual(self.points_x[i], orig_x[i])
             self.assertAlmostEqual(self.points_y[i], orig_y[i])
+        inlier_band = 2 * self.noise_std * math.sqrt(
+            1 + self.slope * self.slope)
         for i in range(self.n, self.n + n_outliers):
-            self.assertGreaterEqual(self.points_x[i], self.x_min)
-            self.assertLessEqual(self.points_x[i], self.x_max)
-            self.assertGreaterEqual(self.points_y[i], self.y_min)
-            self.assertLessEqual(self.points_y[i], self.y_max)
+            x = self.points_x[i]
+            y = self.points_y[i]
+            dist = abs(self.slope * x - y + self.intercept) / math.sqrt(
+                1 + self.slope * self.slope)
+            self.assertGreater(dist, inlier_band)
 
 
     def test_happy_path(self):
         """
-        10 outliers appended. All within range, inliers unchanged.
+        10% outliers appended. All outside inlier band, inliers unchanged.
         """
         n_out = self.n // 10
         orig_x = self.points_x.copy()
         orig_y = self.points_y.copy()
+        # add outliers
         generator.add_outliers(self.points_x, self.points_y, self.n, n_out,
-                               self.x_min, self.x_max, self.y_min, self.y_max)
-        self._assert_outliers_in_range(n_out, orig_x, orig_y)
+                               self.slope, self.intercept, self.noise_std)
+        # assertions
+        self._assert_outliers_outside_band(n_out, orig_x, orig_y)
 
 
     def test_zero_outliers(self):
@@ -395,20 +414,34 @@ class TestAddOutliers(unittest.TestCase):
         """
         orig_x = self.points_x.copy()
         orig_y = self.points_y.copy()
+        # add outliers
         ret = generator.add_outliers(self.points_x, self.points_y, self.n, 0,
-                                     self.x_min, self.x_max,
-                                     self.y_min, self.y_max)
+                                     self.slope, self.intercept, self.noise_std)
+        # assertions
         self.assertEqual(ret, 0)
-        self._assert_outliers_in_range(0, orig_x, orig_y)
+        self._assert_outliers_outside_band(0, orig_x, orig_y)
 
 
     def test_n_outliers_negative(self):
         """
         n_outliers = -10, should return -1.
         """
+        # add outliers
         ret = generator.add_outliers(self.points_x, self.points_y, self.n,
-                                     -10, self.x_min, self.x_max,
-                                     self.y_min, self.y_max)
+                                     -10, self.slope, self.intercept,
+                                     self.noise_std)
+        # assertions
+        self.assertEqual(ret, -1)
+
+
+    def test_n_inliers_negative(self):
+        """
+        n_inliers = -1, should return -1.
+        """
+        # add outliers
+        ret = generator.add_outliers(self.points_x, self.points_y, -1, 10,
+                                     self.slope, self.intercept, self.noise_std)
+        #assertions
         self.assertEqual(ret, -1)
 
 
@@ -416,29 +449,32 @@ class TestAddOutliers(unittest.TestCase):
         """
         n_inliers = 0, n_outliers = 1, total less than 2, should return -1.
         """
-        points_x = []
-        points_y = []
-        ret = generator.add_outliers(points_x, points_y, 0, 1,
-                                     self.x_min, self.x_max,
-                                     self.y_min, self.y_max)
+        # add outliers
+        ret = generator.add_outliers([], [], 0, 1,
+                                     self.slope, self.intercept, self.noise_std)
+        # assertions
         self.assertEqual(ret, -1)
 
 
-    def test_x_min_equals_x_max(self):
+    def test_noise_std_zero(self):
         """
-        x_min == x_max, should return -1.
+        noise_std = 0, should return -1.
         """
+        # add outliers
         ret = generator.add_outliers(self.points_x, self.points_y, self.n,
-                                     10, 5, 5, self.y_min, self.y_max)
+                                     10, self.slope, self.intercept, 0)
+        # assertions
         self.assertEqual(ret, -1)
 
 
-    def test_y_min_equals_y_max(self):
+    def test_noise_std_negative(self):
         """
-        y_min == y_max, should return -1.
+        noise_std = -0.5, should return -1.
         """
+        # add outliers
         ret = generator.add_outliers(self.points_x, self.points_y, self.n,
-                                     10, self.x_min, self.x_max, 5, 5)
+                                     10, self.slope, self.intercept, -0.5)
+        # assertions
         self.assertEqual(ret, -1)
 
 
