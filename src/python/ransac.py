@@ -247,10 +247,9 @@ def ransac(points_x, points_y, n_points, n_params, k_resample, threshold,
         -1 for error if expected_inliers > n_points
         -1 for error if n_points < n_params
     """
-    if (n_points < 2 or n_params < 2 or k_resample < 1 or
-        threshold <= 0 or expected_inliers > n_points or
-        n_points < n_params):
-    return -1
+    if (n_points < 2 or n_params < 2 or n_points < n_params or
+        k_resample < 1 or threshold <= 0 or expected_inliers > n_points):
+        return -1
 
     best_inliers = 0
     best_slope = 0.0
@@ -259,7 +258,14 @@ def ransac(points_x, points_y, n_points, n_params, k_resample, threshold,
 
     for i in range(k_resample):
         # sample n_params random indices
+        idx = list(range(n_points))
+        for i in range(n_params):  # Fisher-Yates random sampling 
+            j = i + random.randint(0, n_points - i - 1)
+            idx[i], idx[j] = idx[j], idx[i]
+            sample_x = [points_x[idx[i]] for i in range(n_params)]
+            sample_y = [points_y[idx[i]] for i in range(n_params)]
         # fit line to sample
+        
         # compute distances to candidate line
         # count inliers
         # update best if improved

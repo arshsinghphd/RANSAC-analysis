@@ -224,6 +224,7 @@ Python:
   * all functions return -1 for error and 0 for success 
   * use only rand() 
   * do not use any other python packages - create gaussian noise manually using Box-Muller[5]
+  * For random sampling I am using Fisher-Yates sampling [6]
 
 
 * Separate lists of x and y rather than tuples for mutability.
@@ -300,6 +301,8 @@ Google Gemini: I used Google Gemini to look up many unknown terms when I encount
 [4] Richard Hartley and Andrew Zisserman. 2004. Multiple View Geometry in Computer Vision. Cambridge University Press.
 
 [5] Box, G. E. P. and Muller, M. E. 1958. A note on the generation of random normal deviates. The Annals of Mathematical Statistics 29, 2, 610–611.
+
+[6] Durstenfeld, R. 1964. Algorithm 235: Random permutation. Communications of the ACM 7, 7, 420.
 
 <!-- Time Line
 Days 1-3  (now-Apr 5):   finish generate.py + model.py
