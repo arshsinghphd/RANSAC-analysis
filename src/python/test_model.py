@@ -50,10 +50,12 @@ class TestFitLine(unittest.TestCase):
         self.list_slopes = [float("inf")] * (self.pos + 1)
         self.list_intercepts = [float("inf")] * (self.pos + 1)
 
+
     def _make_line(self, points_x, points_y, slope, intercept, n=None):
         n = n if n else self.n
         generator.make_inliers(points_x, points_y, n, slope, intercept,
                                self.x_min, self.x_max)
+
 
     def _assert_fit(self, slope, intercept):
         self.assertAlmostEqual(self.list_slopes[self.pos], slope)
@@ -188,10 +190,12 @@ class TestPointsToLineDistances(unittest.TestCase):
         self.x_max = self.n - 1
         self.distances = [float("inf")] * self.n
 
+
     def _make_line(self, points_x, points_y, slope, intercept, n=None):
         n = n if n else self.n
         generator.make_inliers(points_x, points_y, n, slope, intercept,
                                self.x_min, self.x_max)
+
 
     def _assert_distances(self, distances, expected, n=None):
         n = n if n else self.n
