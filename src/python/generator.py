@@ -44,7 +44,10 @@ def box_muller(sigma):
     uniform samples using logarithmic and trigonometric functions to map them
     onto a bell curve, offering a computationally efficient alternative to
     inverse transform sampling.
-    Source: https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+
+    Source: Box, G. E. P. and Muller, M. E. 1958. A note on the generation of
+            random normal deviates. The Annals of Mathematical Statistics 29,
+            2, 610–611.
 
     Params:
         sigma, float
@@ -84,15 +87,15 @@ def add_laplace_noise(data_y, n_inliers, scale_noise):
     Adds zero-mean laplacean noise to the data inplace based on user's inputs.
 
     Background:
-    
+
         Gaussian distribution:  tails decay as exp(-x²)
         Laplace distribution:   tails decay as exp(-|x|), slower decay
         Laplace distribution has a higher probability of generating points far
         from the mean than Gaussian with the same scale. This makes it a good
         model for measurement errors that occasionally produce large deviations
         — more realistic than pure Gaussian.
-        
-        
+
+
     Params:
         data_y      a list of floats
         n_inliers   int, number of inliers to be modified
@@ -166,4 +169,3 @@ def add_structural_bias(data_y, data_x, n_inliers, bias_fn):
     for i in range(n_inliers):
         data_y[i] += bias_fn(data_x[i])
     return 0
-

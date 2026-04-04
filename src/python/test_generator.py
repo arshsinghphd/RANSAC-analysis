@@ -286,7 +286,7 @@ class testAddGaussianNoise(unittest.TestCase):
         # assertions
         for i in range(n_inliers):
             self.assertLessEqual(abs(data_y[i] - copy_data_y[i]), 5 * std)
-        
+
     def test_n_inliers_less_than_2(self):
         # initiate all arguments
         n_inliers = 1
@@ -449,7 +449,7 @@ class TestAddLaplaceNoise(unittest.TestCase):
         scale_noise = -1.5
         ret = generator.add_laplace_noise(data_y, n_inliers, scale_noise)
         # assertion
-        self.assertEqual(ret, -1)  
+        self.assertEqual(ret, -1)
 
 
 class TestAddStructuralBias(unittest.TestCase):
@@ -743,7 +743,7 @@ class TestAddOutliers(unittest.TestCase):
         n_inliers = 0
         n_outliers = 1
         # min/max incorrect, but kept to test the final_n_less_than_2 in isolation
-        x_min = 0  
+        x_min = 0
         x_max = 1
         y_min = 0
         y_max = 1
