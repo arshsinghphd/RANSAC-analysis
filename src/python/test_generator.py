@@ -11,7 +11,6 @@ Run from terminal as follows:
 """
 
 import generator
-
 import math
 import unittest
 
