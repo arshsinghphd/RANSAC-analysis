@@ -75,7 +75,7 @@ def add_gaussian_noise(data_y, n_inliers, std):
         0 for success
         -1 for error
     """
-    if n_inliers < 2:
+    if n_inliers < 2 or std <= 0:
         return -1
     for i in range(n_inliers):
         data_y[i] += box_muller(std)
