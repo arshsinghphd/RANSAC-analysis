@@ -161,6 +161,30 @@ In practice $\epsilon$ is rarely known precisely. Three approaches are common. F
 The parameters $k$ and $d$ have opposing roles: $k$ is a safety net that pushes the iteration count up to guarantee confidence, while $d$ is an exit condition that pulls it down as soon as a good enough model is found. The actual number of iterations run sits somewhere between 1 and $k$, determined by how quickly a model exceeding $d$ inliers is found. Because both parameters depend on the same assumption about the data, the choice of $d$ should be consistent with the outlier fraction $\epsilon$ used to compute $k$. If $\epsilon$ is the estimated outlier fraction and $N$ is the total point count, then a principled choice is $d = (1 - \epsilon) \times N$. Thus of the three apporaches described above, the second approach is the most principled and is the one adopted in this project.
 
 
+### Estimating the Outlier Fraction $\epsilon$
+
+Choosing a good value for $\epsilon$ is more subtle than it appears because the problem is circular — $\epsilon$ is needed to set $k$ and $d$, but the true outlier fraction is only known after the inliers have been identified. Three data-driven approaches are common in practice [2, 4]. 
+
+The first uses the residual distribution: fit a rough model to all the data using least squares, compute the residuals, and treat points with residuals beyond $\bar{e} + 2\sigma$ as likely outliers. The fraction of such points estimates $\epsilon$. The second approach plots a histogram of residuals from the least squares fit. A dataset with outliers typically shows a bimodal distribution — a tight cluster of inlier residuals near zero and a diffuse spread of outlier residuals further out. The fraction in the diffuse spread gives $\epsilon$. The third approach uses iterative refinement: start with a conservative overestimate such as $\epsilon = 0.5$, run RANSAC, observe the inlier fraction of the best model, update $\epsilon$, and rerun until convergence. 
+
+In this project the second approach is used — $\epsilon$ is known exactly because the data is generated synthetically with a controlled outlier fraction. This allows a direct empirical verification — the theoretical $k$ derived from the formula can be compared against the number of iterations actually needed to recover the true model, providing a clean test of how well the analytical result predicts practical performance.
+
+
+### Parameter Estimation Helper Functions
+
+Rather than requiring the caller to supply $\epsilon$, $k$, $d$, and $t$ directly, four helper functions are provided to estimate these parameters from the data itself. 
+
+`estimate_epsilon` fits a least squares line to all points, computes the residuals, and returns the fraction of points whose residual exceeds $\bar{e} + 2\sigma$ as an estimate of the outlier fraction $\epsilon$. 
+
+`compute_t` uses the same residual distribution to set the inlier threshold as $t = \bar{e} + 2\sigma$, consistent with the recommendation of Fischler and Bolles [1]. 
+
+`compute_k` applies the analytical formula $k = \lceil \log(p) / \log(1 - (1 - \epsilon)^n) \rceil$ with a default failure probability of $p = 0.01$, returning the iteration count rounded up to the nearest integer. 
+
+`compute_d` sets the expected inlier count as $d = \lfloor (1 - \epsilon) \times N \rfloor$, ensuring consistency with the same $\epsilon$ used to compute $k$. The caller therefore only needs to provide the raw point data and the minimum sample size $n$, and the parameter estimation is handled automatically. 
+
+This design also makes the relationship between $\epsilon$, $k$, $d$, and $t$ explicit and testable — each helper is a small pure function that can be verified independently, consistent with the test-driven development approach used throughout this project. In the empirical analysis, the true $\epsilon$ used to generate the synthetic data is compared against the value returned by `estimate_epsilon`, providing a direct measure of how accurately the helper recovers the outlier fraction under varying noise conditions.
+
+
 ## Application
 <!-- 
 - What is the algorithm/datastructure used for?
@@ -233,6 +257,21 @@ Given a line defined by slope $m$ and intercept $b$, written in general form as 
 $$d_i = \frac{|m x_i - y_i + b|}{\sqrt{1 + m^2}}$$
 
 This is the geometric distance — the length of the shortest path from the point to the line, which is always perpendicular to it. The absolute value ensures the distance is non-negative regardless of which side of the line the point lies on. RANSAC uses this distance to classify each point as an inlier if $d_i < t$, or an outlier otherwise.
+
+
+### Parameter Estimation Helper Functions
+
+Rather than requiring the caller to supply $\epsilon$, $k$, $d$, and $t$ directly, four helper functions are provided to estimate these parameters from the data itself. 
+
+`estimate_epsilon` fits a least squares line to all points, computes the residuals, and returns the fraction of points whose residual exceeds $\bar{e} + 2\sigma$ as an estimate of the outlier fraction $\epsilon$. 
+
+`compute_t` uses the same residual distribution to set the inlier threshold as $t = \bar{e} + 2\sigma$, consistent with the recommendation of Fischler and Bolles [1]. 
+
+`compute_k` applies the analytical formula $k = \lceil \log(p) / \log(1 - (1 - \epsilon)^n) \rceil$ with a default failure probability of $p = 0.01$, returning the iteration count rounded up to the nearest integer. 
+
+`compute_d` sets the expected inlier count as $d = \lfloor (1 - \epsilon) \times N \rfloor$, ensuring consistency with the same $\epsilon$ used to compute $k$. The caller therefore only needs to provide the raw point data and the minimum sample size $n$, and the parameter estimation is handled automatically. 
+
+This design also makes the relationship between $\epsilon$, $k$, $d$, and $t$ explicit and testable — each helper is a small pure function that can be verified independently, consistent with the test-driven development approach used throughout this project. In the empirical analysis, the true $\epsilon$ used to generate the synthetic data is compared against the value returned by `estimate_epsilon`, providing a direct measure of how accurately the helper recovers the outlier fraction under varying noise conditions.
 
 
 ## Summary
