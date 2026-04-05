@@ -21,21 +21,6 @@ For the sake of the following few paragraphs, assume that we are assigned the ta
 RANSAC inverts the logic of least squares: instead of fitting all the data first and cleaning up afterward, it starts with the smallest possible sample, finds a model, then recruits only the points that agree with it.
 
 
-<!-- Formal Definition -->
-The RANSAC paradigm is more formally stated [1] as follows.
-
-**Given**: a model that requires a minimum of $n$ data points to instantiate its free parameters and a set of data points $P$ such that the number of points in $P$ is greater than $n$; $(size(P)\ge n)$.
-
-1. Randomly select a subset $S1$ of $n$ data points from $P$ and instantiate the model. Use the instantiated model $M1$ to determine the subset $S1*$ of points in $P$ that are within some error tolerance of $M1$. The set $S1$* is called the consensus set of $S1$.
-
-2. If $size(S1*)$ is greater than some threshold $t$, which is a function of the estimate of the number of gross errors in $P$, use $S1*$ to compute (possibly using least squares) a new model $M1*$.
-
-3. If $size(S1*)$ is less than $t$, randomly select a new subset $S2$ and repeat the above process.
-
-4. If, after some predetermined number of trials, no consensus set with $t$ or more members has been found, either solve the model with the largest consensus set found, or terminate in failure.
-
-RANSAC has three parameters that must be configured: the error tolerance that decides whether a point fits a model, the number of random subsets to sample, and a consensus threshold that determines when enough points agree to declare a model correct.
-
 <!-- [Show example of location determination - the one in the paper.] -->
 The original paper demonstrated the application of RANSAC in *location determination problem* in computer vision. Today, RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and data fitting, particularly in 2-D image stitching and structure from motion. The method has now been applied to a wide array of other problems [2, 3, 4]. I will disuss these in the section [Applications](#application). 
 
@@ -62,48 +47,90 @@ Make sure to include the following:
  - [Quadratic model]
  - [Classification in n groups]
 -->
+
+
+
+<!-- Formal Definition -->
+
+### Algorithm
+The RANSAC paradigm is more formally stated [1] as follows.
+
+Given a model that requires a minimum of $n\_params$ data points to instantiate its free parameters, and two arrays $points\_x$ and $points\_y$ of $n\_points$ data points such that $n\_points \ge n\_params$, RANSAC proceeds as follows:
+
+1. Randomly select a subset $S_1$ of $n\_params$ data points from $points\_x$ and $points\_y$ and instantiate the model. Use the instantiated model $M_1$ to determine the subset $S_1^*$ of points in $points\_x$ and $points\_y$ whose perpendicular distance from $M_1$ is within the threshold $t$. The array $S_1^*$ is called the consensus array of $S_1$.
+
+2. If $|S_1^*| \ge expected\_inliers$, where $expected\_inliers$ is a threshold derived from the estimated outlier fraction $\epsilon$, use $S_1^*$ to compute a refined model $M_1^*$ using least squares over all consensus points. Return $M_1^*$ as the best model.
+
+3. If $|S_1^*| < expected\_inliers$, randomly select a new subset $S_2$ and repeat the above process, tracking the consensus array with the largest size seen so far.
+
+4. If, after $k\_resample$ trials, no consensus array of size $expected\_inliers$ or greater has been found, refit the model using the largest consensus array found across all trials. If no consensus array was found at all, terminate in failure.
+
+
 ```mermaid
 flowchart TD
     A([Start]) --> B
 
-    B["Step 1: 
-    randomly sample n points
-    n\_params = min points to fit model"]
-    B --> C
+    B["Initiate: 
+        1. best model as 0 inliers.
+        2. return_array as sentinels."]
+    B --> B2
+
+    B2["Step 1:
+    Randomly sample n_params points
+    from points_x and points_y.
+    E.g. 2 for a linear model"]
+    
+    B2 --> C
 
     C["Step 2: 
-    fit model to sample
-    fit_line(sample_x, sample_y, n_params)"]
+    Fit model to sample.
+    E.g. call fit_line(...)"]
     C --> D
 
     D["Step 3: 
-    compute distances to model
-    points_to_line_distances(...)"]
+    Compute distances to candidate model.
+    E.g. call points_to_line_distances(...)"]
     D --> E
 
     E["Step 4: 
-    count inliers
-    distance less than threshold t"]
-    E --> F
-    F{"Best model so far?
-    inlier count greater than current best"}
+    Count inliers as the no. of points for which 
+    distances[i]<threshold t"]
+    E --> F1
 
-    F -- yes --> G["Update best model"]
-    F -- no --> H
+    F1["Step 5: 
+    Update iterations_run."]
+    F1 --> F
+
+    F{"Best model so far?
+    n_inliers > best_inliers"}
+    F -- yes --> G
+    F -- no --> I
+
+    G["Step 6: 
+    Update best_slope, best_intercept,
+    best_inliers."]
     G --> H
 
-    H{"Inliers greater than expected?
-    early stop condition"}
-    H -- yes --> J
+    H{"Early stop?
+    best_inliers>=expected_inliers"}
+    H -- yes --> L
     H -- no --> I
 
-    I{"k iterations done?"}
+    I{"k_resample iterations done?"}
     I -- no --> B
-    I -- yes --> J
+    I -- yes --> K
+    
+    L["Step 7:
+    Refit all inliers on best model.
+    E.g. call fit_line(...).
+    Fill return_array."]
+    L --> M
+    
+    M["Step 8: 
+    Return return_array"]
+    M --> P
 
-    J["Refit on all inliers
-    return best model"]
-    J --> K([End])
+    P([End])
 ```
 
 
@@ -111,12 +138,34 @@ flowchart TD
 
 Looking at the flow chart. For each of the $k$ iterations:
 
-* Step 1: sample n_params points        $O(n\_params)$
-* Step 2: fit line to sample            $O(n\_params)$
-* Step 3: compute distances             $O(n\_points)$
-* Step 4: count inliers                 $O(n\_points)$
+| Step | Description | Time Complexity of Step |
+|:-|:-|:-|
+| 1 | sample n_params points | $O(n\_params)$ |
+| 2 | fit line to sample | $O(n\_params)$ |
+| 3 | compute distances of each point to the model | $O(n\_points)$ |
+| 4 | count inliers | $O(n\_points)$ |
+
+The steps 3 and 4 are have dominant time complexity of $O(n\_points)$.
 
 So the overall time complexity = $O(k \cdot n\_points)$
+
+$k$ itself depends only on $\epsilon$ and $n\_params$ (minimum parameters to be estimated), not on $n\_points$. So the time complexity of the analysis is linear in $n\_points$. 
+
+### Space Complexity
+
+I only implement arrays. The rate limiting size is `n_points`. So the space complexity of RANSAC is $O(n\_points)$.
+
+| Data Structure | Space Complexity |
+|:-|:-|
+|`distances` | $O(n\_points)$ |
+|`points_x` | $O(n\_points)$  worst case all points are inliers |
+|`points_y` | $O(n\_points)$ worst case all points are inliers |
+|`idx` | $O(n\_points)$ Fisher-Yates index array |
+|`sample_x` | $O(n\_params)$  constant |
+|`sample_y` | $O(n\_params)$  constant |
+
+
+
 
 ## Empirical Analysis
 <!-- 
@@ -299,7 +348,7 @@ This design also makes the relationship between $\epsilon$, $k$, $d$, and $t$ ex
 ## LLM Use Disclosure 
 I did not any LLM to write any part of the code. I implemented my codes using pseudocodes presented in the texts in the reference section. I used MS Word for checking the report for syntax and grammar.
 
-Claude: I used Calude for planning a 4-week time-line. I also used Claude to add doc strings at the end. I also used Clause for trouble shooting when I was unable to figure a bug in helper functions for testing which caused persistent test failures. 
+Claude: I used Calude for planning a 4-week time-line. I also used Claude to add doc strings at the end. I also used Clause for trouble shooting when I was unable to figure a bug in helper functions for testing which caused persistent test failures.
 
 Google Gemini: I used Google Gemini to look up many unknown terms when I encountered them in the text books.
 
