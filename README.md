@@ -26,7 +26,7 @@ The original paper demonstrated the application of RANSAC in *location determina
 
 The rest of the paper is organized as follows: 
 
-In the next section, [Analysis of Algorithm/Datastructure](#analysis-of-algorithmdatastructure), I will present the theoretical analysis of the RANSAC algorithm tryting to fit a linear and a quadratic model. [Maybe: I will also generalize this to a k-neighbors classification problem.] I will present the time and space complexity in the case of the specified models. 
+In the next section, [Analysis of Algorithm](#analysis-of-algorithm), I will present the theoretical analysis of the RANSAC algorithm tryting to fit a linear and a quadratic model. [Maybe: I will also generalize this to a k-neighbors classification problem.] I will present the time and space complexity in the case of the specified models. 
 
 In the section [Empirical Analysis](#empirical-analysis), I will present the empirical run time of the methods I implement in Python [Maybe: and C]. I will do a comparative analysis based on the models and the three variables for RANSAC. 
 
@@ -37,7 +37,7 @@ In the section [Implementation](#implementation) I will present code snippets of
 In conlusion, I will present a [Summary](#summary) of my findings and lessons I learnt.
 
 
-## Analysis of Algorithm/Datastructure 
+## Analysis of Algorithm
 <!-- 
 Make sure to include the following:
  - Time Complexity
@@ -68,37 +68,42 @@ Given a model that requires a minimum of $n\_params$ data points to instantiate 
 
 ```mermaid
 flowchart TD
-    A([Start]) --> B
+    A([Start]) --> B1
 
-    B["Initiate: 
-        1. best model as 0 inliers.
-        2. return_array as sentinels."]
-    B --> B2
+    B1[" Choose:
+    1. the number of iterations (k_resamples)
+    2. Acceptable error from the model (threshold)
+    3. Expected number of inliers (expected_inliers)"]
+    B1 --> B2
 
-    B2["Step 1:
-    Randomly sample n_params points
-    from points_x and points_y.
-    E.g. 2 for a linear model"]
+    B2["Initiate: 
+        1. best model has 0 inliers.
+        2. return_array holds sentinels."]
+    B2 --> B
+
+    B["Step 1:
+    Randomly sample n_params points.
+    E.g. 2 for a linear model."]
     
-    B2 --> C
+    B --> C
 
     C["Step 2: 
     Fit model to sample.
-    E.g. call fit_line(...)"]
+    E.g. call fit_line(...)."]
     C --> D
 
     D["Step 3: 
     Compute distances to candidate model.
-    E.g. call points_to_line_distances(...)"]
+    E.g. call points_to_line_distances(...)."]
     D --> E
 
     E["Step 4: 
     Count inliers as the no. of points for which 
-    distances[i]<threshold t"]
+    distances[i] < threshold t"]
     E --> F1
 
     F1["Step 5: 
-    Update iterations_run."]
+    Incerement iterations_run."]
     F1 --> F
 
     F{"Best model so far?
@@ -116,22 +121,28 @@ flowchart TD
     H -- yes --> L
     H -- no --> I
 
-    I{"k_resample iterations done?"}
+    I{"iterations_run = k_resample?"}
     I -- no --> B
-    I -- yes --> K
+    I -- yes --> L
     
     L["Step 7:
     Refit all inliers on best model.
-    E.g. call fit_line(...).
-    Fill return_array."]
-    L --> M
+    E.g. call fit_line(...) with an array of inliers only."]
+    L --> L1
     
-    M["Step 8: 
+    L1["Step 8:
+    Fill return_array."]
+    L1 --> M
+
+    M["Step 9: 
     Return return_array"]
     M --> P
 
     P([End])
 ```
+
+
+### 
 
 
 ### Time Complexity Analysis
