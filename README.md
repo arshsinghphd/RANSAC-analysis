@@ -264,9 +264,10 @@ The third approach uses iterative refinement: start with a conservative overesti
 
 I implement the first approach as `estimate_epsilon` and its limitations are documented. But since true $epsilon$ is known from synthetic generation it is used directly in experiments.
 
+### Experimental Setup
 
-### Generating Noisy Data
-* Gaussian noise:
+#### Generating Noisy Data
+* Gaussian Noise:
   * Using Box-Muller for gaussian noise [5].
 * Laplace Noise:
   * Why laplace noise?
@@ -274,8 +275,12 @@ I implement the first approach as `estimate_epsilon` and its limitations are doc
     * Laplace:   tails decay as exp(-|x|), slower decay and heavier tails
     * The Laplace distribution looks like two exponential curves back to back, centered at a mean (0 in case of noise).
     * noise drawn from Laplace distribution has a higher probability of generating points far from the mean than Gaussian with the same scale. This makes it a good model for measurement errors that occasionally produce large deviations — more realistic than pure Gaussian.
-* Structural error
-* Outliers or classification errors
+* Outliers or Classification Errors
+* Structural Errors
+
+
+
+### Empirical Analysis 
 
 
 ## Application
