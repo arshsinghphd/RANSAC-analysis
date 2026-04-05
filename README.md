@@ -192,7 +192,13 @@ HIGHLIGHTS:
 
 ## RANSAC Parameters
 
-RANSAC is governed by three parameters that jointly determine both the quality of the estimated model and the computational cost of finding it. These are the threshold distance $threshold$ ($t$ in the original paper), the number of iterations $k\_resample$ ($k$ in the original paper), and the expected inlier count $expected\_inliers$ ($d$ in the original paper).
+RANSAC is governed by three parameters that jointly determine both the quality of the estimated model and the computational cost of finding it. These are: 
+* the threshold distance $threshold$, 
+  * $t$ in the original paper;
+* the number of iterations $k\_resample$, 
+  * $k$ in the original paper; and 
+* the expected inlier count $expected\_inliers$, 
+  * $d$ in the original paper.
 
 
 ### Threshold distance $threshold$
