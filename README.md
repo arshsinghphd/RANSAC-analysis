@@ -293,6 +293,47 @@ HIGHLIGHTS:
 3.  
 -->
 
+## Design Structure
+```mermaid
+flowchart TD
+    A([caller]) --> B
+
+    B["ransac.py
+    estimate_epsilon()
+    compute_t()
+    compute_k()
+    compute_d()"]
+    B --> C
+    B --> D
+    B --> E
+
+    C["model.py
+    fit_line()
+    called on n_params sample
+    and on final inlier set"]
+
+    D["model.py
+    points_to_line_distances()
+    called once per iteration
+    and once after loop"]
+
+    E["evaluate.py
+    model_error()
+    called by caller to assess
+    quality of recovered model"]
+
+    C --> F
+    D --> F
+
+    F["ransac.py
+    ransac()
+    returns best slope,
+    intercept, inlier count,
+    iterations run"]
+
+    F --> A
+```
+
 Salient Design Decisions:
 
 Python:
@@ -315,8 +356,8 @@ Python:
   * Laplace:   tails decay as exp(-|x|), slower decay and heavier tails
   * The Laplace distribution looks like two exponential curves back to back, centered at a mean (0 in case of noise).
   * noise drawn from Laplace distribution has a higher probability of generating points far from the mean than Gaussian with the same scale. This makes it a good model for measurement errors that occasionally produce large deviations — more realistic than pure Gaussian.
-* `fit_line` uses least squares - write formulae
-* `points_to_line_distances` uses geometric (perpendicular) distance - write formula
+* `fit_line` uses least squares (added a special section for this)
+* `points_to_line_distances` uses geometric (perpendicular) distance (added a section for this)
 * In RANSAC The refit is a post-processing step, not part of the RANSAC iteration — cite Fischler and Bolles
 * All tests of RANSAC fail sometimes (1 in 100 times as designed), since RANSAC is a stochastic, randomized good-enough model.
 
