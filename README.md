@@ -59,7 +59,7 @@ Given a model that requires a minimum of $n\_params$ data points to instantiate 
 
 1. Randomly select a subset $S_1$ of $n\_params$ data points from $points\_x$ and $points\_y$ and instantiate the model. Use the instantiated model $M_1$ to determine the subset $S_1^*$ of points in $points\_x$ and $points\_y$ whose perpendicular distance from $M_1$ is within the threshold $threshold$. The array $S_1^*$ is called the consensus array of $S_1$.
 
-2. If $|S_1^*| \ge expected\_inliers$, where $expected\_inliers$ is a threshold derived from the estimated outlier fraction $\epsilon$, use $S_1^*$ to compute a refined model $M_1^*$ using least squares over all consensus points. Return $M_1^*$ as the best model.
+2. If $|S_1^*| \ge expected\_inliers$, where $expected\_inliers$ is a threshold derived from the estimated outlier fraction $epsilon$, use $S_1^*$ to compute a refined model $M_1^*$ using least squares over all consensus points. Return $M_1^*$ as the best model.
 
 3. If $|S_1^*| < expected\_inliers$, randomly select a new subset $S_2$ and repeat the above process, tracking the consensus array with the largest size seen so far.
 
@@ -160,7 +160,7 @@ The steps 3 and 4 are have dominant time complexity of $O(n\_points)$.
 
 So the overall time complexity = $O(k \cdot n\_points)$
 
-$k\_resample$ itself depends only on $\epsilon$ and $n\_params$ (minimum parameters to be estimated), not on $n\_points$. So the time complexity of the analysis is linear in $n\_points$. 
+$k\_resample$ itself depends only on $epsilon$ and $n\_params$ (minimum parameters to be estimated), not on $n\_points$. So the time complexity of the analysis is linear in $n\_points$. 
 
 ### Space Complexity
 
@@ -203,21 +203,32 @@ RANSAC is governed by three parameters that jointly determine both the quality o
 
 ### Threshold distance $threshold$
 
-The threshold $threshold$ defines the boundary between inliers and outliers. A point is classified as an inlier if its perpendicular distance from the candidate model falls below $threshold$. Setting $threshold$ too small causes RANSAC to reject points that are legitimate inliers corrupted by small measurement noise, starving the consensus set. Setting $threshold$ too large causes it to accept outliers as inliers, corrupting the consensus set from the other direction. In practice, $threshold$ is derived from the data itself rather than set in advance. Fischler and Bolles suggest setting $threshold$ at one or two standard deviations beyond the measured average residual error, that is $threshold = \bar{e} + \sigma$ or $threshold = \bar{e} + 2\sigma$, where $\bar{e}$ is the mean residual and $\sigma$ is its standard deviation computed over the full point set.
+The threshold $threshold$ defines the boundary between inliers and outliers. A point is classified as an inlier if its perpendicular distance from the candidate model falls below $threshold$. Setting $threshold$ too small causes RANSAC to reject points that are legitimate inliers corrupted by small measurement noise, starving the consensus set. Setting $threshold$ too large causes it to accept outliers as inliers, corrupting the consensus set from the other direction. In practice, $threshold$ is derived from the data itself rather than set in advance. Fischler and Bolles suggest setting $threshold$ at one or two standard deviations beyond the measured average residual error, that is 
+
+$$threshold = \bar{e} + 2\sigma.$$
+
+Where,
+* $\bar{e}$ is the mean residual error and 
+* $\sigma$ is its standard deviation computed over the full point set.
 
 
 ### Iteration count $k\_resample$
 
-The iteration count $k\_resample$ controls how many independent random samples are drawn. Each sample of $n\_points$ points defines a candidate model, and $k\_resample$ determines how thoroughly the space of candidate models is explored. The probability that at least one of the $k\_resample$ samples is drawn entirely from inliers — and therefore yields a good model — can be derived analytically. If $\epsilon$ is the outlier fraction and $n\_params$ is the minimum sample size, then the probability of drawing a clean sample in a single trial is $(1 - \epsilon)^{n\_params}$. The probability that all $k\_resample$ trials fail is therefore $[1 - (1-\epsilon)^{n\_params}]^{k\_resample}$. Setting this equal to a desired failure probability $p$ and solving for $k\_resample$ gives:
+The iteration count $k\_resample$ controls how many independent random samples are drawn. Each sample of $n\_points$ points defines a candidate model, and $k\_resample$ determines how thoroughly the space of candidate models is explored. The probability that at least one of the $k\_resample$ samples is drawn entirely from inliers — and therefore yields a good model — can be derived analytically. If $epsilon$ ($\epsilon$) is the outlier fraction and $n\_params$ ($m$) is the minimum sample size, then the probability of drawing a clean sample in a single trial is $(1 - \epsilon)^{m}$. The probability that all $k\_resample$ trials fail is therefore $[1 - (1-\epsilon)^{m}]^{k\_resample}$. Setting this equal to a desired failure probability $p$ and solving for $k\_resample$ gives:
 
-$$k\_resample = \frac{\log(p)}{\log(1 - (1 - \epsilon)^{n\_params})}$$
+$$k = \frac{\log(p)}{\log(1 - (1 - \epsilon)^{m})}$$
+
+Where, 
+* $k$ is $k\_resample$; 
+* $m$ is $n\_params$; and 
+* $\epsilon$ is $epsilon$ 
 
 This formula makes explicit the dependence of $k\_resample$ on the outlier fraction and the model complexity. As the outlier fraction grows or the minimum sample size increases, $k\_resample$ must grow rapidly to maintain the same confidence level.
 
 Fischler and Bolles suggest a failure probability of $p = 0.01$, meaning RANSAC is given a 99 percent chance of finding at least one clean sample across all $k\_resample$ iterations. This is the standard practical choice in the literature. Substituting $p = 0.01$ into the formula above, the required number of iterations for line fitting where $n = 2$ grows rapidly with the outlier
-fraction $\epsilon$:
+fraction $epsilon$:
 
-| Outlier fraction $\epsilon$ | Required iterations $k\_resample$ for 99% confidence |
+| Outlier fraction $epsilon$ | Required iterations $k\_resample$ for 99% confidence |
 |---|---|
 | 0.10 | 2 |
 | 0.30 | 7 |
@@ -230,26 +241,28 @@ This exponential growth motivates the early stop parameter $expected\_inliers$ �
 
 ### Expected inlier count $expected\_inliers$
 
-The expected inlier count $expected\_inliers$ serves as an early stopping criterion. Once a candidate model achieves a consensus set of size at least $expected\_inliers$, the search terminates immediately without exhausting all $k\_resample$ iterations. The practical importance of $expected\_inliers$ is made clear by the table above — at an outlier fraction of 0.90, the required iteration count reaches 1163. In such cases, running all $k\_resample$ iterations every time is computationally expensive, and terminating as soon as a sufficiently good model is found provides significant savings. 
+The expected inlier count $expected\_inliers$ serves as an early stopping criterion. Once a candidate model achieves a consensus set of size at least $expected\_inliers$, the search terminates without exhausting all $k\_resample$ iterations. At an outlier fraction of 0.90 the required iteration count reaches 459, making early stopping practically important. 
 
-The parameter $expected\_inliers$ is typically set as a fraction of the total point count $n\_points$, reflecting the expected proportion of inliers. For example, if the outlier fraction is expected to be at most 0.30, then $threshold = 0.70 \times n\_points$ is a reasonable choice. Setting $expected\_inliers$ too conservatively — close to $n\_points$ — causes RANSAC to always run all $k\_resample$ iterations, forgoing the computational savings. Setting it too aggressively — close to $n\_points$, the minimum sample size — risks accepting a suboptimal model that happens to accumulate enough inliers by chance.
+The parameters $k\_resample$ and $expected\_inliers$ have opposing roles: $k\_resample$ is a safety net that pushes the iteration count up to guarantee confidence, while $expected\_inliers$ is an exit condition that pulls it down as soon as a good enough model is found. Setting $expected\_inliers$ too conservatively — close to $n\_points$ — causes RANSAC to always run all $k\_resample$ iterations. Setting it too aggressively — close to $n\_params$ — risks accepting a suboptimal model. 
 
-In practice $\epsilon$ is rarely known precisely. Three approaches are common. First, domain knowledge — if the feature matcher is known to produce roughly 30 percent false matches, set $\epsilon = 0.30$ and $threshold = 0.70 \times n\_points$. Second, consistency between $k\_resample$ and $expected\_inliers$ — use the same $\epsilon$, ensuring the two parameters reflect a coherent assumption about the data. Third, a pilot run — run RANSAC once with a conservative $expected\_inliers$ such as $0.5 \times n\_points$, observe how many inliers the best model finds, and use that count to calibrate $expected\_inliers$ for subsequent runs. 
+Because both depend on the same assumption about the data, they should be set consistently using the same outlier fraction $\epsilon$:
 
-The parameters $k\_resample$ and $expected\_inliers$ have opposing roles: $k\_resample$ is a safety net that pushes the iteration count up to guarantee confidence, while $expected\_inliers$ is an exit condition that pulls it down as soon as a good enough model is found. The actual number of iterations run sits somewhere between 1 and $k\_resample$, determined by how quickly a model exceeding $expected\_inliers$ is found. Because both parameters depend on the same assumption about the data, the choice of $expected\_inliers$ should be consistent with the outlier fraction $\epsilon$ used to compute $k\_resample$. If $\epsilon$ is the estimated outlier fraction and $n\_points$ is the total point count, then a principled choice is $threshold = (1 - \epsilon) \times n\_points$. Thus of the three apporaches described above, the second approach is the most principled and is the one adopted in this project.
+$$expected\_inliers = \lfloor (1 - epsilon) \times n\_points \rfloor$$
+
+Estimating $epsilon$ is discussed in the following section.
 
 
-### Estimating the Outlier Fraction $\epsilon$
+### Estimating the Outlier Fraction $epsilon$
 
-Choosing a good value for $\epsilon$ is more subtle than it appears because the problem is circular: $\epsilon$ is needed to set $k\_resample$ and $expected\_inliers$, but the true outlier fraction is only known after the inliers have been identified. Three data-driven approaches are common in practice [2, 4]. 
+Choosing a good value for $epsilon$ is more subtle than it appears because the problem is circular: $epsilon$ is needed to set $k\_resample$ and $expected\_inliers$, but the true outlier fraction is only known after the inliers have been identified. Three data-driven approaches are common in practice [2, 4]. 
 
-The first approach uses the residual distribution: fit a rough model to all the data using least squares, compute the residuals, and treat points with residuals beyond $\bar{e} + 2\sigma$ as likely outliers. The fraction of such points estimates $\epsilon$. 
+The first approach uses the residual distribution: fit a rough model to all the data using least squares, compute the residuals, and treat points with residuals beyond $\bar{e} + 2\sigma$ as likely outliers. The fraction of such points estimates $epsilon$. 
 
-The second approach plots a histogram of residuals from the least squares fit. A dataset with outliers typically shows a bimodal distribution — a tight cluster of inlier residuals near zero and a diffuse spread of outlier residuals further out. The fraction in the diffuse spread gives $\epsilon$. 
+The second approach plots a histogram of residuals from the least squares fit. A dataset with outliers typically shows a bimodal distribution — a tight cluster of inlier residuals near zero and a diffuse spread of outlier residuals further out. The fraction in the diffuse spread gives $epsilon$. 
 
-The third approach uses iterative refinement: start with a conservative overestimate such as $\epsilon = 0.5$, run RANSAC, observe the inlier fraction of the best model, update $\epsilon$, and rerun until convergence. 
+The third approach uses iterative refinement: start with a conservative overestimate such as $\epsilon = 0.5$, run RANSAC, observe the inlier fraction of the best model, update $epsilon$, and rerun until convergence. 
 
-I implement the first approach as `estimate_epsilon` and its limitations are documented. But since true $\epsilon$ is known from synthetic generation it is used directly in experiments.
+I implement the first approach as `estimate_epsilon` and its limitations are documented. But since true $epsilon$ is known from synthetic generation it is used directly in experiments.
 
 
 ### Generating Noisy Data
@@ -263,7 +276,6 @@ I implement the first approach as `estimate_epsilon` and its limitations are doc
     * noise drawn from Laplace distribution has a higher probability of generating points far from the mean than Gaussian with the same scale. This makes it a good model for measurement errors that occasionally produce large deviations — more realistic than pure Gaussian.
 * Structural error
 * Outliers or classification errors
-
 
 
 ## Application
@@ -380,17 +392,17 @@ This is the geometric distance — the length of the shortest path from the poin
 
 ### Parameter Estimation Helper Functions
 
-Rather than requiring the caller to supply $\epsilon$, $k\_resample$, $expected\_inliers$, and $threshold$ directly, four helper functions are provided to estimate these parameters from the data itself. 
+Rather than requiring the caller to supply $epsilon$, $k\_resample$, $expected\_inliers$, and $threshold$ directly, four helper functions are provided to estimate these parameters from the data itself. 
 
-`estimate_epsilon` fits a least squares line to all points, computes the residuals, and returns the fraction of points whose residual exceeds $\bar{e} + 2\sigma$ as an estimate of the outlier fraction $\epsilon$. 
+`estimate_epsilon` fits a least squares line to all points, computes the residuals, and returns the fraction of points whose residual exceeds $\bar{e} + 2\sigma$ as an estimate of the outlier fraction $epsilon$. 
 
 `compute_t` uses the same residual distribution to set the inlier threshold as $t = \bar{e} + 2\sigma$, consistent with the recommendation of Fischler and Bolles [1]. 
 
 `compute_k` applies the analytical formula $k = \lceil \log(p) / \log(1 - (1 - \epsilon)^n) \rceil$ with a default failure probability of $p = 0.01$, returning the iteration count rounded up to the nearest integer. 
 
-`compute_d` sets the expected inlier count as $threshold = \lfloor (1 - \epsilon) \times N \rfloor$, ensuring consistency with the same $\epsilon$ used to compute $k\_resample$. The caller therefore only needs to provide the raw point data and the minimum sample size $n\_points$, and the parameter estimation is handled automatically. 
+`compute_d` sets the expected inlier count as $threshold = \lfloor (1 - \epsilon) \times N \rfloor$, ensuring consistency with the same $epsilon$ used to compute $k\_resample$. The caller therefore only needs to provide the raw point data and the minimum sample size $n\_points$, and the parameter estimation is handled automatically. 
 
-This design also makes the relationship between $\epsilon$, $k\_resample$, $expected\_inliers$, and $threshold$ explicit and testable — each helper is a small pure function that can be verified independently, consistent with the test-driven development approach used throughout this project. In the empirical analysis, the true $\epsilon$ used to generate the synthetic data is compared against the value returned by `estimate_epsilon`, providing a direct measure of how accurately the helper recovers the outlier fraction under varying noise conditions.
+This design also makes the relationship between $epsilon$, $k\_resample$, $expected\_inliers$, and $threshold$ explicit and testable — each helper is a small pure function that can be verified independently, consistent with the test-driven development approach used throughout this project. In the empirical analysis, the true $epsilon$ used to generate the synthetic data is compared against the value returned by `estimate_epsilon`, providing a direct measure of how accurately the helper recovers the outlier fraction under varying noise conditions.
 
 
 ## Summary
