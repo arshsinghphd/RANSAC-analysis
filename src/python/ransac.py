@@ -150,7 +150,10 @@ def compute_t(points_x, points_y, n_points):
     list_slopes = [float("inf")]
     list_intercepts = [float("inf")]
     pos = 0
-    model.fit_line(points_x, points_y, n_points, list_slopes, list_intercepts, pos)
+    ret = model.fit_line(points_x, points_y, n_points,
+                         list_slopes, list_intercepts, pos)
+    if ret == -1:
+        return -1
     # find distances of points from estimated line
     distances = [float("inf")] * n_points
     model.points_to_line_distances(points_x, points_y, n_points,
@@ -248,30 +251,86 @@ def ransac(points_x, points_y, n_points, n_params, k_resample, threshold,
         -1 for error if n_points < n_params
     """
     if (n_points < 2 or n_params < 2 or n_points < n_params or
-        k_resample < 1 or threshold <= 0 or expected_inliers > n_points):
+            k_resample < 1 or threshold <= 0 or math.isnan(threshold) or
+            expected_inliers > n_points):
         return -1
 
     best_inliers = 0
     best_slope = 0.0
     best_intercept = 0.0
     iterations_run = 0
+    list_slopes = [float("inf")]
+    list_intercepts = [float("inf")]
+    distances = [float("inf")] * n_points
 
     for i in range(k_resample):
-        # sample n_params random indices
+        # sample n_params random indices using Fisher-Yates
         idx = list(range(n_points))
-        for i in range(n_params):  # Fisher-Yates random sampling 
-            j = i + random.randint(0, n_points - i - 1)
-            idx[i], idx[j] = idx[j], idx[i]
-            sample_x = [points_x[idx[i]] for i in range(n_params)]
-            sample_y = [points_y[idx[i]] for i in range(n_params)]
+        for j in range(n_params):
+            k = j + random.randint(0, n_points - j - 1)
+            idx[j], idx[k] = idx[k], idx[j]
+        sample_x = [points_x[idx[j]] for j in range(n_params)]
+        sample_y = [points_y[idx[j]] for j in range(n_params)]
+
         # fit line to sample
-        
-        # compute distances to candidate line
+        ret = model.fit_line(sample_x, sample_y, n_params,
+                             list_slopes, list_intercepts, 0)
+        if ret == -1:
+            continue
+
+        # compute distances from all points to candidate line
+        model.points_to_line_distances(points_x, points_y, n_points,
+                                       list_slopes[0], list_intercepts[0],
+                                       distances)
+
         # count inliers
+        n_inliers = 0
+        for j in range(n_points):
+            if distances[j] < threshold:
+                n_inliers += 1
+
         # update best if improved
-        # early stop if expected_inliers reached
+        if n_inliers > best_inliers:
+            best_inliers = n_inliers
+            best_slope = list_slopes[0]
+            best_intercept = list_intercepts[0]
+
         iterations_run += 1
 
+        # early stop if expected_inliers reached
+        if best_inliers >= expected_inliers:
+            break
+
+    if best_inliers == 0:
+        return -1
+
+    # recompute distances using best model
+    model.points_to_line_distances(points_x, points_y, n_points,
+                                   best_slope, best_intercept, distances)
+
+    # collect inliers of best model into separate lists
+    inlier_x = []
+    inlier_y = []
+    for i in range(n_points):
+        if distances[i] < threshold:
+            inlier_x.append(points_x[i])
+            inlier_y.append(points_y[i])
+    n_inliers = len(inlier_x)
+
     # refit on all inliers of best model
+    ret = model.fit_line(inlier_x, inlier_y, n_inliers,
+                         list_slopes, list_intercepts, 0)
+    if ret == -1:
+        return -1
+
     # fill return_array
+    return_array[0] = n_points
+    return_array[1] = n_params
+    return_array[2] = k_resample
+    return_array[3] = threshold
+    return_array[4] = expected_inliers
+    return_array[5] = list_slopes[0]
+    return_array[6] = list_intercepts[0]
+    return_array[7] = best_inliers
+    return_array[8] = iterations_run
     return 0
