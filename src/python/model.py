@@ -39,6 +39,7 @@ def fit_line(points_x, points_y, n_points, list_slopes, list_intercepts, pos):
     list_slopes[pos] = ( (n_points * sum_xy - sum_x_sum_y)/
                          (n_points * sum_x2 - sum_x_2))
     list_intercepts[pos] = (sum_y - list_slopes[pos] * sum_x) / n_points
+    return 0
 
 
 def points_to_line_distances(points_x, points_y, n_points, slope, intercept,
