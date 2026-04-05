@@ -1,20 +1,3 @@
-def count_inliers(distances, n_points, threshold):
-    """
-    This function returns the number of distances that are within threshold
-    distance.
-
-    Params:
-        distances   a list of floats of size n_points
-        n_points    int, number of points in distances
-        threshold   the threshold distance below which the point is considered 
-                    an inlier        
-
-    Returns:
-        int         num of inliers
-    """
-    pass
-
-
 def model_error(slope, intercept, true_slope, true_intercept):
     """
     This function measures the distance between the true model and the model
@@ -31,4 +14,4 @@ def model_error(slope, intercept, true_slope, true_intercept):
     Returns:
         float           model error
     """
-    pass
+    return math.sqrt((slope - true_slope)**2 + (intercept - true_intercept)**2)
