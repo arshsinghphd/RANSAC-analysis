@@ -68,12 +68,12 @@ flowchart TD
 
     B["Step 1: 
     randomly sample n points
-    n = min points to fit model"]
+    n\_params = min points to fit model"]
     B --> C
 
     C["Step 2: 
     fit model to sample
-    fit_line(points_x, points_y, n)"]
+    fit_line(sample_x, sample_y, n_params)"]
     C --> D
 
     D["Step 3: 
@@ -105,6 +105,18 @@ flowchart TD
     return best model"]
     J --> K([End])
 ```
+
+
+### Time Complexity Analysis
+
+Looking at the flow chart. For each of the $k$ iterations:
+
+* Step 1: sample n_params points        $O(n\_params)$
+* Step 2: fit line to sample            $O(n\_params)$
+* Step 3: compute distances             $O(n\_points)$
+* Step 4: count inliers                 $O(n\_points)$
+
+So the overall time complexity = $O(k \cdot n\_points)$
 
 ## Empirical Analysis
 <!-- 
@@ -287,7 +299,7 @@ This design also makes the relationship between $\epsilon$, $k$, $d$, and $t$ ex
 ## LLM Use Disclosure 
 I did not any LLM to write any part of the code. I implemented my codes using pseudocodes presented in the texts in the reference section. I used MS Word for checking the report for syntax and grammar.
 
-Claude: I used Calude for planning a 4-week time-line. I also used Claude to add doc strings at the end. 
+Claude: I used Calude for planning a 4-week time-line. I also used Claude to add doc strings at the end. I also used Clause for trouble shooting when I was unable to figure a bug in helper functions for testing which caused persistent test failures. 
 
 Google Gemini: I used Google Gemini to look up many unknown terms when I encountered them in the text books.
 
