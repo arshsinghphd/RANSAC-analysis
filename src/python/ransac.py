@@ -179,11 +179,18 @@ def compute_k(epsilon, n_params, failure_prob=0.01):
 
     Returns:
         int, number of iterations k rounded up to nearest integer
-        -1 for error if epsilon <= 0 or epsilon >= 1
+        1, if epsilon == 0, clean sample
+        -1 for error if epsilon < 0 or epsilon >= 1
+            (when epsilon == 1, RANSAC is guaranteed to fail,
+            also causes division by 0 error)
         -1 for error if n_params < 2
         -1 for error if failure_prob <= 0 or failure_prob >= 1
+            (when failure prob = 1, math returns 0,
+            which is non-sense for no. of iterations)
     """
-    if (epsilon <= 0 or epsilon >= 1 or n_params < 2 or
+    if (epsilon == 0):
+        return 1
+    if (epsilon < 0 or epsilon >= 1 or n_params < 2 or
         failure_prob <= 0 or failure_prob >= 1):
         return -1
     return math.ceil(math.log(failure_prob) / math.log(1 - (1 - epsilon)**n_params))
@@ -279,9 +286,11 @@ def ransac(points_x, points_y, n_points, n_params, k_resample, threshold,
             continue
 
         # compute distances from all points to candidate line
-        model.points_to_line_distances(points_x, points_y, n_points,
+        ret = model.points_to_line_distances(points_x, points_y, n_points,
                                        list_slopes[0], list_intercepts[0],
                                        distances)
+        if ret == -1:
+            continue
 
         # count inliers
         n_inliers = 0
