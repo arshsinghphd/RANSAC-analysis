@@ -248,21 +248,6 @@ The first uses the residual distribution: fit a rough model to all the data usin
 In this project the second approach is used — $\epsilon$ is known exactly because the data is generated synthetically with a controlled outlier fraction. This allows a direct empirical verification — the theoretical $k\_resample$ derived from the formula can be compared against the number of iterations actually needed to recover the true model, providing a clean test of how well the analytical result predicts practical performance.
 
 
-### Parameter Estimation Helper Functions
-
-Rather than requiring the caller to supply $\epsilon$, $k\_resample$, $expected\_inliers$, and $threshold$ directly, four helper functions are provided to estimate these parameters from the data itself. 
-
-`estimate_epsilon` fits a least squares line to all points, computes the residuals, and returns the fraction of points whose residual exceeds $\bar{e} + 2\sigma$ as an estimate of the outlier fraction $\epsilon$. 
-
-`compute_t` uses the same residual distribution to set the inlier threshold as $t = \bar{e} + 2\sigma$, consistent with the recommendation of Fischler and Bolles [1]. 
-
-`compute_k` applies the analytical formula $k = \lceil \log(p) / \log(1 - (1 - \epsilon)^n) \rceil$ with a default failure probability of $p = 0.01$, returning the iteration count rounded up to the nearest integer. 
-
-`compute_d` sets the expected inlier count as $d = \lfloor (1 - \epsilon) \times N \rfloor$, ensuring consistency with the same $\epsilon$ used to compute $k\_resample$. The caller therefore only needs to provide the raw point data and the minimum sample size $n$, and the parameter estimation is handled automatically. 
-
-This design also makes the relationship between $\epsilon$, $k\_resample$, $expected\_inliers$, and $threshold$ explicit and testable — each helper is a small pure function that can be verified independently, consistent with the test-driven development approach used throughout this project. In the empirical analysis, the true $\epsilon$ used to generate the synthetic data is compared against the value returned by `estimate_epsilon`, providing a direct measure of how accurately the helper recovers the outlier fraction under varying noise conditions.
-
-
 ## Application
 <!-- 
 - What is the algorithm/datastructure used for?
