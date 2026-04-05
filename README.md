@@ -225,7 +225,8 @@ Python:
   * use only rand() 
   * do not use any other python packages - create gaussian noise manually using Box-Muller[5]
   * For random sampling I am using Fisher-Yates sampling [6]
-
+  * ransac resampling refitting on inliers is dones by moving inliers to the front, changing the user passed list
+  * The in-place compacting was replaced with new lists (not C-correspondent) while looking for a bug. Finally the bug was that the I was refitting the model inside the loop.  
 
 * Separate lists of x and y rather than tuples for mutability.
 * `return_array` layout for ransac() with an eye for a future C struct
@@ -238,7 +239,8 @@ Python:
   * noise drawn from Laplace distribution has a higher probability of generating points far from the mean than Gaussian with the same scale. This makes it a good model for measurement errors that occasionally produce large deviations — more realistic than pure Gaussian.
 * `fit_line` uses least squares - write formulae
 * `points_to_line_distances` uses geometric (perpendicular) distance - write formula
-
+* In RANSAC The refit is a post-processing step, not part of the RANSAC iteration — cite Fischler and Bolles
+* All tests of RANSAC fail sometimes (1 in 100 times as designed), since RANSAC is a stochastic, randomized good-enough model.
 
 ### Least Squares Line Fitting
 
