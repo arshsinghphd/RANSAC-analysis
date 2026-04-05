@@ -492,17 +492,14 @@ class TestRansac(unittest.TestCase):
     """
 
     def setUp(self):
-        self.n = 100
         self.x_min = 0
-        self.x_max = self.n - 1
+        self.x_max = 100 - 1
         self.true_slope = 2.0
         self.true_intercept = 5.0
         self.n_params = 2
         self.k_resample = 100
         self.noise_std = 0.5
         self.return_array = [0.0] * 9
-        self.points_x = [float("inf")] * self.n
-        self.points_y = [float("inf")] * self.n
 
 
     def _make_data(self, points_x, points_y, n_inliers, n_outliers,
@@ -533,16 +530,23 @@ class TestRansac(unittest.TestCase):
         generator.make_inliers(points_x, points_y, n_inliers,
                                self.true_slope, self.true_intercept,
                                self.x_min, self.x_max)
+
         if noise_std > 0:
             generator.add_gaussian_noise(points_y, n_inliers, noise_std)
-            if n_outliers > 0:
-                generator.add_outliers(points_x, points_y,
-                                       n_inliers, n_outliers,
-                                       self.true_slope, self.true_intercept,
-                                       noise_std)
+        # compute t from noisy data, before adding outliers
+        threshold = ransac.compute_t(points_x, points_y, n_inliers)
+        if threshold == 0:
+            threshold = 1e-6
+        # then add outliers
+        if noise_std > 0 and n_outliers > 0:
+            generator.add_outliers(points_x, points_y,
+                                   n_inliers, n_outliers,
+                                   self.true_slope, self.true_intercept,
+                                   noise_std)
         n_points = n_inliers + n_outliers
         epsilon = n_outliers / n_points
-        threshold = ransac.compute_t(points_x, points_y, n_points)
+        if threshold == 0:
+            threshold = 1e-6
         expected_inliers = n_points if epsilon == 0 \
                            else ransac.compute_d(epsilon, n_points)
         return threshold, expected_inliers
@@ -554,27 +558,46 @@ class TestRansac(unittest.TestCase):
         Should recover true slope and intercept exactly.
         """
         n_outliers = 0
-        std_error = 0 
-        _, d = self._make_data(self.points_x, self.points_y, self.n,
+        n_inliers = 100
+        n_points = n_outliers + n_inliers
+        std_error = 0
+        points_x = [float("inf")] * n_inliers
+        points_y = [float("inf")] * n_inliers
+        t, d = self._make_data(points_x, points_y, n_inliers,
                                n_outliers, std_error)
-        t = 1e-6    # we know t will be 0, so override with small positive
-        n_points = self.n + n_outliers
         epsilon = n_outliers/n_points
         n_params = 2
         k = 1       # since no noise or outliers, 1 is enough
         return_array = [float("inf")] * 9
-        ransac.ransac(self.points_x, self.points_y, n_points, n_params,
+        ransac.ransac(points_x, points_y, n_points, n_params,
                       k, t, d, return_array)
         self.assertAlmostEqual(self.true_slope, return_array[5])
         self.assertAlmostEqual(self.true_intercept, return_array[6])
-        
+
 
     def test_low_outlier_fraction(self):
         """
         80 inliers with gaussian noise, 20 outliers (20 percent).
         Should recover true slope and intercept within tolerance.
         """
-        pass
+        n_outliers = 20
+        n_inliers = 80
+        n_points = n_inliers + n_outliers
+        points_x = [float("inf")] * n_inliers
+        points_y = [float("inf")] * n_inliers
+        t, d = self._make_data(points_x, points_y, n_inliers, n_outliers)
+        epsilon = n_outliers/n_points
+        n_params = 2
+        k = ransac.compute_k(epsilon, n_params, failure_prob=0.01)
+        return_array = [float("inf")] * 9
+        ransac.ransac(points_x, points_y, n_points, n_params,
+                      k, t, d, return_array)
+        self.assertAlmostEqual(self.true_slope,
+                               return_array[5],
+                               delta = 2 * self.noise_std)
+        self.assertAlmostEqual(self.true_intercept,
+                               return_array[6],
+                               delta = 2 * self.noise_std)
 
 
     def test_medium_outlier_fraction(self):
@@ -582,7 +605,24 @@ class TestRansac(unittest.TestCase):
         60 inliers with gaussian noise, 40 outliers (40 percent).
         Should recover true slope and intercept within tolerance.
         """
-        pass
+        n_outliers = 40
+        n_inliers = 60
+        n_points = n_inliers + n_outliers
+        points_x = [float("inf")] * n_inliers
+        points_y = [float("inf")] * n_inliers
+        t, d = self._make_data(points_x, points_y, n_inliers, n_outliers)
+        epsilon = n_outliers/n_points
+        n_params = 2
+        k = ransac.compute_k(epsilon, n_params, failure_prob=0.01)
+        return_array = [float("inf")] * 9
+        ransac.ransac(points_x, points_y, n_points, n_params,
+                      k, t, d, return_array)
+        self.assertAlmostEqual(self.true_slope,
+                               return_array[5],
+                               delta = 2 * self.noise_std)
+        self.assertAlmostEqual(self.true_intercept,
+                               return_array[6],
+                               delta = 3 * self.noise_std)
 
 
     def test_high_outlier_fraction(self):
@@ -590,64 +630,173 @@ class TestRansac(unittest.TestCase):
         40 inliers with gaussian noise, 60 outliers (60 percent).
         Documents RANSAC limits at high outlier fraction.
         """
-        pass
+        n_outliers = 60
+        n_inliers = 40
+        n_points = n_inliers + n_outliers
+        points_x = [float("inf")] * n_inliers
+        points_y = [float("inf")] * n_inliers
+        t, d = self._make_data(points_x, points_y, n_inliers, n_outliers)
+        epsilon = n_outliers/n_points
+        n_params = 2
+        k = ransac.compute_k(epsilon, n_params, failure_prob=0.01)
+        return_array = [float("inf")] * 9
+        ransac.ransac(points_x, points_y, n_points, n_params,
+                      k, t, d, return_array)
+        self.assertAlmostEqual(self.true_slope,
+                               return_array[5],
+                               delta = 3 * self.noise_std)
+        self.assertAlmostEqual(self.true_intercept,
+                               return_array[6],
+                               delta = 3 * self.noise_std)
 
 
     def test_early_stop(self):
         """
-        expected_inliers set to 10 percent of n to trigger early stop.
+        expected_inliers set to 20 percent of n to trigger early stop.
         Iterations actually run should be less than k_resample.
         """
-        pass
+        n_outliers = 10
+        n_inliers = 90
+        n_points = n_inliers + n_outliers
+        points_x = [float("inf")] * n_inliers
+        points_y = [float("inf")] * n_inliers
+        t, d = self._make_data(points_x, points_y, n_inliers, n_outliers)
+        d = 40 # overwritten to trigger early stop
+        epsilon = n_outliers/n_points
+        n_params = 2
+        k = ransac.compute_k(epsilon, n_params, failure_prob=0.01)
+        return_array = [float("inf")] * 9
+        ransac.ransac(points_x, points_y, n_points, n_params,
+                      k, t, d, return_array)
+        self.assertGreaterEqual(return_array[7], d)  # inliers >= expected_inliers
+        self.assertLessEqual(return_array[8], k)     # iterations <= k
+
 
 
     def test_n_points_less_than_2(self):
         """
         n_points = 1, should return -1.
         """
-        pass
+        n_points = 1
+        points_x = [float("inf")]
+        points_y = [float("inf")]
+        t = 1e-6
+        d = 20
+        epsilon = 0.5   # wrong, but kept, test if n_points < 2 returns -1
+        n_params = 2
+        k = 10
+        return_array = [float("inf")] * 9
+        ret = ransac.ransac(points_x, points_y, n_points, n_params,
+                      k, t, d, return_array)
+        self.assertEqual(ret, -1)
 
 
     def test_n_params_less_than_2(self):
         """
         n_params = 1, should return -1.
         """
-        pass
+        n_points = 10
+        points_x = [float("inf")] * n_points
+        points_y = [float("inf")] * n_points
+        t = 1e-6
+        d = 20
+        epsilon = 0.5   # wrong, but kept, test if n_params < 2 returns -1
+        n_params = 1    # this is overwritten
+        k = 10
+        return_array = [float("inf")] * 9
+        ret = ransac.ransac(points_x, points_y, n_points, n_params,
+                      k, t, d, return_array)
+        self.assertEqual(ret, -1)
 
 
     def test_k_resample_less_than_1(self):
         """
         k_resample = 0, should return -1.
         """
-        pass
+        n_points = 10
+        points_x = [float("inf")] * n_points
+        points_y = [float("inf")] * n_points
+        t = 1e-6
+        d = 20
+        epsilon = 0.5   # wrong, but kept, test if k_resample == 0 returns -1
+        n_params = 2
+        k = 0   # this is overwritten
+        return_array = [float("inf")] * 9
+        ret = ransac.ransac(points_x, points_y, n_points, n_params,
+                      k, t, d, return_array)
+        self.assertEqual(ret, -1)
 
 
     def test_threshold_zero(self):
         """
         threshold = 0, should return -1.
         """
-        pass
+        n_points = 100
+        points_x = [float("inf")] * n_points
+        points_y = [float("inf")] * n_points
+        t = 0  # this is overwritten
+        d = 20
+        epsilon = 0.5
+        n_params = 2
+        k = 10
+        return_array = [float("inf")] * 9
+        ret = ransac.ransac(points_x, points_y, n_points, n_params,
+                      k, t, d, return_array)
+        self.assertEqual(ret, -1)
 
 
     def test_threshold_negative(self):
         """
         threshold = -1, should return -1.
         """
-        pass
+        n_points = 100
+        points_x = [float("inf")] * n_points
+        points_y = [float("inf")] * n_points
+        t = -1  # this is overwritten
+        d = 20
+        epsilon = 0.5
+        n_params = 2
+        k = 10
+        return_array = [float("inf")] * 9
+        ret = ransac.ransac(points_x, points_y, n_points, n_params,
+                      k, t, d, return_array)
+        self.assertEqual(ret, -1)
 
 
     def test_expected_inliers_greater_than_n_points(self):
         """
         expected_inliers greater than n_points, should return -1.
         """
-        pass
+        n_points = 100
+        points_x = [float("inf")] * n_points
+        points_y = [float("inf")] * n_points
+        t = 1e-6
+        d = 101    # overwritten to greater than n_points
+        epsilon = 0.5
+        n_params = 2
+        k = 10
+        return_array = [float("inf")] * 9
+        ret = ransac.ransac(points_x, points_y, n_points, n_params,
+                      k, t, d, return_array)
+        self.assertEqual(ret, -1)
 
 
     def test_n_points_less_than_n_params(self):
         """
         n_points less than n_params, should return -1.
         """
-        pass
+        n_points = 100
+        points_x = [float("inf")] * n_points
+        points_y = [float("inf")] * n_points
+        t = 1e-6
+        d = 20    # overwritten to greater than n_points
+        epsilon = 0.5
+        n_params = 150  # over written to test
+        k = 10
+        return_array = [float("inf")] * 9
+        ret = ransac.ransac(points_x, points_y, n_points, n_params,
+                      k, t, d, return_array)
+        self.assertEqual(ret, -1)
 
 
 if __name__ == '__main__':
