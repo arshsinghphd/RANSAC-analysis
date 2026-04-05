@@ -1,3 +1,5 @@
+import math
+
 def model_error(slope, intercept, true_slope, true_intercept):
     """
     This function measures the distance between the true model and the model

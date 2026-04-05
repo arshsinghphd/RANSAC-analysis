@@ -1,3 +1,9 @@
+import evaluate
+
+import math
+import unittest
+
+
 class TestModelError(unittest.TestCase):
     """
     Tests for model_error which measures the Euclidean distance between the
@@ -71,3 +77,8 @@ class TestModelError(unittest.TestCase):
                                      self.true_slope, self.true_intercept)
         self.assertGreater(error, 0.0)  # positive
         self.assertAlmostEqual(error, 5.0)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
