@@ -321,35 +321,277 @@ class TestStitchModels(unittest.TestCase):
         """
         n1 = 1, should return -1.
         """
-        pass
+        std = 1
+        # graph 1
+        x1_min = self.x_min
+        x1_max = 60
+        n_points1 = 60
+        points_x1 = [float("inf")] * n_points1
+        points_y1 = [float("inf")] * n_points1
+        generator.make_inliers(points_x1, points_y1,
+                               n_points1,
+                               self.true_slope, self.true_intercept,
+                               x1_min, x1_max - 1)
+        generator.add_gaussian_noise(points_y1, n_points1, std)
+        list_slopes1 = self.list_slopes
+        list_intercepts1 = self.list_intercepts
+        pos = self.pos
+        model.fit_line(points_x1, points_y1, n_points1,
+                       list_slopes1, list_intercepts1, pos)
+        slope1 = list_slopes1[pos]
+        intercept1 = list_intercepts1[pos]
+        # graph 2
+        x2_min = 40
+        x2_max = self.x_max
+        n_points2 = x2_max - x1_max
+        points_x2 = [float("inf")] * n_points2
+        points_y2 = [float("inf")] * n_points2
+        generator.make_inliers(points_x2, points_y2,
+                               n_points2,
+                               self.true_slope, self.true_intercept,
+                               x2_min, x2_max - 1)
+        generator.add_gaussian_noise(points_y2, n_points2, std)
+        list_slopes2 = self.list_slopes
+        list_intercepts2 = self.list_intercepts
+        pos = self.pos
+        model.fit_line(points_x2, points_y2, n_points2,
+                       list_slopes2, list_intercepts2, pos)
+        slope2 = list_slopes2[pos]
+        intercept2 = list_intercepts2[pos]
+        # stitch graphs
+        list_slopes = self.list_slopes
+        list_intercepts = self.list_intercepts
+        pos = self.pos
+        threshold = 2 * std
+        n_points1 = 1           # overwrite
+        ret = model.stitch_models(points_x1, points_y1, n_points1,
+                  slope1, intercept1,
+                  points_x2, points_y2, n_points2,
+                  slope2, intercept2,
+                  threshold,
+                  list_slopes, list_intercepts, pos)
+        self.assertEqual(ret, -1)
 
 
     def test_n2_less_than_2(self):
         """
         n2 = 1, should return -1.
         """
-        pass
+        std = 1
+        # graph 1
+        x1_min = self.x_min
+        x1_max = 60
+        n_points1 = 60
+        points_x1 = [float("inf")] * n_points1
+        points_y1 = [float("inf")] * n_points1
+        generator.make_inliers(points_x1, points_y1,
+                               n_points1,
+                               self.true_slope, self.true_intercept,
+                               x1_min, x1_max - 1)
+        generator.add_gaussian_noise(points_y1, n_points1, std)
+        list_slopes1 = self.list_slopes
+        list_intercepts1 = self.list_intercepts
+        pos = self.pos
+        model.fit_line(points_x1, points_y1, n_points1,
+                       list_slopes1, list_intercepts1, pos)
+        slope1 = list_slopes1[pos]
+        intercept1 = list_intercepts1[pos]
+        # graph 2
+        x2_min = 40
+        x2_max = self.x_max
+        n_points2 = x2_max - x1_max
+        points_x2 = [float("inf")] * n_points2
+        points_y2 = [float("inf")] * n_points2
+        generator.make_inliers(points_x2, points_y2,
+                               n_points2,
+                               self.true_slope, self.true_intercept,
+                               x2_min, x2_max - 1)
+        generator.add_gaussian_noise(points_y2, n_points2, std)
+        list_slopes2 = self.list_slopes
+        list_intercepts2 = self.list_intercepts
+        pos = self.pos
+        model.fit_line(points_x2, points_y2, n_points2,
+                       list_slopes2, list_intercepts2, pos)
+        slope2 = list_slopes2[pos]
+        intercept2 = list_intercepts2[pos]
+        # stitch graphs
+        list_slopes = self.list_slopes
+        list_intercepts = self.list_intercepts
+        pos = self.pos
+        threshold = 2 * std
+        n_points2 = 1           # overwrite
+        ret = model.stitch_models(points_x1, points_y1, n_points1,
+                  slope1, intercept1,
+                  points_x2, points_y2, n_points2,
+                  slope2, intercept2,
+                  threshold,
+                  list_slopes, list_intercepts, pos)
+        self.assertEqual(ret, -1)
 
 
     def test_threshold_zero(self):
         """
         threshold = 0, should return -1.
         """
-        pass
+        std = 1
+        # graph 1
+        x1_min = self.x_min
+        x1_max = 60
+        n_points1 = 60
+        points_x1 = [float("inf")] * n_points1
+        points_y1 = [float("inf")] * n_points1
+        generator.make_inliers(points_x1, points_y1,
+                               n_points1,
+                               self.true_slope, self.true_intercept,
+                               x1_min, x1_max - 1)
+        generator.add_gaussian_noise(points_y1, n_points1, std)
+        list_slopes1 = self.list_slopes
+        list_intercepts1 = self.list_intercepts
+        pos = self.pos
+        model.fit_line(points_x1, points_y1, n_points1,
+                       list_slopes1, list_intercepts1, pos)
+        slope1 = list_slopes1[pos]
+        intercept1 = list_intercepts1[pos]
+        # graph 2
+        x2_min = 40
+        x2_max = self.x_max
+        n_points2 = x2_max - x1_max
+        points_x2 = [float("inf")] * n_points2
+        points_y2 = [float("inf")] * n_points2
+        generator.make_inliers(points_x2, points_y2,
+                               n_points2,
+                               self.true_slope, self.true_intercept,
+                               x2_min, x2_max - 1)
+        generator.add_gaussian_noise(points_y2, n_points2, std)
+        list_slopes2 = self.list_slopes
+        list_intercepts2 = self.list_intercepts
+        pos = self.pos
+        model.fit_line(points_x2, points_y2, n_points2,
+                       list_slopes2, list_intercepts2, pos)
+        slope2 = list_slopes2[pos]
+        intercept2 = list_intercepts2[pos]
+        # stitch graphs
+        list_slopes = self.list_slopes
+        list_intercepts = self.list_intercepts
+        pos = self.pos
+        threshold = 0       # overwrite to test
+        ret = model.stitch_models(points_x1, points_y1, n_points1,
+                  slope1, intercept1,
+                  points_x2, points_y2, n_points2,
+                  slope2, intercept2,
+                  threshold,
+                  list_slopes, list_intercepts, pos)
+        self.assertEqual(ret, -1)
 
 
     def test_threshold_negative(self):
         """
         threshold = -1, should return -1.
         """
-        pass
+        std = 1
+        # graph 1
+        x1_min = self.x_min
+        x1_max = 60
+        n_points1 = 60
+        points_x1 = [float("inf")] * n_points1
+        points_y1 = [float("inf")] * n_points1
+        generator.make_inliers(points_x1, points_y1,
+                               n_points1,
+                               self.true_slope, self.true_intercept,
+                               x1_min, x1_max - 1)
+        generator.add_gaussian_noise(points_y1, n_points1, std)
+        list_slopes1 = self.list_slopes
+        list_intercepts1 = self.list_intercepts
+        pos = self.pos
+        model.fit_line(points_x1, points_y1, n_points1,
+                       list_slopes1, list_intercepts1, pos)
+        slope1 = list_slopes1[pos]
+        intercept1 = list_intercepts1[pos]
+        # graph 2
+        x2_min = 40
+        x2_max = self.x_max
+        n_points2 = x2_max - x1_max
+        points_x2 = [float("inf")] * n_points2
+        points_y2 = [float("inf")] * n_points2
+        generator.make_inliers(points_x2, points_y2,
+                               n_points2,
+                               self.true_slope, self.true_intercept,
+                               x2_min, x2_max - 1)
+        generator.add_gaussian_noise(points_y2, n_points2, std)
+        list_slopes2 = self.list_slopes
+        list_intercepts2 = self.list_intercepts
+        pos = self.pos
+        model.fit_line(points_x2, points_y2, n_points2,
+                       list_slopes2, list_intercepts2, pos)
+        slope2 = list_slopes2[pos]
+        intercept2 = list_intercepts2[pos]
+        # stitch graphs
+        list_slopes = self.list_slopes
+        list_intercepts = self.list_intercepts
+        pos = self.pos
+        threshold = -1       # overwrite to test
+        ret = model.stitch_models(points_x1, points_y1, n_points1,
+                  slope1, intercept1,
+                  points_x2, points_y2, n_points2,
+                  slope2, intercept2,
+                  threshold,
+                  list_slopes, list_intercepts, pos)
+        self.assertEqual(ret, -1)
 
 
     def test_pos_negative(self):
         """
         pos = -1, should return -1.
         """
-        pass
+        std = 1
+        # graph 1
+        x1_min = self.x_min
+        x1_max = 60
+        n_points1 = 60
+        points_x1 = [float("inf")] * n_points1
+        points_y1 = [float("inf")] * n_points1
+        generator.make_inliers(points_x1, points_y1,
+                               n_points1,
+                               self.true_slope, self.true_intercept,
+                               x1_min, x1_max - 1)
+        generator.add_gaussian_noise(points_y1, n_points1, std)
+        list_slopes1 = self.list_slopes
+        list_intercepts1 = self.list_intercepts
+        pos = self.pos
+        model.fit_line(points_x1, points_y1, n_points1,
+                       list_slopes1, list_intercepts1, pos)
+        slope1 = list_slopes1[pos]
+        intercept1 = list_intercepts1[pos]
+        # graph 2
+        x2_min = 40
+        x2_max = self.x_max
+        n_points2 = x2_max - x1_max
+        points_x2 = [float("inf")] * n_points2
+        points_y2 = [float("inf")] * n_points2
+        generator.make_inliers(points_x2, points_y2,
+                               n_points2,
+                               self.true_slope, self.true_intercept,
+                               x2_min, x2_max - 1)
+        generator.add_gaussian_noise(points_y2, n_points2, std)
+        list_slopes2 = self.list_slopes
+        list_intercepts2 = self.list_intercepts
+        pos = self.pos
+        model.fit_line(points_x2, points_y2, n_points2,
+                       list_slopes2, list_intercepts2, pos)
+        slope2 = list_slopes2[pos]
+        intercept2 = list_intercepts2[pos]
+        # stitch graphs
+        list_slopes = self.list_slopes
+        list_intercepts = self.list_intercepts
+        pos = -1        # overwrite to test
+        threshold = 2 * std
+        ret = model.stitch_models(points_x1, points_y1, n_points1,
+                  slope1, intercept1,
+                  points_x2, points_y2, n_points2,
+                  slope2, intercept2,
+                  threshold,
+                  list_slopes, list_intercepts, pos)
+        self.assertEqual(ret, -1)
 
 
     def test_no_inliers_graph1(self):
@@ -365,7 +607,56 @@ class TestStitchModels(unittest.TestCase):
         Threshold too small for graph 2 to find any inliers.
         Should return -1.
         """
-        pass
+        std = 1
+        # graph 1
+        x1_min = self.x_min
+        x1_max = 60
+        n_points1 = 60
+        points_x1 = [float("inf")] * n_points1
+        points_y1 = [float("inf")] * n_points1
+        generator.make_inliers(points_x1, points_y1,
+                               n_points1,
+                               self.true_slope, self.true_intercept,
+                               x1_min, x1_max - 1)
+        generator.add_gaussian_noise(points_y1, n_points1, std)
+        list_slopes1 = self.list_slopes
+        list_intercepts1 = self.list_intercepts
+        pos = self.pos
+        model.fit_line(points_x1, points_y1, n_points1,
+                       list_slopes1, list_intercepts1, pos)
+        slope1 = list_slopes1[pos]
+        intercept1 = list_intercepts1[pos]
+        # graph 2
+        x2_min = 40
+        x2_max = self.x_max
+        n_points2 = x2_max - x1_max
+        points_x2 = [float("inf")] * n_points2
+        points_y2 = [float("inf")] * n_points2
+        generator.make_inliers(points_x2, points_y2,
+                               n_points2,
+                               self.true_slope, self.true_intercept,
+                               x2_min, x2_max - 1)
+        generator.add_gaussian_noise(points_y2, n_points2, std)
+        list_slopes2 = self.list_slopes
+        list_intercepts2 = self.list_intercepts
+        pos = self.pos
+        model.fit_line(points_x2, points_y2, n_points2,
+                       list_slopes2, list_intercepts2, pos)
+        slope2 = list_slopes2[pos]
+        intercept2 = list_intercepts2[pos]
+        # stitch graphs
+        list_slopes = self.list_slopes
+        list_intercepts = self.list_intercepts
+        pos = self.pos
+        threshold = 1e-6        # overwrite to test,
+                                # stitch_models will find 0 inliers
+        ret = model.stitch_models(points_x1, points_y1, n_points1,
+                  slope1, intercept1,
+                  points_x2, points_y2, n_points2,
+                  slope2, intercept2,
+                  threshold,
+                  list_slopes, list_intercepts, pos)
+        self.assertEqual(ret, -1)
 
 
 class TestFitLine(unittest.TestCase):
