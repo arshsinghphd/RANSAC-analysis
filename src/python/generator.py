@@ -3,14 +3,14 @@ import numpy
 import random
 
 
-def make_inliers(data_x, data_y, n_inliers, slope, intercept, x_min, x_max):
+def make_inliers(points_x, points_y, n_inliers, slope, intercept, x_min, x_max):
     """
     Fills the lists inliers_x, inliers_y in place based on input.
 
     Params:
-        data_x      a list of floats of size >= n_points
-                    # size od data_x, data_y = n_inliers + n_outliers
-        data_y      a list of floats of size >= n_points
+        points_x    a list of floats of size >= n_points
+                    # size of points_x, points_y = n_inliers + n_outliers
+        points_y    a list of floats of size >= n_points
         n_inliers   int, number of inlier points to be added
         slope       float, slope of the line
         intercept   float, intercept of the line
@@ -27,8 +27,8 @@ def make_inliers(data_x, data_y, n_inliers, slope, intercept, x_min, x_max):
     # infer the increment of x
     step = (x_max - x_min) / (n_inliers - 1)
     for i in range(n_inliers):
-        data_x[i] = x_min + i * step
-        data_y[i] = slope * data_x[i] + intercept
+        points_x[i] = x_min + i * step
+        points_y[i] = slope * points_x[i] + intercept
     return 0        # success
 
 
@@ -62,12 +62,12 @@ def box_muller(sigma):
     return z * sigma
 
 
-def add_gaussian_noise(data_y, n_inliers, std):
+def add_gaussian_noise(points_y, n_inliers, std):
     """
-    Adds zero mean gaussian noise to data_y inplace based on user's inputs.
+    Adds zero mean gaussian noise to points_y inplace based on user's inputs.
 
     Params:
-        data_y      a list of floats
+        points_y    a list of floats
         n_inliers   int, number of inliers to be modified
         std         float, standard deviation of gaussian noise
 
@@ -78,11 +78,11 @@ def add_gaussian_noise(data_y, n_inliers, std):
     if n_inliers < 2 or std <= 0:
         return -1
     for i in range(n_inliers):
-        data_y[i] += box_muller(std)
+        points_y[i] += box_muller(std)
     return 0
 
 
-def add_laplace_noise(data_y, n_inliers, scale_noise):
+def add_laplace_noise(points_y, n_inliers, scale_noise):
     """
     Adds zero-mean laplacean noise to the data inplace based on user's inputs.
 
@@ -97,7 +97,7 @@ def add_laplace_noise(data_y, n_inliers, scale_noise):
 
 
     Params:
-        data_y      a list of floats
+        points_y      a list of floats
         n_inliers   int, number of inliers to be modified
         scale_noise float, spread, decides how fat the tail will be
 
@@ -111,14 +111,14 @@ def add_laplace_noise(data_y, n_inliers, scale_noise):
         u = random.uniform(-0.5, 0.5)
         # map u on to CDF of Laplace
         z = -scale_noise * (-1 if u < 0 else 1) * math.log(1 - 2 * abs(u))
-        data_y[i] += z
+        points_y[i] += z
     return 0
 
 
-def add_outliers(data_x, data_y, n_inliers, n_outliers,
+def add_outliers(points_x, points_y, n_inliers, n_outliers,
                  slope, intercept, noise_std):
     """
-    Adds n_outliers points to data_x and data_y in place, guaranteeing that
+    Adds n_outliers points to points_x and points_y in place, guaranteeing that
     every added point is a true classification error — that is, it lies
     outside the inlier band defined by the true model. The inlier band is
     defined as points within 2 * noise_std of the true line. Outliers are
@@ -128,8 +128,8 @@ def add_outliers(data_x, data_y, n_inliers, n_outliers,
     outliers and not accidental inliers.
 
     Params:
-        data_x      a list of floats of size n_inliers, modified in place
-        data_y      a list of floats of size n_inliers, modified in place
+        points_x    a list of floats of size n_inliers, modified in place
+        points_y    a list of floats of size n_inliers, modified in place
         n_inliers   int, size of existing valid points in data
         n_outliers  int, number of outliers to add
         slope       float, slope of the true model
@@ -148,8 +148,8 @@ def add_outliers(data_x, data_y, n_inliers, n_outliers,
             n_inliers + n_outliers < 2 or noise_std <= 0):
         return -1
 
-    x_min_data = min(data_x[:n_inliers])
-    x_max_data = max(data_x[:n_inliers])
+    x_min_data = min(points_x[:n_inliers])
+    x_max_data = max(points_x[:n_inliers])
     x_range = x_max_data - x_min_data if x_max_data != x_min_data else 1.0
     x_offset = 2 * x_range
 
@@ -169,19 +169,19 @@ def add_outliers(data_x, data_y, n_inliers, n_outliers,
             y = random.uniform(y_on_line - inlier_band - x_offset,
                                y_on_line - inlier_band)
 
-        data_x.append(x)
-        data_y.append(y)
+        points_x.append(x)
+        points_y.append(y)
 
     return 0
 
 
-def add_structural_bias(data_y, data_x, n_inliers, bias_fn):
+def add_structural_bias(points_y, points_x, n_inliers, bias_fn):
     """
     Adds structural bias to the data inplace based on user's inputs.
 
     Params:
-        data_y      a list of floats
-        data_x      a list of floats
+        points_y    a list of floats
+        points_x    a list of floats
         n_inliers   int, number of inliers to be modified
         bias_fn     a function or lambda that defines structural bias
                     e.g.
@@ -195,5 +195,5 @@ def add_structural_bias(data_y, data_x, n_inliers, bias_fn):
     if n_inliers < 2 or bias_fn == None:
         return -1
     for i in range(n_inliers):
-        data_y[i] += bias_fn(data_x[i])
+        points_y[i] += bias_fn(points_x[i])
     return 0
