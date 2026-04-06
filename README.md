@@ -14,15 +14,47 @@
 The Algorithm that I want to focus on is called Random Sample Consesus (RANSAC). The method was introduced by Martin Fischler and Robert Bolles in 1981 [1]. It is a method for fitting a predetermined model to experimental data with sizeable number of outliers or noise.
 
 <!-- Motivate the discussion with an example create a noisy line genarator over three different graphs with different but over lapping ranges of x -->
-To motivate a good idea of the problem this algorithm solves, its usefulness and effectiveness, I will use a toy example to show how one of most popular fitting models - the least squares model is not robust to outliers.
+To motivate a good idea of the problem this algorithm solves, its usefulness and effectiveness, I will use a toy example to show how one of most popular fitting models - the least squares model is not robust to outliers. I do not want to make the task unapproachable by starting off with homography on two images with overlap. But I do not want to do what standard texts to either: I am not estimating best fit functions for a given two-dimensional dataset.
 
-For the sake of the following few paragraphs, assume that we are assigned the task of stitching the two graphs together and then deduce the true underlying model that created the data (apart from the noise). It is known that the following two graphs are built from the same linear model, but over different ranges of $x$ and are noisy with two possible kinds of errors: random noise (zero mean) and heavy-tailed noise (also mean zero). But there is no appreciable range of $x$ with only systematic bias. RANSAC assumes that within the data there are some clean points that lie within threshold distance of the correct model's prediction.
-
-RANSAC inverts the logic of least squares: instead of fitting all the data first and cleaning up afterward, it starts with the smallest possible sample, finds a model, then recruits only the points that agree with it.
+I am doing something novel in this report, something inbetween: I abstract away from image pixels by using cartesian data, but the motivating problem is to stich together two overlapping noisy graphs made with same underlying generator model that can be easily estimated. 
 
 
+### Motivating Problem: Stitching Two Overlapping Graphs
+We are assigned the task of stitching together the two following graphs with overlapping x-range.
+
+<!-- graph 1 -->
+
+<!-- graph 2 -->
+
+<!-- Some description of the graph data -->
+
+#### Assumptions
+It is known that the two graphs are built from the same linear model, but over different ranges of $x$. 
+
+It is also known that the data is noisy with three possible kinds of errors as follow. 
+   * Random gaussian noise (mean zero) 
+   * heavy-tailed laplace noise (also mean zero)
+   * classification errors or outliers that are not mean zero. 
+   * But there is no appreciable continuous range of $x$ with systematic bias. Systematic bias is when the error is not random, but is correlated with $x$.
+
+I will show how the problem solving will look like for linear regression and then I will show what the RANSAC solution looks like.
+
+
+#### Linear Regression Approach
+
+
+#### RANSAC Approach
+
+As Fisher and Bolles state (rephrased) RANSAC inverts the logic of least squares: instead of fitting all the data first and cleaning up afterward, it starts with the smallest possible sample, finds a model, then recruits only the points that agree with it - these are called the model support. It does this repeatedly - many models are estimated. The model with the largest support is deemed the best fit. 
+
+RANSAC is robust, that is it can deal with large proportions of outliers, random large errors that are not mean zero, that Fisher and Bolles call classification errors [2, 3, 4]. It is also known that it *cannot* deal with pervasive systematic bias.
+
+
+### History of RANSAC
 <!-- [Show example of location determination - the one in the paper.] -->
+
 The original paper demonstrated the application of RANSAC in *location determination problem* in computer vision. Today, RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and data fitting, particularly in 2-D image stitching and structure from motion. The method has now been applied to a wide array of other problems [2, 3, 4]. I will disuss these in the section [Applications](#application). 
+
 
 The rest of the paper is organized as follows: 
 
@@ -98,6 +130,7 @@ flowchart TD
     D --> E
 
     E["Step 4: 
+    Estimate support for the candidate model. 
     Count inliers as the no. of points for which 
     distances[i] < threshold t"]
     E --> F1
@@ -214,7 +247,11 @@ Where,
 
 ### Iteration count $k\_resample$
 
-The iteration count $k\_resample$ controls how many independent random samples are drawn. Each sample of $n\_points$ points defines a candidate model, and $k\_resample$ determines how thoroughly the space of candidate models is explored. The probability that at least one of the $k\_resample$ samples is drawn entirely from inliers — and therefore yields a good model — can be derived analytically. If $epsilon$ ($\epsilon$) is the outlier fraction and $n\_params$ ($m$) is the minimum sample size, then the probability of drawing a clean sample in a single trial is $(1 - \epsilon)^{m}$. The probability that all $k\_resample$ trials fail is therefore $[1 - (1-\epsilon)^{m}]^{k\_resample}$. Setting this equal to a desired failure probability $p$ and solving for $k\_resample$ gives:
+
+
+The iteration count $k\_resample$ controls how many independent random samples are drawn. Each sample of $n\_points$ points defines a candidate model, and $k\_resample$ determines how thoroughly the space of candidate models is explored. It is often computationally infeasible and unnecessary to try every possible sample. Instead the number of samples is chosen sufficiently high to ensure with a probability, $p$, that at least one of the $k\_resample$ samples is drawn entirely from inliers — and therefore yields a good model. $p$ is set externally based on which $k\_resample$ can be derived analytically. 
+
+If $epsilon$ ($\epsilon$) is the outlier fraction and $n\_params$ ($m$) is the minimum sample size, then the probability of drawing a clean sample in a single trial is $(1 - \epsilon)^{m}$. The probability that all $k\_resample$ trials fail is therefore $[1 - (1-\epsilon)^{m}]^{k\_resample}$. Solving for $k\_resample$ gives:
 
 $$k = \frac{\log(p)}{\log(1 - (1 - \epsilon)^{m})}$$
 
@@ -223,7 +260,7 @@ Where,
 * $m$ is $n\_params$; and 
 * $\epsilon$ is $epsilon$ 
 
-This formula makes explicit the dependence of $k\_resample$ on the outlier fraction and the model complexity. As the outlier fraction grows or the minimum sample size increases, $k\_resample$ must grow rapidly to maintain the same confidence level.
+This formula makes explicit the dependence of $k\_resample$ on the outlier fraction and the model complexity. The probability of failure $p$ in this function is provided externally. As the outlier fraction ($epsilon$) grows $k\_resample$ grows rapidly to maintain the same confidence level.
 
 Fischler and Bolles suggest a failure probability of $p = 0.01$, meaning RANSAC is given a 99 percent chance of finding at least one clean sample across all $k\_resample$ iterations. This is the standard practical choice in the literature. Substituting $p = 0.01$ into the formula above, the required number of iterations for line fitting where $n = 2$ grows rapidly with the outlier
 fraction $epsilon$:
@@ -354,6 +391,7 @@ flowchart TD
     F --> A
 ```
 
+
 ### Salient Design Decisions:
 
 Python:
@@ -375,6 +413,22 @@ Python:
 * In RANSAC The refit is a post-processing step, not part of the RANSAC iteration — cite Fischler and Bolles
 * All tests of RANSAC fail sometimes (1 in 100 times as designed), since RANSAC is a stochastic, randomized good-enough model.
 
+
+### Parameter Estimation Helper Functions
+
+Rather than requiring the caller to supply $epsilon$, $k\_resample$, $expected\_inliers$, and $threshold$ directly, four helper functions are provided to estimate these parameters from the data itself. 
+
+`estimate_epsilon` fits a least squares line to all points, computes the residuals, and returns the fraction of points whose residual exceeds $\bar{e} + 2\sigma$ as an estimate of the outlier fraction $epsilon$. 
+
+`compute_t` uses the same residual distribution to set the inlier threshold as $t = \bar{e} + 2\sigma$, consistent with the recommendation of Fischler and Bolles [1]. 
+
+`compute_k` applies the analytical formula $k = \lceil \log(p) / \log(1 - (1 - \epsilon)^n) \rceil$ with a default failure probability of $p = 0.01$, returning the iteration count rounded up to the nearest integer. 
+
+`compute_d` sets the expected inlier count as $threshold = \lfloor (1 - \epsilon) \times N \rfloor$, ensuring consistency with the same $epsilon$ used to compute $k\_resample$. The caller therefore only needs to provide the raw point data and the minimum sample size $n\_points$, and the parameter estimation is handled automatically. 
+
+This design also makes the relationship between $epsilon$, $k\_resample$, $expected\_inliers$, and $threshold$ explicit and testable — each helper is a small pure function that can be verified independently, consistent with the test-driven development approach used throughout this project. In the empirical analysis, the true $epsilon$ used to generate the synthetic data is compared against the value returned by `estimate_epsilon`, providing a direct measure of how accurately the helper recovers the outlier fraction under varying noise conditions.
+
+
 ### Least Squares Line Fitting
 
 Given $n\_points$ points $(x_i, y_i)$, the slope $m$ and intercept $b$ of the best fitting line $y = mx + b$ are estimated by minimizing the sum of squared residuals. The closed form solution is:
@@ -393,21 +447,6 @@ Given a line defined by slope $m$ and intercept $b$, written in general form as 
 $$threshold_i = \frac{|m x_i - y_i + b|}{\sqrt{1 + m^2}}$$
 
 This is the geometric distance — the length of the shortest path from the point to the line, which is always perpendicular to it. The absolute value ensures the distance is non-negative regardless of which side of the line the point lies on. RANSAC uses this distance to classify each point as an inlier if $threshold_i < t$, or an outlier otherwise.
-
-
-### Parameter Estimation Helper Functions
-
-Rather than requiring the caller to supply $epsilon$, $k\_resample$, $expected\_inliers$, and $threshold$ directly, four helper functions are provided to estimate these parameters from the data itself. 
-
-`estimate_epsilon` fits a least squares line to all points, computes the residuals, and returns the fraction of points whose residual exceeds $\bar{e} + 2\sigma$ as an estimate of the outlier fraction $epsilon$. 
-
-`compute_t` uses the same residual distribution to set the inlier threshold as $t = \bar{e} + 2\sigma$, consistent with the recommendation of Fischler and Bolles [1]. 
-
-`compute_k` applies the analytical formula $k = \lceil \log(p) / \log(1 - (1 - \epsilon)^n) \rceil$ with a default failure probability of $p = 0.01$, returning the iteration count rounded up to the nearest integer. 
-
-`compute_d` sets the expected inlier count as $threshold = \lfloor (1 - \epsilon) \times N \rfloor$, ensuring consistency with the same $epsilon$ used to compute $k\_resample$. The caller therefore only needs to provide the raw point data and the minimum sample size $n\_points$, and the parameter estimation is handled automatically. 
-
-This design also makes the relationship between $epsilon$, $k\_resample$, $expected\_inliers$, and $threshold$ explicit and testable — each helper is a small pure function that can be verified independently, consistent with the test-driven development approach used throughout this project. In the empirical analysis, the true $epsilon$ used to generate the synthetic data is compared against the value returned by `estimate_epsilon`, providing a direct measure of how accurately the helper recovers the outlier fraction under varying noise conditions.
 
 
 ## Summary
