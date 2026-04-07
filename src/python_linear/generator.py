@@ -1,3 +1,24 @@
+"""
+Data generation functions for the RANSAC pipeline. Provides inlier generation
+on a linear model, gaussian noise injection, outlier generation guaranteed to
+lie outside the inlier band, and structural bias injection.
+
+The inlier band is defined as points within 2 * noise_std of the true line,
+using perpendicular distance. Outliers are guaranteed to lie outside this band.
+
+Functions:
+    make_inliers            fills points_x, points_y with inlier data
+                            evenly spaced from x_min to x_max on y = a1*x + a0
+    box_muller              generates a gaussian random number via Box-Muller
+    add_gaussian_noise      adds zero mean gaussian noise to points_y in place
+    add_outliers            appends outlier points guaranteed outside inlier band
+    add_structural_bias     adds a user-defined structural bias to points_y
+
+References:
+    Box, G. E. P. and Muller, M. E. 1958. A note on the generation of random
+    normal deviates. The Annals of Mathematical Statistics 29, 2, 610-611.
+"""
+
 import math
 import numpy
 import random
