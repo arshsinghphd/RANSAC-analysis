@@ -317,7 +317,7 @@ int main(){
 	RUN_TEST(test_make_inliers_edge_n_params_lt_2, i);
 	i++;
 	/* ------- RUNNING TESTS FOR ADD_GAUSSIAN_NOISE ---------- */
-	printf("***** RUNNING TESTS FOR MAKE_INLIERS *****\n");
+	printf("***** RUNNING TESTS FOR ADD_GAUSSIAN_NOISE *****\n");
 	RUN_TEST(test_add_gaussian_noise_std_int, i);
 	i++;
 	RUN_TEST(test_add_gaussian_noise_std_float, i);
