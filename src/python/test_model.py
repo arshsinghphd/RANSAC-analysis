@@ -13,6 +13,7 @@ Run from terminal as follows:
 
 import generator
 import model
+import ransac
 
 import math
 import unittest
@@ -214,13 +215,8 @@ class TestStitchModels(unittest.TestCase):
                                n_points1,
                                self.true_slope, self.true_intercept,
                                x1_min, x1_max - 1)
-        list_slopes1 = self.list_slopes
-        list_intercepts1 = self.list_intercepts
-        pos = self.pos
-        model.fit_line(points_x1, points_y1, n_points1,
-                       list_slopes1, list_intercepts1, pos)
-        slope1 = list_slopes1[pos]
-        intercept1 = list_intercepts1[pos]
+        slope1 = self.true_slope            # since no noise or outliers
+        intercept1 = self.true_intercept    # since no noise or outliers
         # graph 2
         x2_min = 40
         x2_max = self.x_max
@@ -231,13 +227,8 @@ class TestStitchModels(unittest.TestCase):
                                n_points2,
                                self.true_slope, self.true_intercept,
                                x2_min, x2_max - 1)
-        list_slopes2 = self.list_slopes
-        list_intercepts2 = self.list_intercepts
-        pos = self.pos
-        model.fit_line(points_x2, points_y2, n_points2,
-                       list_slopes2, list_intercepts2, pos)
-        slope2 = list_slopes2[pos]
-        intercept2 = list_intercepts2[pos]
+        slope2 = self.true_slope            # since no noise or outliers
+        intercept2 = self.true_intercept    # since no noise or outliers
         # stitch graphs
         list_slopes = self.list_slopes
         list_intercepts = self.list_intercepts
@@ -261,52 +252,67 @@ class TestStitchModels(unittest.TestCase):
         Two noisy overlapping graphs built from the same true model.
         Combined fit should recover true slope and intercept within tolerance.
         """
-        std = 1
-        # graph 1
+        std = 2
+        # create graph 1
         x1_min = self.x_min
         x1_max = 60
-        n_points1 = 60
-        points_x1 = [float("inf")] * n_points1
-        points_y1 = [float("inf")] * n_points1
+        n_inliers1 = 60
+        points_x1 = [float("inf")] * n_inliers1
+        points_y1 = [float("inf")] * n_inliers1
         generator.make_inliers(points_x1, points_y1,
-                               n_points1,
+                               n_inliers1,
                                self.true_slope, self.true_intercept,
                                x1_min, x1_max - 1)
-        generator.add_gaussian_noise(points_y1, n_points1, std)
-        list_slopes1 = self.list_slopes
-        list_intercepts1 = self.list_intercepts
-        pos = self.pos
-        model.fit_line(points_x1, points_y1, n_points1,
-                       list_slopes1, list_intercepts1, pos)
-        slope1 = list_slopes1[pos]
-        intercept1 = list_intercepts1[pos]
-        # graph 2
+        # make it noisy
+        generator.add_gaussian_noise(points_y1, n_inliers1, std)
+        # add outliers
+        epsilon1 = 0.1
+        n_outliers1 = int(epsilon1 * n_inliers1)
+        generator.add_outliers(points_x1, points_y1, n_inliers1, n_outliers1,
+                 self.true_slope, self.true_intercept, std)
+        # find solution using RANSAC
+        n_points1 = n_inliers1 + n_outliers1
+        threshold1 = ransac.compute_t(points_x1, points_y1, n_points1)
+        n_params = 2
+        return_array1 = [float("inf")] * 9 
+        k_resample1 = ransac.compute_k(epsilon1, n_params, failure_prob=0.01)
+        ransac.ransac(points_x1, points_y1, n_points1, n_params, k_resample1,
+                      threshold1, n_inliers1, return_array1)
+        
+        # make graph 2
         x2_min = 40
         x2_max = self.x_max
-        n_points2 = x2_max - x1_max
-        points_x2 = [float("inf")] * n_points2
-        points_y2 = [float("inf")] * n_points2
+        n_inliers2 = x2_max - x1_max + 1
+        points_x2 = [float("inf")] * n_inliers2
+        points_y2 = [float("inf")] * n_inliers2
         generator.make_inliers(points_x2, points_y2,
-                               n_points2,
+                               n_inliers2,
                                self.true_slope, self.true_intercept,
                                x2_min, x2_max - 1)
-        generator.add_gaussian_noise(points_y2, n_points2, std)
-        list_slopes2 = self.list_slopes
-        list_intercepts2 = self.list_intercepts
-        pos = self.pos
-        model.fit_line(points_x2, points_y2, n_points2,
-                       list_slopes2, list_intercepts2, pos)
-        slope2 = list_slopes2[pos]
-        intercept2 = list_intercepts2[pos]
+        # make it noisy
+        generator.add_gaussian_noise(points_y2, n_inliers2, std)
+        # add outliers
+        epsilon2 = 0.1
+        n_outliers2 = int(epsilon2 * n_inliers2)
+        generator.add_outliers(points_x2, points_y2, n_inliers2, n_outliers2,
+                               self.true_slope, self.true_intercept, std)
+        # find solution using RANSAC
+        n_points2 = n_inliers2 + n_outliers2
+        threshold2 = ransac.compute_t(points_x2, points_y2, n_points2)
+        n_params = 2
+        k_resample2 = ransac.compute_k(epsilon2, n_params, failure_prob=0.01)
+        return_array2 = [float("inf")] * 9 
+        ransac.ransac(points_x2, points_y2, n_points2, n_params, k_resample2,
+                      threshold2, n_inliers2, return_array2)
         # stitch graphs
         list_slopes = self.list_slopes
         list_intercepts = self.list_intercepts
         pos = self.pos
-        threshold = 2 * std
+        threshold = max(threshold1, threshold2)
         model.stitch_models(points_x1, points_y1, n_points1,
-                  slope1, intercept1,
+                  return_array1[5], return_array1[6],
                   points_x2, points_y2, n_points2,
-                  slope2, intercept2,
+                  return_array2[5], return_array2[6],
                   threshold,
                   list_slopes, list_intercepts, pos)
         slope = list_slopes[pos]
@@ -599,14 +605,6 @@ class TestStitchModels(unittest.TestCase):
         Threshold too small for graph 1 to find any inliers.
         Should return -1.
         """
-        pass
-
-
-    def test_no_inliers_graph2(self):
-        """
-        Threshold too small for graph 2 to find any inliers.
-        Should return -1.
-        """
         std = 1
         # graph 1
         x1_min = self.x_min
@@ -626,6 +624,51 @@ class TestStitchModels(unittest.TestCase):
                        list_slopes1, list_intercepts1, pos)
         slope1 = list_slopes1[pos]
         intercept1 = list_intercepts1[pos]
+        # graph 2
+        x2_min = 40
+        x2_max = self.x_max
+        n_points2 = x2_max - x1_max
+        points_x2 = [float("inf")] * n_points2
+        points_y2 = [float("inf")] * n_points2
+        generator.make_inliers(points_x2, points_y2,
+                               n_points2,
+                               self.true_slope, self.true_intercept,
+                               x2_min, x2_max - 1)
+        slope2 = self.true_slope
+        intercept2 = self.true_intercept
+        # stitch graphs
+        list_slopes = self.list_slopes
+        list_intercepts = self.list_intercepts
+        pos = self.pos
+        threshold = 1e-6        # overwrite to test,
+                                # stitch_models will find 0 inliers
+        ret = model.stitch_models(points_x1, points_y1, n_points1,
+                  slope1, intercept1,
+                  points_x2, points_y2, n_points2,
+                  slope2, intercept2,
+                  threshold,
+                  list_slopes, list_intercepts, pos)
+        self.assertEqual(ret, -1)
+
+
+    def test_no_inliers_graph2(self):
+        """
+        Threshold too small for graph 2 to find any inliers.
+        Should return -1.
+        """
+        std = 1
+        # graph 1
+        x1_min = self.x_min
+        x1_max = 60
+        n_points1 = 60
+        points_x1 = [float("inf")] * n_points1
+        points_y1 = [float("inf")] * n_points1
+        generator.make_inliers(points_x1, points_y1,
+                               n_points1,
+                               self.true_slope, self.true_intercept,
+                               x1_min, x1_max - 1)
+        slope1 = self.true_slope
+        intercept1 = self.true_intercept
         # graph 2
         x2_min = 40
         x2_max = self.x_max
