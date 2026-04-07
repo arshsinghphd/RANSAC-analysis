@@ -376,22 +376,16 @@ class TestAddOutliers(unittest.TestCase):
         generator.add_gaussian_noise(self.points_y, self.n, self.noise_std)
 
     def _assert_outliers_outside_band(self, n_outliers, orig_x, orig_y):
-        """
-        Asserts total length is correct, inliers are unchanged, and every
-        added point lies outside the inlier band.
-        """
         self.assertEqual(len(self.points_x), self.n + n_outliers)
         for i in range(self.n):
             self.assertAlmostEqual(self.points_x[i], orig_x[i])
             self.assertAlmostEqual(self.points_y[i], orig_y[i])
-        inlier_band = 2 * self.noise_std * math.sqrt(
-            1 + self.slope * self.slope)
+        inlier_band = 2 * self.noise_std
         for i in range(self.n, self.n + n_outliers):
             x = self.points_x[i]
             y = self.points_y[i]
-            dist = abs(self.slope * x - y + self.intercept) / math.sqrt(
-                1 + self.slope * self.slope)
-            self.assertGreater(dist, inlier_band)
+            y_on_model = self.slope * x + self.intercept
+            self.assertGreater(abs(y - y_on_model), inlier_band)
 
 
     def test_happy_path(self):
