@@ -54,5 +54,18 @@ int make_inliers(float* points_x, float* points_y, int n_inliers,
                 float x_min, float x_max);
 
 
-
+/**
+ * Adds zero mean gaussian noise to points_y in place.
+ * 
+ * Params:
+ * points_y    a list of floats, modified in place
+ * n_inliers   int, number of points to modify
+ * std         float, standard deviation of gaussian noise
+ * 
+ * Returns:
+ * 0 for success
+ * -1 for error if n_inliers < 2
+ * -1 for error if std <= 0
+ */
+int add_gaussian_noise(float* points_y, int n_inliers, float std);
 #endif
