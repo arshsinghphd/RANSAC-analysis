@@ -53,7 +53,6 @@ int make_inliers(float* points_x, float* points_y, int n_inliers,
                 float* params, int n_params,
                 float x_min, float x_max);
 
-
 /**
  * Adds zero mean gaussian noise to points_y in place.
  * 
@@ -68,4 +67,53 @@ int make_inliers(float* points_x, float* points_y, int n_inliers,
  * -1 for error if std <= 0
  */
 int add_gaussian_noise(float* points_y, int n_inliers, float std);
-#endif
+
+/**
+ * Appends n_outliers points to points_x and points_y in place, guaranteeing 
+ * that every added point lies outside the inlier band defined by the true 
+ * polynomial model and noise_std. Outliers are placed in the x-range of inliers
+ * and in a y range that is guaranteed to be outside the inlier band defined as 
+ * (2 * noise_std) from the model value at that x.
+ * 
+ * Params:
+ * points_x     a list of floats of size n_inliers, modified in place
+ * points_y     a list of floats of size n_inliers, modified in place
+ * n_inliers    int, number of existing valid points
+ * n_outliers   int, number of outliers to append
+ * params       a list of n_params floats, polynomial coefficients
+ *              from lowest to highest degree [a0, a1, ...]
+ * n_params     int, number of model parameters
+ * noise_std    float, standard deviation of inlier noise, used to
+ *              define the inlier band as 2 * noise_std from the model
+ *
+ * Returns:
+ * 0 for success
+ * -1 for error if n_inliers < 0
+ * -1 for error if n_outliers < 0
+ * -1 for error if n_inliers + n_outliers < 2
+ * -1 for error if noise_std <= 0
+ * -1 for error if n_params < 2
+ */
+int add_outliers(float* points_x, float* points_y, int n_inliers, 
+    int n_outliers, float* params, int n_params, float noise_std);
+
+/**
+ * Adds structural bias to the data inplace based on user's inputs.
+ * 
+ * Params:
+ * points_y    a list of floats
+ * points_x    a list of floats
+ * n_inliers   int, number of inliers to be modified
+ * bias_fn     a function or lambda that defines structural bias
+ * e.g. 
+ *      lambda x: 0.5 * x       # linear structural bias
+ *      lambda x: math.sin(x)   # periodic structural bias
+ * 
+ * Returns:
+ * 0 for success
+ * -1 for error
+ */
+ int add_structural_bias(float* points_y, float* points_x, int n_inliers, 
+    float pr, float (*bias_fn)(float));
+
+ #endif
