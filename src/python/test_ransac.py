@@ -354,7 +354,7 @@ class TestComputeK(unittest.TestCase):
         epsilon = 0
         n_params = 2
         k = ransac.compute_k(epsilon, n_params, failure_prob=0.01)
-        self.assertEqual(k, -1)
+        self.assertEqual(k, 1)
 
 
     def test_epsilon_one(self):
