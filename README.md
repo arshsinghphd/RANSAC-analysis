@@ -33,21 +33,29 @@ It is known that the two graphs are built from the same linear model, but over d
 
 It is also known that the data is noisy with three possible kinds of errors as follow. 
    * Random gaussian noise (mean zero) 
-   * heavy-tailed laplace noise (also mean zero)
-   * classification errors or outliers that are not mean zero. 
-   * But there is no appreciable continuous range of $x$ with systematic bias. Systematic bias is when the error is not random, but is correlated with $x$.
+   * Heavy-tailed laplace noise (also mean zero)
+   * Classification errors or outliers that are not mean zero. 
+
+It is also known that there is no appreciable continuous range of $x$ with systematic bias. Systematic bias is when the error is not random, but is correlated with $x$.
 
 I will show how the problem solving will look like for linear regression and then I will show what the RANSAC solution looks like.
 
 
 #### Linear Regression Approach
 
+<!-- 
+* describe it
+* how/why it is not robust
+-->
 
 #### RANSAC Approach
-
-As Fisher and Bolles state (rephrased) RANSAC inverts the logic of least squares: instead of fitting all the data first and cleaning up afterward, it starts with the smallest possible sample, finds a model, then recruits only the points that agree with it - these are called the model support. It does this repeatedly - many models are estimated. The model with the largest support is deemed the best fit. 
+Least squares produces a solution in a single pass using all points and always terminates in one pass regardless of outlier fraction - but is effected disproportionately by outliers. It gives outliers disproportionate influence through the squaring of large residuals. Thus least sqaures may return completely inaccurate models.
 
 RANSAC is robust, that is it can deal with large proportions of outliers, random large errors that are not mean zero, that Fisher and Bolles call classification errors [2, 3, 4]. It is also known that it *cannot* deal with pervasive systematic bias.
+
+As Fisher and Bolles state (rephrased) RANSAC inverts the logic of least squares: instead of fitting all the data first and cleaning up afterward, it starts with the smallest possible sample, finds a model, then recruits only the points that agree with it - these are called the model support. It does this repeatedly - many candidate models are estimated. The model with the largest support is deemed the best fit. 
+
+In this way, RANSAC trades computational cost for robustness. RANSAC avoids giving overt weightage to large outliers by working with small random samples and only committing to points that agree with the candidate model. The cost is that many candidate models are tested before finding one with sufficient consensus or support, but this makes RANSAC robust to large proportions of outliers.
 
 
 ### History of RANSAC
@@ -97,7 +105,7 @@ Given a model that requires a minimum of $n\_params$ data points to instantiate 
 
 4. If, after $k\_resample$ trials, no consensus array of size $expected\_inliers$ or greater has been found, refit the model using the largest consensus array found across all trials. If no consensus array was found at all, terminate in failure.
 
-
+### Flow Chart for RANSAC Algorithm
 ```mermaid
 flowchart TD
     A([Start]) --> B1
@@ -174,9 +182,37 @@ flowchart TD
     P([End])
 ```
 
+### Proof of Correctness
 
-### 
+RANSAC does not guarantee that the correct model is always found — it is a randomized algorithm and makes no deterministic guarantees. Instead it provides a probabilistic guarantee: given enough iterations, the correct model is found with high probability. The proof is embedded in the derivation of the iteration count $k\_resample$.
 
+**Claim:** After $k\_resample$ iterations, RANSAC finds at least one clean sample — a sample drawn entirely from inliers — with probability at least $1 - p$, where $p$ is an acceptable failure probability.
+
+**Proof:** Let $\epsilon$ be the outlier fraction ($epsilon$) and $n\_params$ be the minimum sample size required to instantiate the model. The probability that a single randomly drawn point is an inlier is $(1 - \epsilon)$. Since points are drawn independently, the probability that all $n\_params$ points in a sample are inliers is:
+
+$$(1 - \epsilon)^{n\_params}$$
+
+The probability that a single sample contains at least one outlier — that is, the sample is not clean — is:
+
+$$1 - (1 - \epsilon)^{n\_params}$$
+
+The probability that all $k\_resample$ independent samples fail to be clean is:
+
+$$\left[1 - (1 - \epsilon)^{n\_params}\right]^{k\_resample}$$
+
+Setting this equal to the acceptable failure probability $p$ and solving for $k\_resample$:
+
+$$\left[1 - (1 - \epsilon)^{n\_params}\right]^{k\_resample} = p$$
+
+Taking log transformation on both sides and rearranging to isloate $k\_resample$.
+
+$$k\_resample = \frac{\log(p)}{\log\left(1 - (1 - \epsilon)^{n\_params}\right)}$$
+
+This is the formula implemented in `compute_k`. It gives the minimum number of iterations required to guarantee that at least one clean sample is drawn with probability $1 - p$.
+
+Fischler and Bolles recommend $p = 0.01$, giving 99 percent confidence. 
+
+The formula makes three assumptions. First, the underlying model matches the model we are assuming. i.e the true model shouldn't be cubic $n\_params$ needed = 4, while we are trying to fit a linear model with $n\_params = 2$. In this case we may never reach a model with good enough accuracy. Second, the outliers are distributed randomly rather than clustered, and Third, that the inlier fraction $(1 - \epsilon)$ is known or can be estimated with fair accuracy. If either second or third assumption is violated, the actual number of iterations needed to rech the true model may exceed $k\_resample$.
 
 ### Time Complexity Analysis
 
@@ -195,6 +231,13 @@ So the overall time complexity = $O(k \cdot n\_points)$
 
 $k\_resample$ itself depends only on $epsilon$ and $n\_params$ (minimum parameters to be estimated), not on $n\_points$. So the time complexity of the analysis is linear in $n\_points$. 
 
+#### Best, Worst, and Average Cases
+The best case occurs when the early stopping condition is triggered on the first iteration — a clean sample is drawn immediately and the consensus set meets $expected\_inliers$. In this case only one pass over the data is needed, giving $O(n\_points)$. 
+
+The worst case occurs when no early stop is triggered and all $k\_resample$ iterations run to exhaustion, giving $O(k\_resample \times n\_points)$. 
+
+The average case lies between these extremes and is governed directly by the $k\_resample$ formula — at low outlier fractions a clean sample is found quickly and the average cost approaches $O(n\_points)$, while at high outlier fractions many iterations are needed and the average cost approaches the worst case.
+
 ### Space Complexity
 
 I only implement arrays. The rate limiting size is `n_points`. So the space complexity of RANSAC is $O(n\_points)$.
@@ -209,6 +252,8 @@ I only implement arrays. The rate limiting size is `n_points`. So the space comp
 |`sample_y` | $O(n\_params)$  constant |
 
 
+#### Best, Worst, and Average Cases
+Space complexity is $O(n\_points)$ in all cases. The algorithm allocates a distances array of size $n\_points$ per iteration, and a separate inlier array of at most $n\_points$ elements for the final refit. No additional memory scales with $k\_resample$ — running more iterations does not increase memory usage, only runtime.
 
 
 ## Empirical Analysis
@@ -247,8 +292,6 @@ Where,
 
 ### Iteration count $k\_resample$
 
-
-
 The iteration count $k\_resample$ controls how many independent random samples are drawn. Each sample of $n\_points$ points defines a candidate model, and $k\_resample$ determines how thoroughly the space of candidate models is explored. It is often computationally infeasible and unnecessary to try every possible sample. Instead the number of samples is chosen sufficiently high to ensure with a probability, $p$, that at least one of the $k\_resample$ samples is drawn entirely from inliers — and therefore yields a good model. $p$ is set externally based on which $k\_resample$ can be derived analytically. 
 
 If $epsilon$ ($\epsilon$) is the outlier fraction and $n\_params$ ($m$) is the minimum sample size, then the probability of drawing a clean sample in a single trial is $(1 - \epsilon)^{m}$. The probability that all $k\_resample$ trials fail is therefore $[1 - (1-\epsilon)^{m}]^{k\_resample}$. Solving for $k\_resample$ gives:
@@ -260,11 +303,11 @@ Where,
 * $m$ is $n\_params$; and 
 * $\epsilon$ is $epsilon$ 
 
-This formula makes explicit the dependence of $k\_resample$ on the outlier fraction and the model complexity. The probability of failure $p$ in this function is provided externally. As the outlier fraction ($epsilon$) grows $k\_resample$ grows rapidly to maintain the same confidence level.
+This formula shows how $k\_resample$ depends on the outlier fraction and the model complexity. The probability of failure $p$ in this function is provided externally. Fischler and Bolles suggest a failure probability of $p = 0.01$, meaning RANSAC is given a 99 percent chance of finding at least one clean sample across all $k\_resample$ iterations. This is the standard practical choice in the literature. 
 
-Fischler and Bolles suggest a failure probability of $p = 0.01$, meaning RANSAC is given a 99 percent chance of finding at least one clean sample across all $k\_resample$ iterations. This is the standard practical choice in the literature. Substituting $p = 0.01$ into the formula above, the required number of iterations for line fitting where $n = 2$ grows rapidly with the outlier
-fraction $epsilon$:
+As the outlier fraction ($epsilon$) grows $k\_resample$ grows rapidly to maintain the same confidence level as shown in the table below for $p = 0.01$ and for line fitting where $n\_params = 2$. 
 
+#### Table: $k\_resample$ for various $epsilon$ for $p = 0.01$ and for line fitting where $n\_params = 2$.
 | Outlier fraction $epsilon$ | Required iterations $k\_resample$ for 99% confidence |
 |---|---|
 | 0.10 | 2 |
@@ -334,8 +377,20 @@ Many real-world computer vision tasks require a field of view far wider than wha
 
 In image stitching, the goal is to align two or more overlapping images by estimating a geometric transformation — such as a homography — that maps points from one image to corresponding points in another. This requires finding reliable feature correspondences between images. However, automated feature matching is inherently noisy: many matched point pairs will be incorrect, either due to repetitive textures, illumination differences etc. These incorrect matches, or outliers, is exactly what are handled gracefully and efficiently by RANSAC.
 
+<!--
+When the number of measurements is quite large, it may be preferable to only score a subset
+of the measurements in an initial round that selects the most plausible hypotheses for additional
+scoring and selection. This modification of RANSAC, which can significantly speed up its per-
+formance, is called Preemptive RANSAC (Nist´
+er 2003). In another variant on RANSAC called
+PROSAC (PROgressive SAmple Consensus), random samples are initially added from the most
+“confident” matches, thereby speeding up the process of finding a (statistically) likely good set of
+inliers (Chum and Matas 2005). Raguram, Chum et al. (2012) provide a unified framework from
+which most of these techniques can be derived as well as a nice experimental comparison.
+-->
 
 ## Implementation
+
 <!-- 
 - What language did you use?
 - What libraries did you use?
