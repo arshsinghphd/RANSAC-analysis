@@ -533,6 +533,8 @@ Google Gemini: I used Google Gemini to look up many unknown terms when I encount
 
 [6] Durstenfeld, R. 1964. Algorithm 235: Random permutation. Communications of the ACM 7, 7, 420.
 
+[7] Cappetta, R. 2018. Gaussian Elimination with Back Substitution. YouTube. Retrieved from https://youtu.be/8cnxU-Pmb3w on Apr 7, 2026.
+
 <!-- Time Line
 Days 1-3  (now-Apr 5):   finish generate.py + model.py
 Days 4-6  (Apr 6-8):     ransac.py + evaluate.py

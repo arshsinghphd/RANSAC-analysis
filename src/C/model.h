@@ -43,6 +43,11 @@
  * back substitution. All matrix operations are implemented without external
  * libraries for C-correspondence.
  * 
+ * Simple introduction by Robert Cappetta in this video on YouTube: 
+ *  https://youtu.be/8cnxU-Pmb3w
+ * Cappetta, R. 2018. Gaussian Elimination with Back Substitution. YouTube. 
+ * Retrieved from https://youtu.be/8cnxU-Pmb3w on Apr 7, 2026.
+ * 
  * Params:
  * points_x     a list of n_points floats
  * points_y     a list of n_points floats
