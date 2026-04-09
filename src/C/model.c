@@ -5,6 +5,9 @@
 #include<stdlib.h>
 #include<string.h>
 
+
+// eval_model(x, params, n_params, pos)
+
 /**
  * Fits a polynomial model of degree (n_params - 1) to n_points data points 
  * using least squares, solved via Gaussian elimination on the normal equations. 
@@ -40,8 +43,8 @@
  * -1 for error if matrix is singular (e.g. all x values equal)
  */
 int fit_model(float* points_x, float* points_y, int n_points,
-              float* params, int n_params, int pos) {
-    if (n_points < n_params || n_params < 2 || pos < 0)
+              float* params, int n_params) {
+    if (n_points < n_params || n_params < 2)
         return -1;
 
     int d = n_params;
@@ -116,15 +119,57 @@ int fit_model(float* points_x, float* points_y, int n_points,
         coeffs[row] /= aug[row][row];
     }
 
-    /* store coefficients in params at offset pos * n_params */
-    int offset = pos * n_params;
+    /* store coefficients in params */
     for (int i = 0; i < d; i++)
-        params[offset + i] = coeffs[i];
+        params[i] = coeffs[i];
 
     return 0;
 }
 
 
-
+// /**
+//  * Collects inliers from points_x and points_y by computing the vertical
+//  * residual of each point from the polynomial model defined by params.
+//  * Points whose absolute residual is within threshold are appended to
+//  * inliers_x and inliers_y in place.
+//  * 
+//  * For line models (n_params = 2) the vertical residual approximates the
+//  * perpendicular distance when the slope is small. For higher degree models
+//  * the vertical residual is the natural distance metric.
+//  * 
+//  * Params:
+//  * points_x    a list of n_points floats
+//  * points_y    a list of n_points floats
+//  * n_points    int, number of points to evaluate
+//  * params      a list of floats containing model coefficients
+//  * n_params    int, number of model parameters
+//  * threshold   float, maximum absolute residual to qualify as inlier
+//  * inliers_x   a list of floats, appended to in place
+//  * inliers_y   a list of floats, appended to in place
+//  * 
+//  * Returns:
+//  * 0 for success
+//  * -1 for error if n_points < 1
+//  * -1 for error if threshold <= 0
+//  * -1 for error if n_params < 2
+//  * -1 for error if pos < 0
+//  */
+// int find_model_inliers(float* points_x, float* points_y, int n_points,
+//     float* params, int n_params, float threshold, float* inliers_x, 
+//     float* inliers_y) 
+// {
+//     int j = 0;
+//     if (n_points < 1 || threshold <= 0 || n_params < 2 || pos < 0) {
+//         return -1;
+//     }
+//     for (int i = 0; i < n_points; i++) {
+//         y_model = eval_model(points_x[i], params, n_params);
+//         if (abs(points_y[i] - y_model) < threshold) {
+//             inliers_x[j] = points_x[i];
+//             inliers_y[j] = points_y[i];
+//             j++;
+//         }
+//     return 0;
+// }
 
 
