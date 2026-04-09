@@ -45,31 +45,31 @@ static void assert_equal_int(int a, int b, const char *label) {
 }
 
 /* ================================================================
- 	Tests for fit_model which fits a polynomial model using least squares via
- 	Gaussian elimination. Coefficients stored in params at pos * n_params. 
-        params[pos * n_params + 0] = a0  (intercept)
-        params[pos * n_params + 1] = a1  (slope)
-        params[pos * n_params + 2] = a2  (quadratic term)
+	Tests for fit_model which fits a polynomial model using least squares via
+	Gaussian elimination. Coefficients stored in params at pos * n_params. 
+    params[pos * n_params + 0] = a0  (intercept)
+    params[pos * n_params + 1] = a1  (slope)
+    params[pos * n_params + 2] = a2  (quadratic term)
 
-    Happy paths:
-        slope = 1, intercept = 0, n_params = 2, n_points = 10
-            exact recovery on clean data
-        slope = -1, intercept = 5, n_params = 2, n_points = 10
-            exact recovery with negative slope
-        slope = 0, intercept = 3, n_params = 2, n_points = 10
-            exact recovery for flat line
-        slope = 0.5, intercept = 0, n_params = 2, n_points = 10
-            exact recovery for fractional slope
-        slope = 1, intercept = 0, n_params = 2, n_points = 2
-            exact recovery at minimum sample size
-        quadratic a0=1, a1=2, a2=0.5, n_params = 3, n_points = 20
-            exact recovery of quadratic model
+	Happy paths:
+	    slope = 1, intercept = 0, n_params = 2, n_points = 10
+	        exact recovery on clean data
+	    slope = -1, intercept = 5, n_params = 2, n_points = 10
+	        exact recovery with negative slope
+	    slope = 0, intercept = 3, n_params = 2, n_points = 10
+	        exact recovery for flat line
+	    slope = 0.5, intercept = 0, n_params = 2, n_points = 10
+	        exact recovery for fractional slope
+	    slope = 1, intercept = 0, n_params = 2, n_points = 2
+	        exact recovery at minimum sample size
+	    quadratic a0=1, a1=2, a2=0.5, n_params = 3, n_points = 20
+	        exact recovery of quadratic model
 
-    Edge cases:
-        pos < 0,                    should return -1
-        n_points < n_params,        should return -1
-        n_params < 2,               should return -1
-        all x values equal,         should return -1 (singular matrix)
+	Edge cases:
+	    pos < 0,                    should return -1
+	    n_points < n_params,        should return -1
+	    n_params < 2,               should return -1
+	    all x values equal,         should return -1 (singular matrix)
  * ================================================================ */
 
 /* intercept = 0, slope = 1. */
@@ -208,5 +208,6 @@ int main() {
     test_quadratic_model();
     test_n_points_less_than_n_params();
     test_n_params_less_than_2();
+    test_all_x_equal();
     return 0;
 }

@@ -47,6 +47,18 @@ int fit_model(float* points_x, float* points_y, int n_points,
     if (n_points < n_params || n_params < 2)
         return -1;
 
+    // test if x_min == x_max
+    float x_min = points_x[0];
+    float x_max = points_x[0];
+    for (int i = 0; i < n_points; i++) {
+        if (points_x[i] < x_min)
+            x_min = points_x[i];
+        if (points_x[i] > x_max)
+            x_max = points_x[i];
+    }
+    if (x_min - x_max < 1e-6) // x_min == x_max with floats
+        return -1;
+
     int d = n_params;
 
     /* build X^T X (d x d array) and X^T y (d array) */
