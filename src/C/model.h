@@ -65,4 +65,33 @@
 int fit_model(float* points_x, float* points_y, int n_points, float* params, 
     int n_params);
 
-
+/**
+ * Collects inliers from points_x and points_y by computing the vertical
+ * residual of each point from the polynomial model defined by params.
+ * Points whose absolute residual is within threshold are appended to
+ * inliers_x and inliers_y in place.
+ * 
+ * For line models (n_params = 2) the vertical residual approximates the
+ * perpendicular distance when the slope is small. For higher degree models
+ * the vertical residual is the natural distance metric.
+ * 
+ * Params:
+ * points_x    a list of n_points floats
+ * points_y    a list of n_points floats
+ * n_points    int, number of points to evaluate
+ * params      a list of floats containing model coefficients
+ * n_params    int, number of model parameters
+ * threshold   float, maximum absolute residual to qualify as inlier
+ * inliers_x   a list of floats, appended to in place
+ * inliers_y   a list of floats, appended to in place
+ * 
+ * Returns:
+ * 0 for success
+ * -1 for error if n_points < 1
+ * -1 for error if threshold <= 0
+ * -1 for error if n_params < 2
+ * -1 for error if pos < 0
+ */
+int find_model_inliers(float* points_x, float* points_y, int n_points,
+    float* params, int n_params, float threshold, float* inliers_x, 
+    float* inliers_y):
