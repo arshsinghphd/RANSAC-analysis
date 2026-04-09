@@ -92,6 +92,6 @@ int fit_model(float* points_x, float* points_y, int n_points, float* params,
  * -1 for error if n_params < 2
  * -1 for error if pos < 0
  */
-int find_model_inliers(float* points_x, float* points_y, int n_points,
+int find_model_inliers(float* points_x, float* points_y, int n_points, 
     float* params, int n_params, float threshold, float* inliers_x, 
-    float* inliers_y):
+    float* inliers_y);
