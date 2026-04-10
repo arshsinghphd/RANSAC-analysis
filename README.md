@@ -99,11 +99,11 @@ Given a model that requires a minimum of $m$ data points to instantiate its free
 
 1. Randomly select a subset $S_1$ of $m$ data points from $points\_x$ and $points\_y$ and instantiate the model. Use the instantiated model $M_1$ to determine the subset $S_1^*$ of points in $points\_x$ and $points\_y$ whose perpendicular distance from $M_1$ is within the threshold $t$. The array $S_1^*$ is called the consensus array of $S_1$.
 
-2. If $|S_1^*| \ge expected\_inliers$, where $expected\_inliers$ is a threshold derived from the estimated outlier fraction $\varepsilon$, use $S_1^*$ to compute a refined model $M_1^*$ using least squares over all consensus points. Return $M_1^*$ as the best model.
+2. If $|S_1^*| \ge expected\_inliers$, where $d$ is a threshold derived from the estimated outlier fraction $\varepsilon$, use $S_1^*$ to compute a refined model $M_1^*$ using least squares over all consensus points. Return $M_1^*$ as the best model.
 
 3. If $|S_1^*| < expected\_inliers$, randomly select a new subset $S_2$ and repeat the above process, tracking the consensus array with the largest size seen so far.
 
-4. If, after $k$ trials, no consensus array of size $expected\_inliers$ or greater has been found, refit the model using the largest consensus array found across all trials. If no consensus array was found at all, terminate in failure.
+4. If, after $k$ trials, no consensus array of size $d$ or greater has been found, refit the model using the largest consensus array found across all trials. If no consensus array was found at all, terminate in failure.
 
 ### Flow Chart for RANSAC Algorithm
 ```mermaid
@@ -232,7 +232,7 @@ So the overall time complexity = $O(k \cdot N)$
 $k$ itself depends only on $\varepsilon$ and $m$ (minimum parameters to be estimated), not on $N$. So the time complexity of the analysis is linear in $N$. 
 
 #### Best, Worst, and Average Cases
-The best case occurs when the early stopping condition is triggered on the first iteration — a clean sample is drawn immediately and the consensus set meets $expected\_inliers$. In this case only one pass over the data is needed, giving $O(N)$. 
+The best case occurs when the early stopping condition is triggered on the first iteration — a clean sample is drawn immediately and the consensus set meets $d$. In this case only one pass over the data is needed, giving $O(N)$. 
 
 The worst case occurs when no early stop is triggered and all $k$ iterations run to exhaustion, giving $O(k \times N)$. 
 
@@ -310,7 +310,7 @@ RANSAC is governed by three parameters that jointly determine both the quality o
   * $t$ in the original paper;
 * the number of iterations $k$, 
   * $k$ in the original paper; and 
-* the expected inlier count $expected\_inliers$, 
+* the expected inlier count $d$, 
   * $t$ in the original paper.
 
 
@@ -346,14 +346,14 @@ As the outlier fraction ($\varepsilon$) grows $k$ grows rapidly to maintain the 
 | 0.70 | 49 |
 | 0.90 | 459 |
 
-This exponential growth motivates the early stop parameter $expected\_inliers$ — at high outlier fractions, running all $k$ iterations is computationally expensive, and terminating early when a sufficiently good model is found provides significant practical savings.
+This exponential growth motivates the early stop parameter $d$ — at high outlier fractions, running all $k$ iterations is computationally expensive, and terminating early when a sufficiently good model is found provides significant practical savings.
 
 
-### Expected inlier count $expected\_inliers$
+### Expected inlier count d
 
-The expected inlier count $expected\_inliers$ serves as an early stopping criterion. Once a candidate model achieves a consensus set of size at least $expected\_inliers$, the search terminates without exhausting all $k$ iterations. At an outlier fraction of 0.90 the required iteration count reaches 459, making early stopping practically important. 
+The expected inlier count $d$ serves as an early stopping criterion. Once a candidate model achieves a consensus set of size at least $d$, the search terminates without exhausting all $k$ iterations. At an outlier fraction of 0.90 the required iteration count reaches 459, making early stopping practically important. 
 
-The parameters $k$ and $expected\_inliers$ have opposing roles: $k$ is a safety net that pushes the iteration count up to guarantee confidence, while $expected\_inliers$ is an exit condition that pulls it down as soon as a good enough model is found. Setting $expected\_inliers$ too conservatively — close to $N$ — causes RANSAC to always run all $k$ iterations. Setting it too aggressively — close to $m$ — risks accepting a suboptimal model. 
+The parameters $k$ and $d$ have opposing roles: $k$ is a safety net that pushes the iteration count up to guarantee confidence, while $d$ is an exit condition that pulls it down as soon as a good enough model is found. Setting $d$ too conservatively — close to $N$ — causes RANSAC to always run all $k$ iterations. Setting it too aggressively — close to $m$ — risks accepting a suboptimal model. 
 
 Because both depend on the same assumption about the data, they should be set consistently using the same outlier fraction $\epsilon$:
 
@@ -364,7 +364,7 @@ Estimating $\varepsilon$ is discussed in the following section.
 
 ### Estimating the Outlier Fraction $\varepsilon$
 
-Choosing a good value for $\varepsilon$ is more subtle than it appears because the problem is circular: $\varepsilon$ is needed to set $k$ and $expected\_inliers$, but the true outlier fraction is only known after the inliers have been identified. Three data-driven approaches are common in practice [2, 4]. 
+Choosing a good value for $\varepsilon$ is more subtle than it appears because the problem is circular: $\varepsilon$ is needed to set $k$ and $d$, but the true outlier fraction is only known after the inliers have been identified. Three data-driven approaches are common in practice [2, 4]. 
 
 The first approach uses the residual distribution: fit a rough model to all the data using least squares, compute the residuals, and treat points with residuals beyond $\bar{e} + 2\sigma$ as likely outliers. The fraction of such points estimates $\varepsilon$. 
 
@@ -501,7 +501,7 @@ Python:
 
 ### Parameter Estimation Helper Functions
 
-Rather than requiring the caller to supply $\varepsilon$, $k$, $expected\_inliers$, and $t$ directly, four helper functions are provided to estimate these parameters from the data itself. 
+Rather than requiring the caller to supply $\varepsilon$, $k$, $d$, and $t$ directly, four helper functions are provided to estimate these parameters from the data itself. 
 
 `estimate_epsilon` fits a least squares line to all points, computes the residuals, and returns the fraction of points whose residual exceeds $\bar{e} + 2\sigma$ as an estimate of the outlier fraction $\varepsilon$. 
 
@@ -511,7 +511,7 @@ Rather than requiring the caller to supply $\varepsilon$, $k$, $expected\_inlier
 
 `compute_d` sets the expected inlier count as $threshold = \lfloor (1 - \epsilon) \times N \rfloor$, ensuring consistency with the same $\varepsilon$ used to compute $k$. The caller therefore only needs to provide the raw point data and the minimum sample size $N$, and the parameter estimation is handled automatically. 
 
-This design also makes the relationship between $\varepsilon$, $k$, $expected\_inliers$, and $t$ explicit and testable — each helper is a small pure function that can be verified independently, consistent with the test-driven development approach used throughout this project. In the empirical analysis, the true $\varepsilon$ used to generate the synthetic data is compared against the value returned by `estimate_epsilon`, providing a direct measure of how accurately the helper recovers the outlier fraction under varying noise conditions.
+This design also makes the relationship between $\varepsilon$, $k$, $d$, and $t$ explicit and testable — each helper is a small pure function that can be verified independently, consistent with the test-driven development approach used throughout this project. In the empirical analysis, the true $\varepsilon$ used to generate the synthetic data is compared against the value returned by `estimate_epsilon`, providing a direct measure of how accurately the helper recovers the outlier fraction under varying noise conditions.
 
 
 ### Least Squares Line Fitting
