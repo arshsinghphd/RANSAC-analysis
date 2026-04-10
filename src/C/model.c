@@ -16,7 +16,6 @@ Params:
     x           float, the x value to evaluate at
     params      a list of floats containing model coefficients
     n_params    int, number of coefficients
-    pos         int, position index, coefficients at pos n_params
 
 Returns:
     float, the model value at x

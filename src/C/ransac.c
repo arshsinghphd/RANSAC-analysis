@@ -1,37 +1,174 @@
-/*
-Implementation of the RANSAC (Random Sample Consensus) algorithm for robust
-polynomial model fitting in the presence of outliers.
+/* Implementation of RANSAC.H */
 
-This module provides the core ransac function and four helper functions for
-estimating its parameters from the data. Rather than requiring the caller to
-supply epsilon, k, d, and t directly, the helpers derive these values from
-the residual distribution of a preliminary least squares fit.
+#include "ransac.h"
+#include "model.h"
 
-Model parameters are stored as polynomial coefficients from lowest to highest
-degree in a flat params array at offset pos * n_params:
-    params[pos * n_params + 0] = a0  (intercept)
-    params[pos * n_params + 1] = a1  (slope for line)
-    params[pos * n_params + 2] = a2  (quadratic term)
+#include<math.h>
+#include<stdio.h>
+#include<stdlib.h>
 
-For line fitting n_params = 2, giving y = a0 + a1 * x.
 
-Functions:
-    estimate_mean       computes population mean of distances
-    estimate_std        computes population standard deviation of distances
-    estimate_epsilon    estimates outlier fraction from residual distribution
-    compute_t           estimates inlier threshold from residual distribution
-    compute_k           computes required iterations from epsilon and n_params
-    compute_d           computes expected inlier count from epsilon and n_points
-    ransac              finds the best fitting model using RANSAC
+/* =============================================================================
+Helper: Computes the population mean of distances. 
+Tested indirectly via estimate_epsilon.
 
-References:
-	For RANSAC:
-    Fischler, M. A. and Bolles, R. C. 1981. Random sample consensus: a paradigm
-    for model fitting with applications to image analysis and automated
-    cartography. Commun. ACM 24, 6, 381-395.
-	
-	For Random Shuffle:
-    Durstenfeld, R. 1964. Algorithm 235: Random permutation.
-    Communications of the ACM 7, 7, 420.
-*/
+Params:
+    distances   a list of n_points floats
+    n_points    int, number of distances to process
+
+Returns:
+    float, mean of distances
+============================================================================= */
+float _estimate_mean(float* distances, int n_points) {
+	float mean = 0.0;
+	for (int i = 0; i < n_points; i++) {
+		mean += distances[i];
+	}
+	return (float) mean / n_points;
+}
+
+
+/* =============================================================================
+Helper: Computes the population standard deviation of distances given a 
+precomputed mean. Uses population standard deviation dividing by n_points rather
+than n_points - 1, which is appropriate for threshold estimation as recommended
+by Fischler and Bolles (1981). Tested indirectly via estimate_epsilon.
+
+Params:
+    distances   a list of n_points floats
+    n_points    int, number of distances to process
+    mean        float, precomputed mean of distances
+
+Returns:
+    float, population standard deviation of distances
+============================================================================= */
+float _estimate_std(float* distances, int n_points, float mean) {
+	float variance = 0.0;
+    for (int i = 0; i < n_points; i++) {
+        variance += (distances[i] - mean) * (distances[i] - mean);
+    }
+    return (float) sqrt(variance / n_points);
+}
+
+
+/* =============================================================================
+Helper: Fills the array of residuals.
+
+Params:
+	points_x    	a pointer to a list of n_points floats
+    points_y    	a pointer to a list of n_points floats
+    n_points    	int, number of points
+	n_params		int, min parameters to be estimated in the model
+    params      	a pointer to a list of floats containing model coefficients
+    mean        	float, precomputed mean of distances
+    residuals 		a pointer to list of residuals to be filled in place
+
+Returns:
+	nothing 
+============================================================================= */
+void _fill_residuals(float* points_x, float* points_y, int n_points, 
+	float* params, int n_params, float* residuals) {
+	float y_model = 0;
+    for (int i = 0; i < n_points; i++) {
+    	y_model = eval_model(points_x[i], params, n_params);
+    	residuals[i] = fabs(points_y[i] - y_model);
+    }
+}
+
+/* =============================================================================
+Estimates the inlier threshold t from the residual distribution of a preliminary
+least squares fit computed from the data itself. Fits a polynomial to all points
+using least squares, computes the vertical residual of each point from that 
+model, then returns mean + 2 * std of all residuals, consistent with the 
+recommendation of Fischler and Bolles (1981).
+
+Like estimate_epsilon, this estimate is a rough first guess only. At high
+outlier fractions the preliminary least squares fit is corrupted, inflating
+mean and std and producing an overly large threshold that may accept outliers
+as inliers. It should be treated as a starting point only.
+
+Params:
+    points_x    a list of n_points floats
+    points_y    a list of n_points floats
+    n_points    int, number of points
+    n_params	int, min parameters to be estimated in the model
+
+Returns:
+    float, estimated inlier threshold t
+    -1 for error if n_points < 2
+============================================================================= */
+float compute_t(float* points_x, float* points_y, int n_points, int n_params) {
+	if (n_points < 2) {
+		return -1;
+	}
+	float params[n_params], residuals[n_points];
+	int ret = fit_model(points_x, points_y, n_points, params, n_params);
+	if (ret == -1)
+		return -1;
+	_fill_residuals(points_x, points_y, n_points, params, n_params, residuals);
+	float mean = _estimate_mean(residuals, n_points);
+    float std = _estimate_std(residuals, n_points, mean);
+    return (float) mean + 2 * std;
+}
+
+/* =============================================================================
+Estimates the outlier fraction epsilon from the residual distribution of a
+preliminary least squares fit computed from the data itself. Fits a line to all
+points using least squares, computes the vertical residual of each point from
+that line, then returns the fraction of outliers as fraction of points whose 
+residual exceeds mean + 2 * std of all residuals.
+
+This estimate is a rough first guess only. It is unreliable at high outlier
+fractions because outliers corrupt the preliminary least squares fit, inflating
+mean and std and causing the function to undercount outliers. This is a known
+limitation — the same problem RANSAC is designed to solve. 
+
+A more robust approach is iterative refinement: start with a conservative 
+epsilon such as 0.5, run RANSAC, observe the inlier fraction of the best model,
+update epsilon, and repeat until convergence. This is left as future work.
+
+In this project epsilon is known exactly from the synthetic data generation
+process, so this function is provided for completeness and for use in real-world
+scenarios where the true epsilon is unknown.
+
+Params:
+    points_x    a list of n_points floats
+    points_y    a list of n_points floats
+    n_points    int, number of points
+	n_params	int, min parameters to be estimated in the model
+Returns:
+    float, estimated outlier fraction in [0, 1], rough estimate only
+    -1 for error if n_points < 2
+============================================================================= */
+float estimate_epsilon(float* points_x, float* points_y, int n_points, 
+	int n_params) 
+{
+	if (n_points < 2){
+        return -1;
+	}
+    float params[n_params], residuals[n_points];
+    int ret = fit_model(points_x, points_y, n_points, params, n_params);
+    if(ret == -1)
+        return -1;
+    _fill_residuals(points_x, points_y, n_points, params, n_params, residuals);
+    float mean = _estimate_mean(residuals, n_points);
+    float std = _estimate_std(residuals, n_points, mean);
+    float threshold = mean + 2 * std;
+
+    int count_outliers = 0;
+    for (int i = 0; i < n_points; i++) {
+    	// definition of outlier
+    	if (residuals[i] > threshold){
+    		count_outliers++;
+    	}
+    }
+    return (float) count_outliers / n_points;
+}
+
+
+
+
+
+
+
 
