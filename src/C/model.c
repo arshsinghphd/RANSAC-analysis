@@ -156,7 +156,7 @@ int fit_model(float* points_x, float* points_y, int n_points,
         coeffs[row] /= aug[row][row];
     }
 
-    /* store coefficients in params */
+    /* store coefficients in params modifying it in-place */
     for (int i = 0; i < d; i++)
         params[i] = coeffs[i];
 
@@ -258,7 +258,7 @@ int stitch_models(points_x1, points_y1, n1, params1,
     find_model_inliers(points_x2, points_y2, n2, params2, n_params, threshold, 
         inliers_x2, inliers_y2, &n_inliers2);
     
-    // if any model has no inliers return error
+    // if either model has no inliers return error
     if (n_inliers1 < 1 || n_inliers2 < 1)
         return -1
     
@@ -274,44 +274,7 @@ int stitch_models(points_x1, points_y1, n1, params1,
             inliers_y[i] = inliers_y2[i - n_inliers1];
         }
     }
-
-    // TODO: finish this code
+    // fills params in place
+    fit_model(inliers_x, inliers_y, n_inliers, params, n_params);
     return 0;
 }
-
-/*
-    if n1 < n_params or n2 < n_params or threshold <= 0 or pos < 0:
-        return -1
-
-    inliers_x1 = []
-    inliers_y1 = []
-    find_model_inliers(points_x1, points_y1, n1,
-                       params1, n_params, 0,
-                       threshold, inliers_x1, inliers_y1)
-    n_inliers1 = len(inliers_x1)
-    if n_inliers1 == 0:
-        return -1
-
-    inliers_x2 = []
-    inliers_y2 = []
-    find_model_inliers(points_x2, points_y2, n2,
-                       params2, n_params, 0,
-                       threshold, inliers_x2, inliers_y2)
-    n_inliers2 = len(inliers_x2)
-    if n_inliers2 == 0:
-        return -1
-
-    n_inliers = n_inliers1 + n_inliers2
-    inliers_x = [float("inf")] * n_inliers
-    inliers_y = [float("inf")] * n_inliers
-    for i in range(n_inliers):
-        if i < n_inliers1:
-            inliers_x[i] = inliers_x1[i]
-            inliers_y[i] = inliers_y1[i]
-        else:
-            inliers_x[i] = inliers_x2[i - n_inliers1]
-            inliers_y[i] = inliers_y2[i - n_inliers1]
-
-    fit_model(inliers_x, inliers_y, n_inliers, params, n_params, pos)
-    return n_inliers
-*/
