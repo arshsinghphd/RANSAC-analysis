@@ -289,12 +289,14 @@ void test_all_points_on_line() {
 		inliers_y[i] = -1.0f;
 		test_arr[i] = -1.0f;  // initial state of inliers_x, inliers_y
 	}
+	int n_inliers;
 	int result = find_model_inliers(points_x, points_y, N, params, N_PARAMS, 
-		threshold, inliers_x, inliers_y);
+		threshold, inliers_x, inliers_y, &n_inliers);
 	assert_equal_int(result, 0, "test_all_points_on_line/result");
-	assert_equal_float_array(inliers_x, points_x, N, 
+	assert_equal_int(n_inliers, N, "test_all_points_on_line/n_inliers");
+	assert_equal_float_array(inliers_x, points_x, n_inliers, 
 		"test_all_points_on_line/inliers_x");
-	assert_equal_float_array(inliers_y, points_y, N, 
+	assert_equal_float_array(inliers_y, points_y, n_inliers, 
 		"test_all_points_on_line/inliers_y");
 }
 
@@ -313,9 +315,11 @@ void test_no_points_within_threshold() {
 		inliers_y[i] = -1.0f;
 		test_arr[i] = -1.0f;  // initial state of inliers_x, inliers_y
 	}
+	int n_inliers;
 	int result = find_model_inliers(points_x, points_y, N, params, N_PARAMS, 
-		threshold, inliers_x, inliers_y);
+		threshold, inliers_x, inliers_y, &n_inliers);
 	assert_equal_int(result, 0, "test_no_points_within_threshold/result");
+	assert_equal_int(n_inliers, 0, "test_all_points_on_line/n_inliers");
 	assert_equal_float_array(inliers_x, test_arr, N, 
 		"test_no_points_within_threshold/result");
 	assert_equal_float_array(inliers_y, test_arr, N, 
@@ -328,27 +332,30 @@ void test_mixed_points() {
 	float threshold = 0.1f;
 	float points_x[N], points_y[N], inliers_x[N], inliers_y[N];
 	float test_x[N], test_y[N];
+	int expected_inliers = N / 2;
 	for(int i = 0; i < N; i++) {
 		points_x[i] = (float) i;
-		if(i > 4) {
-			// y are 10 threshold away from linear model
+		if(i < expected_inliers) {
+			// points are on model
+			points_y[i] = params[0] + params[1] * points_x[i];
+			test_x[i] = points_x[i]; // expected inliers_x
+			test_y[i] = points_y[i]; // expected inliers_y
+		} else {
+			// y is 10 threshold away from linear model
 			points_y[i] = params[0] + params[1] * points_x[i] + 10 * threshold;
 			// test, like inliers, initiated at -1.
 			test_x[i] = -1.0f;
 			test_y[i] = -1.0f;
-		} else {
-			// first 5 points are on model
-			points_y[i] = params[0] + params[1] * points_x[i];
-			test_x[i] = points_x[i]; // expected inliers_x
-			test_y[i] = points_y[i]; // expected inliers_y
 		}
-		// inliers initiated at -1.
+		// all inliers initiated at unexpected value of -1.
 		inliers_x[i] = -1.0f;
 		inliers_y[i] = -1.0f;
 	}
+	int n_inliers;
 	int result = find_model_inliers(points_x, points_y, N, params, N_PARAMS, 
-		threshold, inliers_x, inliers_y);
+		threshold, inliers_x, inliers_y, &n_inliers);
 	assert_equal_int(result, 0, "mixed_points/result");
+	assert_equal_int(n_inliers, expected_inliers, "test_all_points_on_line/n_inliers");
 	assert_equal_float_array(inliers_x, test_x, N, "mixed_points/inliers_x");
 	assert_equal_float_array(inliers_y, test_y, N, "mixed_points/inliers_y");
 }
@@ -376,9 +383,11 @@ void test_quadratic_model_inliers() {
 		test_x[i] = points_x[i];
 		test_y[i] = points_y[i];
 	}
+	int n_inliers;
 	int result = find_model_inliers(points_x, points_y, N, params, n_params,
-		threshold, inliers_x, inliers_y);
+		threshold, inliers_x, inliers_y, &n_inliers);
 	assert_equal_int(result, 0, "quadratic_model_inliers/result");
+	assert_equal_int(n_inliers, N, "quadratic_model_inliers/n_inliers");
 	assert_equal_float_array(inliers_x, test_x, N,
 		"quadratic_model_inliers/inliers_x");
 	assert_equal_float_array(inliers_y, test_y, N,
@@ -390,8 +399,9 @@ void test_threshold_zero() {
 	float params[2] = {0.0, 1.0};
     float points_x[N], points_y[N], inliers_x[N], inliers_y[N];
     float threshold = 0;
+    int n_inliers;
     int res = find_model_inliers(points_x, points_y, N, params, N_PARAMS,
-    	threshold, inliers_x, inliers_y);
+    	threshold, inliers_x, inliers_y, &n_inliers);
     assert_equal_int(res, -1, "threshold_zero/result");
 }
 
@@ -400,8 +410,9 @@ void test_threshold_negative() {
 	float params[2] = {0.0, 1.0};
     float points_x[N], points_y[N], inliers_x[N], inliers_y[N];
     float threshold = -1;
+    int n_inliers;
     int res = find_model_inliers(points_x, points_y, N, params, N_PARAMS,
-    	threshold, inliers_x, inliers_y);
+    	threshold, inliers_x, inliers_y, &n_inliers);
     assert_equal_int(res, -1, "threshold_negative/result");
 }
 
@@ -411,10 +422,12 @@ void test_n_params_less_than_2_inliers() {
     float points_x[N], points_y[N], inliers_x[N], inliers_y[N];
     float threshold = -1;
     int n_params = 1;
+    int n_inliers;
     int res = find_model_inliers(points_x, points_y, N, params, n_params,
-    	threshold, inliers_x, inliers_y);
+    	threshold, inliers_x, inliers_y, &n_inliers);
     assert_equal_int(res, -1, "n_params_less_than_2_inliers/result");
 }
+
 
 /*==============================================================================
 	Tests for stitch_models which combines inliers from two overlapping graphs
@@ -434,15 +447,17 @@ void test_n_params_less_than_2_inliers() {
         no inliers graph 1, should return -1
         no inliers graph 2, should return -1
 ==============================================================================*/
-void _make_graph(self, x_min, x_max, n_points, points_x, points_y, noise_std=0) 
-{
-	float points_x[N], points_y[N];
-	// fill points_x, points_y
-	make_inliers(points_x, points_y, N, TRUE_SLOPE, TRUE_INTERCEPT,
-		x_min, x_max);
-	if noise_std > 0:
-        add_gaussian_noise(points_y, n_points, noise_std);
-}
+// void _make_graph(self, x_min, x_max, n_points, points_x, points_y, noise_std=0) 
+// {
+// 	float points_x[N], points_y[N];
+// 	// fill points_x, points_y
+// 	make_inliers(points_x, points_y, N, TRUE_SLOPE, TRUE_INTERCEPT,
+// 		x_min, x_max);
+// 	if noise_std > 0:
+//         add_gaussian_noise(points_y, n_points, noise_std);
+// }
+
+
 
 
 

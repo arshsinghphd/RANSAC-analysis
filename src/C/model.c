@@ -183,6 +183,7 @@ Params:
     threshold   float, maximum absolute residual to qualify as inlier
     inliers_x   a list of floats, appended to in place
     inliers_y   a list of floats, appended to in place
+    n_inliers   a pointer to count of inliers, modified in place
 
 Returns:
     0 for success
@@ -192,19 +193,19 @@ Returns:
  */
 int find_model_inliers(float* points_x, float* points_y, int n_points,
     float* params, int n_params, float threshold, float* inliers_x, 
-    float* inliers_y) 
+    float* inliers_y, int* n_inliers)
 {
     if (n_points < 1 || threshold <= 0 || n_params < 2) {
         return -1;
     }
 
-    int j = 0; // initiate j
+    *n_inliers = 0; // initiate n_inliers
     for (int i = 0; i < n_points; i++) {
         float y_model = eval_model(points_x[i], params, n_params);
         if (fabs(points_y[i] - y_model) < threshold) {
-            inliers_x[j] = points_x[i];
-            inliers_y[j] = points_y[i];
-            j++;
+            inliers_x[*n_inliers] = points_x[i];
+            inliers_y[*n_inliers] = points_y[i];
+            (*n_inliers)++;
         }
     }
     return 0;
@@ -232,7 +233,6 @@ Params:
     threshold   float, inlier residual threshold
     params      a list of floats of size at least (pos + 1) * n_params,
                 modified in place
-    pos         int, position to store result in params
 
 Returns:
     int, total number of inliers used in the combined fit
@@ -245,5 +245,73 @@ Returns:
 int stitch_models(points_x1, points_y1, n1, params1,
                   points_x2, points_y2, n2, params2,
                   params, n_params, threshold) {
+    if (n1 < n_params || n2 < n_params || threshold <= 0)
+        return -1;
+    // find inliers of model 1
+    float inliers_x1[n1], inliers_y1[n1];
+    int n_inliers1;
+    find_model_inliers(points_x1, points_y1, n1, params1, n_params, threshold, 
+        inliers_x1, inliers_y1, &n_inliers1);
+    // find inliers of model 2
+    float inliers_x1[n2], inliers_y1[n2];
+    int n_inliers2;
+    find_model_inliers(points_x2, points_y2, n2, params2, n_params, threshold, 
+        inliers_x2, inliers_y2, &n_inliers2);
     
+    // if any model has no inliers return error
+    if (n_inliers1 < 1 || n_inliers2 < 1)
+        return -1
+    
+    // create an array of all inliers
+    int n_inliers = n_inliers1 + n_inliers2;
+    float inliers_x[n_inliers];
+    for (int i = 0; i < n_inliers; i++) {
+        if (i < n_inliers1) {. // add inliers of model 1
+            inliers_x[i] = inliers_x1[i];
+            inliers_y[i] = inliers_y1[i];
+        } else {  // add inliers of model 2
+            inliers_x[i] = inliers_x2[i - n_inliers1];
+            inliers_y[i] = inliers_y2[i - n_inliers1];
+        }
+    }
+
+    // TODO: finish this code
+    return 0;
 }
+
+/*
+    if n1 < n_params or n2 < n_params or threshold <= 0 or pos < 0:
+        return -1
+
+    inliers_x1 = []
+    inliers_y1 = []
+    find_model_inliers(points_x1, points_y1, n1,
+                       params1, n_params, 0,
+                       threshold, inliers_x1, inliers_y1)
+    n_inliers1 = len(inliers_x1)
+    if n_inliers1 == 0:
+        return -1
+
+    inliers_x2 = []
+    inliers_y2 = []
+    find_model_inliers(points_x2, points_y2, n2,
+                       params2, n_params, 0,
+                       threshold, inliers_x2, inliers_y2)
+    n_inliers2 = len(inliers_x2)
+    if n_inliers2 == 0:
+        return -1
+
+    n_inliers = n_inliers1 + n_inliers2
+    inliers_x = [float("inf")] * n_inliers
+    inliers_y = [float("inf")] * n_inliers
+    for i in range(n_inliers):
+        if i < n_inliers1:
+            inliers_x[i] = inliers_x1[i]
+            inliers_y[i] = inliers_y1[i]
+        else:
+            inliers_x[i] = inliers_x2[i - n_inliers1]
+            inliers_y[i] = inliers_y2[i - n_inliers1]
+
+    fit_model(inliers_x, inliers_y, n_inliers, params, n_params, pos)
+    return n_inliers
+*/
