@@ -155,3 +155,46 @@ int stitch_models(float* points_x1, float* points_y1, int n1, float* params1,
                   float* points_x2, float* points_y2, int n2, float* params2,
                   float* params, int n_params, int threshold);
 
+/*
+Computes the perpendicular distance from each point to a line defined
+by slope and intercept, storing results in distances in place. This is
+used by ransac for line models (n_params = 2) where perpendicular distance
+is the natural metric. For higher degree models use find_model_inliers
+with vertical residual instead.
+
+    distances[i] = |slope * points_x[i] - points_y[i] + intercept|
+                   / sqrt(1 + slope^2)
+
+Params:
+    points_x    a list of n_points floats
+    points_y    a list of n_points floats
+    n_points    int
+    slope       float
+    intercept   float
+    distances   a list of n_points floats, modified in place
+
+Returns:
+    0 for success
+    -1 for error if n_points <= 0
+*/
+int points_to_model_distances(float* points_x, float* points_y, int n_points,
+                              float slope, float intercept, float* distances);
+
+/*
+Measures the Euclidean distance between the estimated and true polynomial
+model parameters:
+
+    sqrt(sum((params[i] - true_params[i])^2 for i in range(n_params)))
+
+Params:
+    params          a list of n_params floats, estimated coefficients
+                    from lowest to highest degree [a0, a1, ...]
+    true_params     a list of n_params floats, true coefficients
+                    from lowest to highest degree [a0, a1, ...]
+    n_params        int, number of model parameters
+
+Returns:
+    float, Euclidean distance between estimated and true parameters
+    -1 for error if n_params < 2
+*/
+float model_error(float* params, float* true_params, int n_params);

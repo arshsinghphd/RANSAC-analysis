@@ -4,7 +4,7 @@
 		fit_model
 		find_model_inliers
 		stitch_models
-		points_to_line_distances
+		 points_to_model_distances
 		model_error
 	 
 	fit_model fits a polynomial model of degree n_params - 1 to n_points data
@@ -12,7 +12,7 @@
 	Coefficients are stored in params at offset pos * n_params, from lowest to
 	highest degree.
 	 
-	points_to_line_distances computes vertical distance from each point to the 
+	 points_to_model_distances computes vertical distance from each point to the 
 	model, storing results in distances.
 ============================================================================= */
 
@@ -31,6 +31,8 @@
 #define EPSILON 1e-4
 #define TRUE_SLOPE 1.0f
 #define TRUE_INTERCEPT 0.0f
+#define X_MIN 0.0f
+#define X_MAX 9.0f
 
 
 /* =============================================================================
@@ -637,7 +639,7 @@ void test_no_inliers_graph2() {
 
 
 /*==============================================================================
-Tests for points_to_line_distances which computes perpendicular distance
+Tests for  points_to_model_distances which computes perpendicular distance
     from each point to a line defined by slope and intercept.
 
         distances[i] = |slope * points_x[i] - points_y[i] + intercept|
@@ -654,7 +656,178 @@ Tests for points_to_line_distances which computes perpendicular distance
 
 ==============================================================================*/
 
+/* ---------------------------------------------------------------
+ * Helper: fills points_x, points_y with n inliers on a line
+ * defined by slope and intercept over [X_MIN, X_MAX].
+ * --------------------------------------------------------------- */
+static void _make_line_dist(float* points_x, float* points_y,
+                             float slope, float intercept) {
+    float params[] = {intercept, slope};
+    make_inliers(points_x, points_y, N, params, N_PARAMS, X_MIN, X_MAX);
+}
 
+
+/* ---------------------------------------------------------------
+ * Helper: asserts all distances[i] are within EPSILON of expected.
+ * --------------------------------------------------------------- */
+static void _assert_distances(float* distances, float expected,
+                               const char* label) {
+    for (int i = 0; i < N; i++) {
+        if (fabsf(distances[i] - expected) > EPSILON) {
+            printf("FAIL %s: index %d expected %f got %f\n",
+                   label, i, expected, distances[i]);
+            return;
+        }
+    }
+    printf("PASS %s\n", label);
+}
+
+
+/* All points on the line. All distances should equal 0.0. */
+void test_points_on_line() {
+    float slope = 1.0f, intercept = 0.0f;
+    float points_x[N], points_y[N], distances[N];
+    _make_line_dist(points_x, points_y, slope, intercept);
+    points_to_model_distances(points_x, points_y, N,
+                             slope, intercept, distances);
+    _assert_distances(distances, 0.0f, "points_on_line");
+}
+
+
+/* Points shifted 1 unit above the line.
+ * Distance should equal 1 / sqrt(1 + slope^2). */
+void test_points_one_unit_above_line() {
+    float slope = 1.0f, intercept = 0.0f;
+    float points_x[N], points_y[N], distances[N];
+    _make_line_dist(points_x, points_y, slope, intercept);
+    for (int i = 0; i < N; i++)
+        points_y[i] += 1.0f;
+    points_to_model_distances(points_x, points_y, N,
+                             slope, intercept, distances);
+    float expected = 1.0f / sqrtf(1.0f + slope * slope);
+    _assert_distances(distances, expected, "points_one_unit_above_line");
+}
+
+
+/* slope = 0, points shifted 2 units above. Distance should equal 2.0. */
+void test_zero_slope_points_above_line() {
+    float slope = 0.0f, intercept = 0.0f;
+    float points_x[N], points_y[N], distances[N];
+    _make_line_dist(points_x, points_y, slope, intercept);
+    for (int i = 0; i < N; i++)
+        points_y[i] += 2.0f;
+    points_to_model_distances(points_x, points_y, N,
+                             slope, intercept, distances);
+    _assert_distances(distances, 2.0f, "zero_slope_points_above_line");
+}
+
+
+/* slope = -1, points shifted 1 unit above.
+ * Distances should be positive due to absolute value. */
+void test_negative_slope_points_above_line() {
+    float slope = -1.0f, intercept = 0.0f;
+    float points_x[N], points_y[N], distances[N];
+    _make_line_dist(points_x, points_y, slope, intercept);
+    for (int i = 0; i < N; i++)
+        points_y[i] += 1.0f;
+    points_to_model_distances(points_x, points_y, N,
+                             slope, intercept, distances);
+    float expected = 1.0f / sqrtf(1.0f + slope * slope);
+    _assert_distances(distances, expected, "negative_slope_points_above_line");
+}
+
+
+/* n_points = 0, should return -1. */
+void test_n_points_less_than_1() {
+    float points_x[N], points_y[N], distances[N];
+    int ret =  points_to_model_distances(points_x, points_y, 0,
+                                       1.0f, 0.0f, distances);
+    assert_equal_int(ret, -1, "n_points_less_than_1");
+}
+
+
+/*
+Tests for model_error which measures the Euclidean distance between estimated 
+and true polynomial model parameters:
+
+    sqrt(sum((params[i] - true_params[i])^2 for i in range(n_params)))
+
+Happy paths:
+    exact recovery              error should be 0.0
+    a1 differs only             error should equal abs(a1 - true_a1)
+    a0 differs only             error should equal abs(a0 - true_a0)
+    both differ                 error should equal sqrt(da0^2 + da1^2)
+    negative differences        error should still be positive
+    n_params = 3                error should equal sqrt(da0^2 + da1^2 + da2^2)
+
+Edge cases:
+    n_params < 2                should return -1
+*/
+
+/* Estimated params equal true params. Error should be exactly 0.0. */
+void test_model_error_exact_recovery() {
+    float params[]      = {5.0f, 2.0f};
+    float true_params[] = {5.0f, 2.0f};
+    float error = model_error(params, true_params, 2);
+    assert_almost_equal(error, 0.0f, "exact_recovery");
+}
+
+/* a1 differs by 1.0, a0 matches. Error should equal 1.0. */
+void test_model_error_a1_differs() {
+    float params[]      = {5.0f, 3.0f};
+    float true_params[] = {5.0f, 2.0f};
+    float error = model_error(params, true_params, 2);
+    assert_almost_equal(error, 1.0f, "a1_differs");
+}
+
+
+/* a0 differs by 2.0, a1 matches. Error should equal 2.0. */
+void test_model_error_a0_differs() {
+    float params[]      = {7.0f, 2.0f};
+    float true_params[] = {5.0f, 2.0f};
+    float error = model_error(params, true_params, 2);
+    assert_almost_equal(error, 2.0f, "a0_differs");
+}
+
+
+/* a0 differs by 4.0, a1 differs by 3.0. 
+   Error should equal 5.0. */
+void test_model_error_both_differ() {
+    float params[]      = {9.0f, 5.0f};
+    float true_params[] = {5.0f, 2.0f};
+    float error = model_error(params, true_params, 2);
+    assert_almost_equal(error, 5.0f, "both_differ");
+}
+
+
+/* Estimated params below true params.
+   Error should still be positive and equal 5.0. */
+void test_model_error_negative_differences() {
+    float params[]      = {1.0f, -1.0f};
+    float true_params[] = {5.0f,  2.0f};
+    float error = model_error(params, true_params, 2);
+    assert_almost_equal(error, 5.0f, "negative_differences");
+}
+
+
+/* Quadratic model, n_params = 3.
+   a0 differs by 4.0, a1 by 3.0, a2 by 0.0. 
+   Error should equal 5.0. */
+void test_model_error_n_params_3() {
+    float params[]      = {9.0f, 5.0f, 1.0f};
+    float true_params[] = {5.0f, 2.0f, 1.0f};
+    float error = model_error(params, true_params, 3);
+    assert_almost_equal(error, 5.0f, "n_params_3");
+}
+
+
+/* n_params = 1, should return -1. */
+void test_model_error_n_params_less_than_2() {
+    float params[]      = {1.0f};
+    float true_params[] = {1.0f};
+    float error = model_error(params, true_params, 1);
+    assert_almost_equal(error, -1.0f, "n_params_less_than_2");
+}
 
 
 /*==============================================================================
@@ -692,5 +865,19 @@ int main() {
 	test_threshold_zero_stitch_models();
 	test_threshold_negative_stitch_models();
 	test_no_inliers_graph1();
+	printf("***** RUNNING TESTS FOR POINTS_TO_MODEL_DISTANCE *****\n");
+	test_points_on_line();
+	test_points_one_unit_above_line();
+	test_zero_slope_points_above_line();
+	test_negative_slope_points_above_line();
+	test_n_points_less_than_1();
+	printf("***** RUNNING TESTS FOR MODEL_ERROR *****\n");
+	test_model_error_exact_recovery();
+	test_model_error_a1_differs();
+	test_model_error_a0_differs();
+	test_model_error_both_differ();
+	test_model_error_negative_differences();
+	test_model_error_n_params_3();
+	test_model_error_n_params_less_than_2();
     return 0;
 }

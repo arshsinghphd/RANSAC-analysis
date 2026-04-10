@@ -213,7 +213,7 @@ int find_model_inliers(float* points_x, float* points_y, int n_points,
     return 0;
 }
 
-/*
+/**
 Combines inliers from two overlapping graphs of same number of parameters into
 a single refined polynomial model. Collects inliers from each graph using their
 respective RANSAC-recovered models and threshold via vertical residual, then
@@ -291,7 +291,7 @@ int stitch_models(float* points_x1, float* points_y1, int n1, float* params1,
 }
 
 
-/*
+/**
 Computes the perpendicular distance from each point to a line defined
 by slope and intercept, storing results in distances in place. This is
 used by ransac for line models (n_params = 2) where perpendicular distance
@@ -313,7 +313,7 @@ Returns:
     0 for success
     -1 for error if n_points <= 0
 */
-int points_to_line_distances(float* points_x, float* points_y, int n_points,
+int points_to_model_distances(float* points_x, float* points_y, int n_points,
                               float slope, float intercept, float* distances) {
     if (n_points <= 0)
         return -1;
@@ -325,7 +325,7 @@ int points_to_line_distances(float* points_x, float* points_y, int n_points,
 }
 
 
-/*
+/**
 Measures the Euclidean distance between the estimated and true polynomial
 model parameters:
 
