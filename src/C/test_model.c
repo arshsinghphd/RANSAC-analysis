@@ -1,20 +1,20 @@
-/**
- * Tests for model.c functions:
- * 	eval_model
- * 	fit_model
- * 	find_model_inliers
- * 	stitch_models
- * 	points_to_line_distances
- * 	model_error
- * 
- * fit_model fits a polynomial model of degree n_params - 1 to n_points data
- * points using least squares via Gaussian elimination on the normal equations.
- * Coefficients are stored in params at offset pos * n_params, from lowest to
- * highest degree.
- * 
- * points_to_line_distances computes vertical distance from each point to
- * the model, storing results in distances.
- */
+/* =============================================================================
+	Tests for model.c functions:
+		eval_model
+		fit_model
+		find_model_inliers
+		stitch_models
+		points_to_line_distances
+		model_error
+	 
+	fit_model fits a polynomial model of degree n_params - 1 to n_points data
+	points using least squares via Gaussian elimination on the normal equations.
+	Coefficients are stored in params at offset pos * n_params, from lowest to
+	highest degree.
+	 
+	points_to_line_distances computes vertical distance from each point to the 
+	model, storing results in distances.
+============================================================================= */
 
 #include "model.h"
 #include "generator.h"
@@ -25,31 +25,101 @@
 #include <assert.h>
 #include <string.h>
 
+#define N 10
+#define N_PARAMS 2
 #define MAX_PARAMS 10
-#define EPSILON 1e-10
+#define EPSILON 1e-5
+#define TRUE_SLOPE 1.0f
+#define TRUE_INTERCEPT 0.0f
 
-/* ================================================================
- * HELPERS
- * ================================================================ */
+
+/* =============================================================================
+	HELPERS
+============================================================================= */
+/* Helper function tests if two float values are almost the same. */
 static void assert_almost_equal(double a, double b, const char *label) {
-    if (fabs(a - b) > 1e-5) {
+    if (fabs(a - b) > EPSILON) {
         printf("FAIL %s: expected %.6f got %.6f\n", label, b, a);
     } else {
         printf("PASS %s\n", label);
     }
 }
 
+/* Helper function tests if two int values are same. */
 static void assert_equal_int(int a, int b, const char *label) {
     if (a != b) printf("FAIL %s: expected %d got %d\n", label, b, a);
     else        printf("PASS %s\n", label);
 }
 
-/* ================================================================
+/* Helper function tests if all values are same in two float arrays */
+static void assert_equal_float_array(float* a, float* b, int n, 
+	const char* label) {
+    for (int i = 0; i < n; i++) {
+        if (fabsf(a[i] - b[i]) > EPSILON) {
+            printf("FAIL %s: index %d expected %f got %f\n", 
+                   label, i, b[i], a[i]);
+            return;
+        }
+    }
+    printf("PASS %s\n", label);
+}
+/* =============================================================================
+	Tests for eval_model which evaluates a polynomial model at a given x.
+
+	Happy paths:
+	    n_params = 2, line y = 1 + 2x, x = 3, result should be 7.0
+	    n_params = 3, quadratic y = 1 + 2x + 0.5x^2, x = 2, result = 7.0
+	    n_params = 2, x = 0, result equals intercept (a0)
+
+	Edge cases:
+	    n_params < 2, should return -1
+============================================================================= */
+
+/* n_params = 2, a0 = 1, a1 = 2. eval at x = 3 should give 7.0 */
+void test_line_at_x(){
+	float a0 = 1.0f;
+	float a1 = 2.0f;
+	float x = 3;
+	float params[2] = {a0, a1};
+	float result = eval_model(x, params, N_PARAMS);
+	assert_almost_equal(result, 7.0f, "line_at_x");
+}
+
+
+/* n_params = 3, a0 = 1, a1 = 2, a2 = 0.5. eval at x = 2 should give 7.0. */
+void test_quadratic_at_x() {
+	float params[3] = {1.0f, 2.0f, 0.5f};
+	int n_params = 3;
+	float x = 2.0f;
+	float result = eval_model(x, params, n_params);
+	assert_almost_equal(result, 7.0f, "quadratic_at_x");
+}
+
+/* x = 0. Result should equal a0 (intercept) regardless of other params. */
+void test_eval_at_zero() {
+	float params[3] = {5.0, 3.0, 1.0};
+	int n_params = 3;
+	float x = 0.0;
+	float result = eval_model(x, params, n_params);
+	assert_almost_equal(result, 5.0, "eval_at_zero");
+}
+
+/* n_params = 1, should return -1. */
+void test_n_params_lt_2() {
+	float params[1] = {1.0};
+	int n_params = 1;
+	float x = 1.0f;
+	float result = eval_model(x, params, n_params);
+	assert_almost_equal(result, -1, "n_params_lt_2");
+}
+
+
+/* =============================================================================
 	Tests for fit_model which fits a polynomial model using least squares via
 	Gaussian elimination. Coefficients stored in params at pos * n_params. 
-    params[pos * n_params + 0] = a0  (intercept)
-    params[pos * n_params + 1] = a1  (slope)
-    params[pos * n_params + 2] = a2  (quadratic term)
+	params[pos * n_params + 0] = a0  (intercept)
+	params[pos * n_params + 1] = a1  (slope)
+	params[pos * n_params + 2] = a2  (quadratic term)
 
 	Happy paths:
 	    slope = 1, intercept = 0, n_params = 2, n_points = 10
@@ -70,60 +140,52 @@ static void assert_equal_int(int a, int b, const char *label) {
 	    n_points < n_params,        should return -1
 	    n_params < 2,               should return -1
 	    all x values equal,         should return -1 (singular matrix)
- * ================================================================ */
+============================================================================= */
 
 /* intercept = 0, slope = 1. */
 void test_unit_slope_zero_intercept() {
-    int n = 10; 
     float params[2] = {0.0f, 1.0f};
-    int n_params = 2;
-    float points_x[n], points_y[n];
+    float points_x[N], points_y[N];
     float x_min = 0.0;
-    float x_max = (float) n - 1;
-    make_inliers(points_x, points_y, n, params, n_params, x_min, x_max);
-    fit_model(points_x, points_y, n, params, 2);
-    assert_almost_equal(params[0], 0, "unit_slope/intercept");
-    assert_almost_equal(params[1], 1, "unit_slope/slope");
+    float x_max = (float) N - 1;
+    make_inliers(points_x, points_y, N, params, N_PARAMS, x_min, x_max);
+    fit_model(points_x, points_y, N, params, N_PARAMS);
+    assert_almost_equal(params[0], 0.0f, "unit_slope/intercept");
+    assert_almost_equal(params[1], 1.0f, "unit_slope/slope");
 }
 
 /* intercept = 0, slope = -1. */
 void test_negative_slope() {
-    int n = 10; 
     float params[2] = {0.0f, -1.0f};
-    int n_params = 2;
-    float points_x[n], points_y[n];
+    float points_x[N], points_y[N];
     float x_min = 0.0;
-    float x_max = (float) n - 1;
-    make_inliers(points_x, points_y, n, params, n_params, x_min, x_max);
-    fit_model(points_x, points_y, n, params, 2);
-    assert_almost_equal(params[0], 0, "negative_slope/intercept");
-    assert_almost_equal(params[1], -1, "negative_slope/slope");
+    float x_max = (float) N - 1;
+    make_inliers(points_x, points_y, N, params, N_PARAMS, x_min, x_max);
+    fit_model(points_x, points_y, N, params, N_PARAMS);
+    assert_almost_equal(params[0], 0.0f, "negative_slope/intercept");
+    assert_almost_equal(params[1], -1.0f, "negative_slope/slope");
 }
 
 /* intercept = 0, slope = 0 */
 void test_zero_slope() {
-    int n = 10; 
     float params[2] = {0.0f, 0.0f};
-    int n_params = 2;
-    float points_x[n], points_y[n];
+    float points_x[N], points_y[N];
     float x_min = 0.0;
-    float x_max = (float) n - 1;
-    make_inliers(points_x, points_y, n, params, n_params, x_min, x_max);
-    fit_model(points_x, points_y, n, params, 2);
+    float x_max = (float) N - 1;
+    make_inliers(points_x, points_y, N, params, N_PARAMS, x_min, x_max);
+    fit_model(points_x, points_y, N, params, N_PARAMS);
     assert_almost_equal(params[0], 0, "zero_slope/intercept");
     assert_almost_equal(params[1], 0, "zero_slope/slope");
 }
 
 /* intercept = 0, slope = 0.5 */
 void test_fractional_slope() {
-    int n = 10; 
     float params[2] = {0.0f, 0.5f};
-    int n_params = 2;
-    float points_x[n], points_y[n];
+    float points_x[N], points_y[N];
     float x_min = 0.0;
-    float x_max = (float) n - 1;
-    make_inliers(points_x, points_y, n, params, n_params, x_min, x_max);
-    fit_model(points_x, points_y, n, params, 2);
+    float x_max = (float) N - 1;
+    make_inliers(points_x, points_y, N, params, N_PARAMS, x_min, x_max);
+    fit_model(points_x, points_y, N, params, N_PARAMS);
     assert_almost_equal(params[0], 0, "fractional_slope/intercept");
     assert_almost_equal(params[1], 0.5, "fractional_slope/slope");
 }
@@ -132,12 +194,11 @@ void test_fractional_slope() {
 void test_minimum_points() {
     int n = 2; 
     float params[2] = {0.0f, 1.0f};
-    int n_params = 2;
     float points_x[n], points_y[n];
     float x_min = 0.0;
     float x_max = (float) n - 1;
-    make_inliers(points_x, points_y, n, params, n_params, x_min, x_max);
-    fit_model(points_x, points_y, n, params, n_params);
+    make_inliers(points_x, points_y, n, params, N_PARAMS, x_min, x_max);
+    fit_model(points_x, points_y, n, params, N_PARAMS);
     assert_almost_equal(params[0], 0, "minimum_points/intercept");
     assert_almost_equal(params[1], 1, "minimum_points/slope");
 }
@@ -198,6 +259,196 @@ void test_all_x_equal() {
     assert_equal_int(ret, -1, "all_x_equal");
 }
 
+/* =============================================================================
+	Tests for find_model_inliers which collects inliers using vertical
+	residual from the polynomial model. Points whose absolute residual is
+	within threshold are appended to inliers_x and inliers_y in place.
+
+	Happy paths:
+		all points on the line, all points collected as inliers
+		no points within threshold, inliers_x and inliers_y remain empty
+		mixed points, only those within threshold collected
+		quadratic model, inliers collected correctly
+
+	Edge cases:
+		threshold <= 0,     should return -1
+		n_params < 2,       should return -1
+		pos < 0,            should return -1 
+============================================================================= */
+
+/* All points on the line. No noise, all should be collected as inliers. */
+void test_all_points_on_line() {
+	float params[2] = {0.0f, 1.0f};
+	float points_x[N], points_y[N], inliers_x[N], inliers_y[N], test_arr[N];
+	float threshold = 1e-3;
+	for(int i = 0; i < N; i++) {
+		points_x[i] = (float) i;
+		// y are 10 threshold away from linear model 
+		points_y[i] = (params[0] + params[1] * points_x[i]); // no noise
+		inliers_x[i] = -1.0f;
+		inliers_y[i] = -1.0f;
+		test_arr[i] = -1.0f;  // initial state of inliers_x, inliers_y
+	}
+	int result = find_model_inliers(points_x, points_y, N, params, N_PARAMS, 
+		threshold, inliers_x, inliers_y);
+	assert_equal_int(result, 0, "test_all_points_on_line/result");
+	assert_equal_float_array(inliers_x, points_x, N, 
+		"test_all_points_on_line/inliers_x");
+	assert_equal_float_array(inliers_y, points_y, N, 
+		"test_all_points_on_line/inliers_y");
+}
+
+
+/* All points far from the line. inliers_x and inliers_y remain empty. */
+void test_no_points_within_threshold() {
+	float params[] = {0.0f, 1.0f};
+	float threshold = 0.1f;
+	int n = 3;
+	float points_x[N], points_y[N], inliers_x[N], inliers_y[N], test_arr[N];
+	for(int i = 0; i < N; i++) {
+		points_x[i] = (float) i;
+		// y are 10 threshold away from linear model 
+		points_y[i] = (params[0] + params[1] * points_x[i]) + 10 * threshold;
+		inliers_x[i] = -1.0f;
+		inliers_y[i] = -1.0f;
+		test_arr[i] = -1.0f;  // initial state of inliers_x, inliers_y
+	}
+	int result = find_model_inliers(points_x, points_y, N, params, N_PARAMS, 
+		threshold, inliers_x, inliers_y);
+	assert_equal_int(result, 0, "test_no_points_within_threshold/result");
+	assert_equal_float_array(inliers_x, test_arr, N, 
+		"test_no_points_within_threshold/result");
+	assert_equal_float_array(inliers_y, test_arr, N, 
+		"test_no_points_within_threshold/result");
+}
+
+/* Half points on line, half far. Only those within threshold collected. */
+void test_mixed_points() {
+	float params[] = {0.0f, 1.0f};
+	float threshold = 0.1f;
+	float points_x[N], points_y[N], inliers_x[N], inliers_y[N];
+	float test_x[N], test_y[N];
+	for(int i = 0; i < N; i++) {
+		points_x[i] = (float) i;
+		if(i > 4) {
+			// y are 10 threshold away from linear model
+			points_y[i] = params[0] + params[1] * points_x[i] + 10 * threshold;
+			// test, like inliers, initiated at -1.
+			test_x[i] = -1.0f;
+			test_y[i] = -1.0f;
+		} else {
+			// first 5 points are on model
+			points_y[i] = params[0] + params[1] * points_x[i];
+			test_x[i] = points_x[i]; // expected inliers_x
+			test_y[i] = points_y[i]; // expected inliers_y
+		}
+		// inliers initiated at -1.
+		inliers_x[i] = -1.0f;
+		inliers_y[i] = -1.0f;
+	}
+	int result = find_model_inliers(points_x, points_y, N, params, N_PARAMS, 
+		threshold, inliers_x, inliers_y);
+	assert_equal_int(result, 0, "mixed_points/result");
+	assert_equal_float_array(inliers_x, test_x, N, "mixed_points/inliers_x");
+	assert_equal_float_array(inliers_y, test_y, N, "mixed_points/inliers_y");
+}
+
+/* Quadratic model a0 = 1, a1 = 2, a2 = 0.5. Points on the curve are inliers. */
+void test_quadratic_model_inliers() {
+	float a0 = 1.0f;
+	float a1 = 2.0f;
+	float a2 = 0.5f;
+	float params[] = {a0, a1, a2};
+	int n_params = 3;
+	float threshold = 0.1f;
+	float points_x[N], points_y[N];
+	float inliers_x[N], inliers_y[N];
+	float test_x[N], test_y[N];
+	for(int i = 0; i < N; i++) {
+		points_x[i] = (float) i;
+		// no noise
+		points_y[i] = (params[0] + params[1] * points_x[i]
+			+ params[2] * pow(points_x[i], 2));
+		// initiate inliers
+		inliers_x[i] = -1.0f;
+		inliers_y[i] = -1.0f;
+		// expected inliers
+		test_x[i] = points_x[i];
+		test_y[i] = points_y[i];
+	}
+	int result = find_model_inliers(points_x, points_y, N, params, n_params,
+		threshold, inliers_x, inliers_y);
+	assert_equal_int(result, 0, "quadratic_model_inliers/result");
+	assert_equal_float_array(inliers_x, test_x, N,
+		"quadratic_model_inliers/inliers_x");
+	assert_equal_float_array(inliers_y, test_y, N,
+		"quadratic_model_inliers/inliers_y");
+}
+
+/* threshold = 0, should return -1. */
+void test_threshold_zero() {
+	float params[2] = {0.0, 1.0};
+    float points_x[N], points_y[N], inliers_x[N], inliers_y[N];
+    float threshold = 0;
+    int res = find_model_inliers(points_x, points_y, N, params, N_PARAMS,
+    	threshold, inliers_x, inliers_y);
+    assert_equal_int(res, -1, "threshold_zero/result");
+}
+
+/* threshold = -1, should return -1. */
+void test_threshold_negative() {
+	float params[2] = {0.0, 1.0};
+    float points_x[N], points_y[N], inliers_x[N], inliers_y[N];
+    float threshold = -1;
+    int res = find_model_inliers(points_x, points_y, N, params, N_PARAMS,
+    	threshold, inliers_x, inliers_y);
+    assert_equal_int(res, -1, "threshold_negative/result");
+}
+
+/* n_params = 1, should return -1. */
+void test_n_params_less_than_2_inliers() {
+	float params[2] = {0.0, 1.0};
+    float points_x[N], points_y[N], inliers_x[N], inliers_y[N];
+    float threshold = -1;
+    int n_params = 1;
+    int res = find_model_inliers(points_x, points_y, N, params, n_params,
+    	threshold, inliers_x, inliers_y);
+    assert_equal_int(res, -1, "n_params_less_than_2_inliers/result");
+}
+
+/*==============================================================================
+	Tests for stitch_models which combines inliers from two overlapping graphs
+    into a single refined model using params1 and params2.
+
+    Happy paths:
+        two clean overlapping graphs with same true model
+            combined fit should recover true slope and intercept exactly
+        two noisy overlapping graphs with same true model
+            combined fit should recover true model within tolerance
+
+    Edge cases:
+        n1 < n_params,      should return -1
+        n2 < n_params,      should return -1
+        threshold <= 0,     should return -1
+        pos < 0,            should return -1
+        no inliers graph 1, should return -1
+        no inliers graph 2, should return -1
+==============================================================================*/
+void _make_graph(self, x_min, x_max, n_points, points_x, points_y, noise_std=0) 
+{
+	float points_x[N], points_y[N];
+	// fill points_x, points_y
+	make_inliers(points_x, points_y, N, TRUE_SLOPE, TRUE_INTERCEPT,
+		x_min, x_max);
+	if noise_std > 0:
+        add_gaussian_noise(points_y, n_points, noise_std);
+}
+
+
+
+/*==============================================================================
+  MAIN 
+==============================================================================*/
 int main() {
 	printf("***** RUNNING TESTS FOR FIT_MODEL *****\n");
     test_unit_slope_zero_intercept();
@@ -209,5 +460,18 @@ int main() {
     test_n_points_less_than_n_params();
     test_n_params_less_than_2();
     test_all_x_equal();
+	printf("***** RUNNING TESTS FOR EVAL_MODEL *****\n");
+    test_line_at_x();
+    test_quadratic_at_x();
+    test_eval_at_zero();
+    test_n_params_lt_2();
+    printf("***** RUNNING TESTS FOR FIND_MODEL_INLIERS *****\n");
+	test_all_points_on_line();
+	test_no_points_within_threshold();
+	test_mixed_points();
+	test_quadratic_model_inliers();
+	test_threshold_zero();
+	test_threshold_negative();
+	test_n_params_less_than_2_inliers();
     return 0;
 }

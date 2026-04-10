@@ -5,42 +5,67 @@
 #include<stdlib.h>
 #include<string.h>
 
+/**
+Evaluates the polynomial model at a given x using Horner's method.
+The polynomial is defined by n_params coefficients stored in params
+starting at offset pos n_params, from lowest to highest degree:
 
-// eval_model(x, params, n_params, pos)
+    y = a0 + a1 x + a2 x^2 + ... + a(n-1) x^(n-1)
+
+Params:
+    x           float, the x value to evaluate at
+    params      a list of floats containing model coefficients
+    n_params    int, number of coefficients
+    pos         int, position index, coefficients at pos n_params
+
+Returns:
+    float, the model value at x
+    -1 for error if n_params < 2
+    -1 for error if pos < 0
+ */
+float eval_model(float x, float* params, int n_params) {
+    if (n_params < 2)
+        return -1;
+    float y = params[0];
+    for(int i = 1; i < n_params; i++)
+        y += params[i] * pow(x, i);
+    return y;
+}
+
 
 /**
- * Fits a polynomial model of degree (n_params - 1) to n_points data points 
- * using least squares, solved via Gaussian elimination on the normal equations. 
- * 
- * Stores the n_params coefficients in params starting at index pos * n_params, 
- * in order from lowest to highest degree:
- *  params[pos * n_params + 0] = a0  (intercept) 
- *  params[pos * n_params + 1] = a1  (slope for line)
- *  params[pos * n_params + 2] = a2  (quadratic term)
- *  ...
- * 
- * For n_params = 2 this is equivalent to ordinary least squares (OLS):
- *  y = a0 + a1 * x
- * 
- * The normal equations (X^T X) a = X^T y are formed using the Vandermonde
- * matrix X and solved using Gaussian elimination with partial pivoting and
- * back substitution.
- * 
- * Runs in O(n_points) for n_params << n_points.
- * 
- * Params:
- * points_x     a list of n_points floats
- * points_y     a list of n_points floats
- * n_points     int, number of points to fit
- * params       a list of floats of size at least (pos + 1) * n_params, 
- *              modified in place
- * n_params     int, number of model parameters, equals polynomial degree + 1
- * 
- * Returns:
- * 0 for success
- * -1 for error if n_points < n_params
- * -1 for error if n_params < 2-1 for error if pos < 0
- * -1 for error if matrix is singular (e.g. all x values equal)
+Fits a polynomial model of degree (n_params - 1) to n_points data points 
+using least squares, solved via Gaussian elimination on the normal equations. 
+
+Stores the n_params coefficients in params starting at index pos n_params, 
+in order from lowest to highest degree:
+    params[pos n_params + 0] = a0  (intercept) 
+    params[pos n_params + 1] = a1  (slope for line)
+    params[pos n_params + 2] = a2  (quadratic term)
+    ...
+
+For n_params = 2 this is equivalent to ordinary least squares (OLS):
+    y = a0 + a1 x
+
+The normal equations (X^T X) a = X^T y are formed using the Vandermonde
+matrix X and solved using Gaussian elimination with partial pivoting and
+back substitution.
+
+Runs in O(n_points) for n_params << n_points.
+
+Params:
+    points_x     a list of n_points floats
+    points_y     a list of n_points floats
+    n_points     int, number of points to fit
+    params       a list of floats of size at least (pos + 1) n_params, 
+              modified in place
+    n_params     int, number of model parameters, equals polynomial degree + 1
+
+Returns:
+    0 for success
+    -1 for error if n_points < n_params
+    -1 for error if n_params < 2-1 for error if pos < 0
+    -1 for error if matrix is singular (e.g. all x values equal)
  */
 int fit_model(float* points_x, float* points_y, int n_points,
               float* params, int n_params) {
@@ -139,49 +164,86 @@ int fit_model(float* points_x, float* points_y, int n_points,
 }
 
 
-// /**
-//  * Collects inliers from points_x and points_y by computing the vertical
-//  * residual of each point from the polynomial model defined by params.
-//  * Points whose absolute residual is within threshold are appended to
-//  * inliers_x and inliers_y in place.
-//  * 
-//  * For line models (n_params = 2) the vertical residual approximates the
-//  * perpendicular distance when the slope is small. For higher degree models
-//  * the vertical residual is the natural distance metric.
-//  * 
-//  * Params:
-//  * points_x    a list of n_points floats
-//  * points_y    a list of n_points floats
-//  * n_points    int, number of points to evaluate
-//  * params      a list of floats containing model coefficients
-//  * n_params    int, number of model parameters
-//  * threshold   float, maximum absolute residual to qualify as inlier
-//  * inliers_x   a list of floats, appended to in place
-//  * inliers_y   a list of floats, appended to in place
-//  * 
-//  * Returns:
-//  * 0 for success
-//  * -1 for error if n_points < 1
-//  * -1 for error if threshold <= 0
-//  * -1 for error if n_params < 2
-//  * -1 for error if pos < 0
-//  */
-// int find_model_inliers(float* points_x, float* points_y, int n_points,
-//     float* params, int n_params, float threshold, float* inliers_x, 
-//     float* inliers_y) 
-// {
-//     int j = 0;
-//     if (n_points < 1 || threshold <= 0 || n_params < 2 || pos < 0) {
-//         return -1;
-//     }
-//     for (int i = 0; i < n_points; i++) {
-//         y_model = eval_model(points_x[i], params, n_params);
-//         if (abs(points_y[i] - y_model) < threshold) {
-//             inliers_x[j] = points_x[i];
-//             inliers_y[j] = points_y[i];
-//             j++;
-//         }
-//     return 0;
-// }
+/**
+Collects inliers from points_x and points_y by computing the vertical
+residual of each point from the polynomial model defined by params.
+Points whose absolute residual is within threshold are appended to
+inliers_x and inliers_y in place.
 
+For line models (n_params = 2) the vertical residual approximates the
+perpendicular distance when the slope is small. For higher degree models
+the vertical residual is the natural distance metric.
 
+Params:
+    points_x    a list of n_points floats
+    points_y    a list of n_points floats
+    n_points    int, number of points to evaluate
+    params      a list of floats containing model coefficients
+    n_params    int, number of model parameters
+    threshold   float, maximum absolute residual to qualify as inlier
+    inliers_x   a list of floats, appended to in place
+    inliers_y   a list of floats, appended to in place
+
+Returns:
+    0 for success
+    -1 for error if n_points < 1
+    -1 for error if threshold <= 0
+    -1 for error if n_params < 2
+ */
+int find_model_inliers(float* points_x, float* points_y, int n_points,
+    float* params, int n_params, float threshold, float* inliers_x, 
+    float* inliers_y) 
+{
+    if (n_points < 1 || threshold <= 0 || n_params < 2) {
+        return -1;
+    }
+
+    int j = 0; // initiate j
+    for (int i = 0; i < n_points; i++) {
+        float y_model = eval_model(points_x[i], params, n_params);
+        if (fabs(points_y[i] - y_model) < threshold) {
+            inliers_x[j] = points_x[i];
+            inliers_y[j] = points_y[i];
+            j++;
+        }
+    }
+    return 0;
+}
+
+/*
+Combines inliers from two overlapping graphs into a single refined
+polynomial model. Collects inliers from each graph using their respective
+RANSAC-recovered models and threshold via vertical residual, then refits
+one model to all combined inliers using fit_model. This implements the
+stitching step analogous to homography estimation — if both graphs share
+the same underlying model, the combined fit is more accurate than either
+individual fit since it uses more inlier points.
+
+Params:
+    points_x1   a list of n1 floats, x values of graph 1
+    points_y1   a list of n1 floats, y values of graph 1
+    n1          int, number of points in graph 1
+    params1     a list of n_params floats, model for graph 1 at pos 0
+    points_x2   a list of n2 floats, x values of graph 2
+    points_y2   a list of n2 floats, y values of graph 2
+    n2          int, number of points in graph 2
+    params2     a list of n_params floats, model for graph 2 at pos 0
+    n_params    int, number of model parameters
+    threshold   float, inlier residual threshold
+    params      a list of floats of size at least (pos + 1) * n_params,
+                modified in place
+    pos         int, position to store result in params
+
+Returns:
+    int, total number of inliers used in the combined fit
+    -1 for error if n1 < n_params
+    -1 for error if n2 < n_params
+    -1 for error if threshold <= 0
+    -1 for error if pos < 0
+    -1 for error if no inliers found in either graph
+*/
+int stitch_models(points_x1, points_y1, n1, params1,
+                  points_x2, points_y2, n2, params2,
+                  params, n_params, threshold) {
+    
+}
