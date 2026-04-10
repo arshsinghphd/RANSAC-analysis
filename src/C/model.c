@@ -69,8 +69,9 @@ Returns:
  */
 int fit_model(float* points_x, float* points_y, int n_points,
               float* params, int n_params) {
-    if (n_points < n_params || n_params < 2)
+    if (n_points < n_params || n_params < 2) {
         return -1;
+    }
 
     // test if x_min == x_max
     float x_min = points_x[0];
@@ -81,9 +82,9 @@ int fit_model(float* points_x, float* points_y, int n_points,
         if (points_x[i] > x_max)
             x_max = points_x[i];
     }
-    if (x_min - x_max < 1e-6) // x_min == x_max with floats
+    if (fabs(x_min - x_max) < 1e-4) {     // x_min == x_max with floats
         return -1;
-
+    }
     int d = n_params;
 
     /* build X^T X (d x d array) and X^T y (d array) */
@@ -130,8 +131,9 @@ int fit_model(float* points_x, float* points_y, int n_points,
                 max_row = row;
             }
         }
-        if (max_val == 0.0f)
+        if (max_val == 0.0f){
             return -1;
+        }
 
         /* swap rows col and max_row */
         for (int k = 0; k <= d; k++) {
@@ -212,10 +214,10 @@ int find_model_inliers(float* points_x, float* points_y, int n_points,
 }
 
 /*
-Combines inliers from two overlapping graphs into a single refined
-polynomial model. Collects inliers from each graph using their respective
-RANSAC-recovered models and threshold via vertical residual, then refits
-one model to all combined inliers using fit_model. This implements the
+Combines inliers from two overlapping graphs of same number of parameters into
+a single refined polynomial model. Collects inliers from each graph using their
+respective RANSAC-recovered models and threshold via vertical residual, then
+refits one model to all combined inliers using fit_model. This implements the
 stitching step analogous to homography estimation — if both graphs share
 the same underlying model, the combined fit is more accurate than either
 individual fit since it uses more inlier points.
@@ -242,31 +244,35 @@ Returns:
     -1 for error if pos < 0
     -1 for error if no inliers found in either graph
 */
-int stitch_models(points_x1, points_y1, n1, params1,
-                  points_x2, points_y2, n2, params2,
-                  params, n_params, threshold) {
-    if (n1 < n_params || n2 < n_params || threshold <= 0)
+int stitch_models(float* points_x1, float* points_y1, int n1, float* params1,
+                  float* points_x2, float* points_y2, int n2, float* params2,
+                  float* params, int n_params, float threshold) {
+    if (n1 < n_params || n2 < n_params || threshold < 0) {
         return -1;
+    }
     // find inliers of model 1
     float inliers_x1[n1], inliers_y1[n1];
     int n_inliers1;
-    find_model_inliers(points_x1, points_y1, n1, params1, n_params, threshold, 
+    int ret1 = find_model_inliers(points_x1, points_y1, n1, params1, n_params, threshold, 
         inliers_x1, inliers_y1, &n_inliers1);
+
     // find inliers of model 2
-    float inliers_x1[n2], inliers_y1[n2];
+    float inliers_x2[n2], inliers_y2[n2];
     int n_inliers2;
-    find_model_inliers(points_x2, points_y2, n2, params2, n_params, threshold, 
+    int ret2 = find_model_inliers(points_x2, points_y2, n2, params2, n_params, threshold, 
         inliers_x2, inliers_y2, &n_inliers2);
-    
-    // if either model has no inliers return error
-    if (n_inliers1 < 1 || n_inliers2 < 1)
-        return -1
+
+    // if either model has no inliers or find_model inliers does not work 
+    // return error
+    if (n_inliers1 < 1 || n_inliers2 < 1 || ret1 < 0 || ret2 < 0) {
+        return -1;
+    }
     
     // create an array of all inliers
     int n_inliers = n_inliers1 + n_inliers2;
-    float inliers_x[n_inliers];
+    float inliers_x[n_inliers], inliers_y[n_inliers];
     for (int i = 0; i < n_inliers; i++) {
-        if (i < n_inliers1) {. // add inliers of model 1
+        if (i < n_inliers1) { // add inliers of model 1
             inliers_x[i] = inliers_x1[i];
             inliers_y[i] = inliers_y1[i];
         } else {  // add inliers of model 2
@@ -274,7 +280,73 @@ int stitch_models(points_x1, points_y1, n1, params1,
             inliers_y[i] = inliers_y2[i - n_inliers1];
         }
     }
+
     // fills params in place
-    fit_model(inliers_x, inliers_y, n_inliers, params, n_params);
+    int fit_ret = fit_model(inliers_x, inliers_y, n_inliers, params, n_params);
+    if (fit_ret < 0) {
+        printf("fit_ret = -1.");
+        return -1;
+    }
     return 0;
+}
+
+
+/*
+Computes the perpendicular distance from each point to a line defined
+by slope and intercept, storing results in distances in place. This is
+used by ransac for line models (n_params = 2) where perpendicular distance
+is the natural metric. For higher degree models use find_model_inliers
+with vertical residual instead.
+
+    distances[i] = |slope * points_x[i] - points_y[i] + intercept|
+                   / sqrt(1 + slope^2)
+
+Params:
+    points_x    a list of n_points floats
+    points_y    a list of n_points floats
+    n_points    int
+    slope       float
+    intercept   float
+    distances   a list of n_points floats, modified in place
+
+Returns:
+    0 for success
+    -1 for error if n_points <= 0
+*/
+int points_to_line_distances(float* points_x, float* points_y, int n_points,
+                              float slope, float intercept, float* distances) {
+    if (n_points <= 0)
+        return -1;
+    float denom = sqrtf(1 + slope * slope);
+    for (int i = 0; i < n_points; i++)
+        distances[i] = fabsf((slope * points_x[i] - points_y[i] + intercept)
+                             / denom);
+    return 0;
+}
+
+
+/*
+Measures the Euclidean distance between the estimated and true polynomial
+model parameters:
+
+    sqrt(sum((params[i] - true_params[i])^2 for i in range(n_params)))
+
+Params:
+    params          a list of n_params floats, estimated coefficients
+                    from lowest to highest degree [a0, a1, ...]
+    true_params     a list of n_params floats, true coefficients
+                    from lowest to highest degree [a0, a1, ...]
+    n_params        int, number of model parameters
+
+Returns:
+    float, Euclidean distance between estimated and true parameters
+    -1 for error if n_params < 2
+*/
+float model_error(float* params, float* true_params, int n_params) {
+    if (n_params < 2)
+        return -1.0f;
+    float sum = 0.0f;
+    for (int i = 0; i < n_params; i++)
+        sum += (params[i] - true_params[i]) * (params[i] - true_params[i]);
+    return sqrtf(sum);
 }

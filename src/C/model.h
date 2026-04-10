@@ -151,7 +151,7 @@ Returns:
     -1 for error if pos < 0
     -1 for error if no inliers found in either graph
 */
-// int stitch_models(points_x1, points_y1, n1, params1,
-//                   points_x2, points_y2, n2, params2,
-//                   params, n_params, threshold);
+int stitch_models(float* points_x1, float* points_y1, int n1, float* params1,
+                  float* points_x2, float* points_y2, int n2, float* params2,
+                  float* params, int n_params, int threshold);
 

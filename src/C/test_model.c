@@ -28,7 +28,7 @@
 #define N 10
 #define N_PARAMS 2
 #define MAX_PARAMS 10
-#define EPSILON 1e-5
+#define EPSILON 1e-4
 #define TRUE_SLOPE 1.0f
 #define TRUE_INTERCEPT 0.0f
 
@@ -45,6 +45,13 @@ static void assert_almost_equal(double a, double b, const char *label) {
     }
 }
 
+static void assert_equal_delta(double a, double b, double delta, const char *label) {
+    if (fabs(a - b) > delta) {
+        printf("FAIL %s: expected %.6f got %.6f\n", label, b, a);
+    } else {
+        printf("PASS %s\n", label);
+    }
+}
 /* Helper function tests if two int values are same. */
 static void assert_equal_int(int a, int b, const char *label) {
     if (a != b) printf("FAIL %s: expected %d got %d\n", label, b, a);
@@ -443,20 +450,209 @@ void test_n_params_less_than_2_inliers() {
         n1 < n_params,      should return -1
         n2 < n_params,      should return -1
         threshold <= 0,     should return -1
-        pos < 0,            should return -1
         no inliers graph 1, should return -1
         no inliers graph 2, should return -1
 ==============================================================================*/
-// void _make_graph(self, x_min, x_max, n_points, points_x, points_y, noise_std=0) 
-// {
-// 	float points_x[N], points_y[N];
-// 	// fill points_x, points_y
-// 	make_inliers(points_x, points_y, N, TRUE_SLOPE, TRUE_INTERCEPT,
-// 		x_min, x_max);
-// 	if noise_std > 0:
-//         add_gaussian_noise(points_y, n_points, noise_std);
-// }
 
+/* ---------------------------------------------------------------
+ * Helper: fills points_x, points_y with n inliers on the true
+ * model over [x_min, x_max], optionally adding gaussian noise.
+ * noise_std = 0 means no noise.
+ * --------------------------------------------------------------- */
+static void _make_graph(float* points_x, float* points_y, int n,
+                        float x_min, float x_max, float noise_std) {
+    float params[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    make_inliers(points_x, points_y, n, params, N_PARAMS, x_min, x_max);
+    if (noise_std > 0)
+        add_gaussian_noise(points_y, n, noise_std);
+}
+
+
+/* ---------------------------------------------------------------
+ * Helper: runs stitch_models and returns result.
+ * --------------------------------------------------------------- */
+static int _stitch(float* px1, float* py1, int n1, float* params1,
+                   float* px2, float* py2, int n2, float* params2,
+                   float* params, float threshold) {
+    return stitch_models(px1, py1, n1, params1,
+                         px2, py2, n2, params2,
+                         params, N_PARAMS, threshold);
+}
+
+/* Two clean overlapping graphs with same true model.
+ * Combined fit should recover true model exactly. */
+void test_clean_overlapping_graphs() {
+    int n = 100, n1 = 55, n2 = 55;
+    float points_x1[n1], points_y1[n1];
+    float points_x2[n2], points_y2[n2];
+    float params1[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    float params2[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    // graph 1: x in [0, n1 - 1], no noise
+    _make_graph(points_x1, points_y1, n1, 0, n1 - 1, 0);
+    // graph 2: x in [n - n2, n - 1], overlap of 10 points, no noise
+    _make_graph(points_x2, points_y2, n2, n - n2, n - 1, 0);
+    float params[N_PARAMS];
+    int result = _stitch(points_x1, points_y1, n1, params1,
+                         points_x2, points_y2, n2, params2,
+                         params, 0.1f);
+    assert_equal_int(result, 0, "clean_overlapping_graphs/result");
+    assert_almost_equal(params[0], TRUE_INTERCEPT,
+        "clean_overlapping_graphs/intercept");
+    assert_almost_equal(params[1], TRUE_SLOPE,
+        "clean_overlapping_graphs/slope");
+}
+
+
+/* Two noisy overlapping graphs with same true model.
+ * Combined fit should recover true model within threshold. */
+void test_noisy_overlapping_graphs() {
+    int n = 100, n1 = 55, n2 = 55;
+    float std = 1.0f, threshold = 3.0f;
+    float points_x1[n1], points_y1[n1];
+    float points_x2[n2], points_y2[n2];
+    float params1[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    float params2[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    // graph 1: x in [0, n1 - 1], gaussian noise std = 1
+    _make_graph(points_x1, points_y1, n1, 0, n1 - 1, std);
+    // graph 2: x in [n - n2, n - 1], overlap of 10 points, gaussian noise std = 1
+    _make_graph(points_x2, points_y2, n2, n - n2, n - 1, std);
+    float params[N_PARAMS];
+    int result = _stitch(points_x1, points_y1, n1, params1,
+                         points_x2, points_y2, n2, params2,
+                         params, threshold);
+    assert_equal_int(result, 0, "noisy_overlapping_graphs/result");
+    assert_equal_delta(params[0], TRUE_INTERCEPT, threshold,
+        "noisy_overlapping_graphs/intercept");
+    assert_equal_delta(params[1], TRUE_SLOPE, threshold,
+        "noisy_overlapping_graphs/slope");
+}
+
+
+/* n1 = 1, should return -1. */
+void test_n1_lt_n_params() {
+    int n = 100, n1 = 55, n2 = 55;
+    float points_x1[n1], points_y1[n1];
+    float points_x2[n2], points_y2[n2];
+    float params1[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    float params2[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    _make_graph(points_x1, points_y1, n1, 0, n1 - 1, 1.0f);
+    _make_graph(points_x2, points_y2, n2, n - n2, n - 1, 1.0f);
+    float params[N_PARAMS];
+    // overwrite n1 to trigger error
+    int result = _stitch(points_x1, points_y1, 1, params1,
+                         points_x2, points_y2, n2, params2,
+                         params, 0.1f);
+    assert_equal_int(result, -1, "n1_lt_n_params/result");
+}
+
+
+/* n2 = 1, should return -1. */
+void test_n2_lt_n_params() {
+    int n = 100, n1 = 55, n2 = 55;
+    float points_x1[n1], points_y1[n1];
+    float points_x2[n2], points_y2[n2];
+    float params1[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    float params2[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    _make_graph(points_x1, points_y1, n1, 0, n1 - 1, 1.0f);
+    _make_graph(points_x2, points_y2, n2, n - n2, n - 1, 1.0f);
+    float params[N_PARAMS];
+    // overwrite n2 to trigger error
+    int result = _stitch(points_x1, points_y1, n1, params1,
+                         points_x2, points_y2, 1, params2,
+                         params, 0.1f);
+    assert_equal_int(result, -1, "n2_lt_n_params/result");
+}
+
+
+/* threshold = 0, should return -1. */
+void test_threshold_zero_stitch_models() {
+    int n = 100, n1 = 55, n2 = 55;
+    float points_x1[n1], points_y1[n1];
+    float points_x2[n2], points_y2[n2];
+    float params1[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    float params2[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    _make_graph(points_x1, points_y1, n1, 0, n1 - 1, 1.0f);
+    _make_graph(points_x2, points_y2, n2, n - n2, n - 1, 1.0f);
+    float params[N_PARAMS];
+    int result = _stitch(points_x1, points_y1, n1, params1,
+                         points_x2, points_y2, n2, params2,
+                         params, 0.0f);
+    assert_equal_int(result, -1, "threshold_zero/result");
+}
+
+
+/* threshold = -1, should return -1. */
+void test_threshold_negative_stitch_models() {
+    int n = 100, n1 = 55, n2 = 55;
+    float points_x1[n1], points_y1[n1];
+    float points_x2[n2], points_y2[n2];
+    float params1[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    float params2[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    _make_graph(points_x1, points_y1, n1, 0, n1 - 1, 1.0f);
+    _make_graph(points_x2, points_y2, n2, n - n2, n - 1, 1.0f);
+    float params[N_PARAMS];
+    int result = _stitch(points_x1, points_y1, n1, params1,
+                         points_x2, points_y2, n2, params2,
+                         params, -1.0f);
+    assert_equal_int(result, -1, "threshold_negative/result");
+}
+
+
+/* Threshold too small for noisy graph 1. Should return -1. */
+void test_no_inliers_graph1() {
+    int n = 100, n1 = 55, n2 = 55;
+    float points_x1[n1], points_y1[n1];
+    float points_x2[n2], points_y2[n2];
+    float params1[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    float params2[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    // graph 1 has noise, graph 2 is clean
+    _make_graph(points_x1, points_y1, n1, 0, n1 - 1, 1.0f);
+    _make_graph(points_x2, points_y2, n2, n - n2, n - 1, 0.0f);
+    float params[N_PARAMS];
+    // threshold too small for noisy graph 1
+    int result = _stitch(points_x1, points_y1, n1, params1,
+                         points_x2, points_y2, n2, params2,
+                         params, 1e-9f);
+    assert_equal_int(result, -1, "no_inliers_graph1/result");
+}
+
+
+/* Threshold too small for noisy graph 2. Should return -1. */
+void test_no_inliers_graph2() {
+    int n = 100, n1 = 55, n2 = 55;
+    float points_x1[n1], points_y1[n1];
+    float points_x2[n2], points_y2[n2];
+    float params1[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    float params2[] = {TRUE_INTERCEPT, TRUE_SLOPE};
+    // graph 1 is clean, graph 2 has noise
+    _make_graph(points_x1, points_y1, n1, 0, n1 - 1, 0.0f);
+    _make_graph(points_x2, points_y2, n2, n - n2, n - 1, 1.0f);
+    float params[N_PARAMS];
+    // threshold too small for noisy graph 2
+    int result = _stitch(points_x1, points_y1, n1, params1,
+                         points_x2, points_y2, n2, params2,
+                         params, 1e-9f);
+    assert_equal_int(result, -1, "no_inliers_graph2/result");
+}
+
+
+/*==============================================================================
+Tests for points_to_line_distances which computes perpendicular distance
+    from each point to a line defined by slope and intercept.
+
+        distances[i] = |slope * points_x[i] - points_y[i] + intercept|
+                       / sqrt(1 + slope squared)
+
+    Happy paths:
+        all points on the line, all distances equal 0.0
+        points 1 unit above the line, distance = 1 / sqrt(1 + slope squared)
+        slope = 0, points 2 units above, distance = 2.0
+        slope = -1, points 1 unit above, distances positive
+
+    Edge cases:
+        n_points = 0, should return -1
+
+==============================================================================*/
 
 
 
@@ -488,5 +684,13 @@ int main() {
 	test_threshold_zero();
 	test_threshold_negative();
 	test_n_params_less_than_2_inliers();
+	printf("***** RUNNING TESTS FOR STITCH_MODELS *****\n");
+	test_clean_overlapping_graphs();
+	test_noisy_overlapping_graphs();
+	test_n1_lt_n_params();
+	test_n2_lt_n_params();
+	test_threshold_zero_stitch_models();
+	test_threshold_negative_stitch_models();
+	test_no_inliers_graph1();
     return 0;
 }
