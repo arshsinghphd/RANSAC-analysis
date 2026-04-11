@@ -1,26 +1,27 @@
 /* =============================================================================
-	Tests for model.c functions:
-		eval_model
-		fit_model
-		find_model_inliers
-		stitch_models
-		 points_to_model_distances
-		model_error
-	 
-	fit_model fits a polynomial model of degree n_params - 1 to n_points data
-	points using least squares via Gaussian elimination on the normal equations.
-	Coefficients are stored in params at offset pos * n_params, from lowest to
-	highest degree.
-	 
-	 points_to_model_distances computes vertical distance from each point to the 
-	model, storing results in distances.
-============================================================================= */
+ * Tests for model.c functions:
+ *     eval_model
+ *     fit_model
+ *     find_model_inliers
+ *     stitch_models
+ *     points_to_line_distances
+ *     model_error
+ *
+ * fit_model fits a polynomial model of degree n_params - 1 to n_points
+ * data points using least squares via Gaussian elimination on the normal
+ * equations. Coefficients are stored in params from lowest to highest
+ * degree.
+ *
+ * points_to_line_distances computes the perpendicular distance from each
+ * point to a line defined by slope and intercept, storing results in
+ * distances.
+ * ========================================================================== */
 
 #include "model.h"
 #include "generator.h"
-#include<stdio.h>
-#include<string.h>
-#include<math.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
 
 #include <assert.h>
 #include <string.h>
@@ -73,16 +74,17 @@ static void assert_equal_float_array(float* a, float* b, int n,
     printf("PASS %s\n", label);
 }
 /* =============================================================================
-	Tests for eval_model which evaluates a polynomial model at a given x.
-
-	Happy paths:
-	    n_params = 2, line y = 1 + 2x, x = 3, result should be 7.0
-	    n_params = 3, quadratic y = 1 + 2x + 0.5x^2, x = 2, result = 7.0
-	    n_params = 2, x = 0, result equals intercept (a0)
-
-	Edge cases:
-	    n_params < 2, should return -1
-============================================================================= */
+ * Tests for eval_model which evaluates a polynomial model at a given x.
+ *
+ * Happy paths:
+ *     n_params = 2, line y = 1 + 2x, x = 3         result should be 7.0
+ *     n_params = 3, quadratic y = 1 + 2x + 0.5x^2,
+ *                   x = 2                            result should be 7.0
+ *     n_params = 2, x = 0                            result equals a0
+ *
+ * Edge cases:
+ *     n_params < 2                                   should return -1
+ * ========================================================================== */
 
 /* n_params = 2, a0 = 1, a1 = 2. eval at x = 3 should give 7.0 */
 void test_line_at_x(){
@@ -124,32 +126,32 @@ void test_n_params_lt_2() {
 
 
 /* =============================================================================
-	Tests for fit_model which fits a polynomial model using least squares via
-	Gaussian elimination. Coefficients stored in params at pos * n_params. 
-	params[pos * n_params + 0] = a0  (intercept)
-	params[pos * n_params + 1] = a1  (slope)
-	params[pos * n_params + 2] = a2  (quadratic term)
-
-	Happy paths:
-	    slope = 1, intercept = 0, n_params = 2, n_points = 10
-	        exact recovery on clean data
-	    slope = -1, intercept = 5, n_params = 2, n_points = 10
-	        exact recovery with negative slope
-	    slope = 0, intercept = 3, n_params = 2, n_points = 10
-	        exact recovery for flat line
-	    slope = 0.5, intercept = 0, n_params = 2, n_points = 10
-	        exact recovery for fractional slope
-	    slope = 1, intercept = 0, n_params = 2, n_points = 2
-	        exact recovery at minimum sample size
-	    quadratic a0=1, a1=2, a2=0.5, n_params = 3, n_points = 20
-	        exact recovery of quadratic model
-
-	Edge cases:
-	    pos < 0,                    should return -1
-	    n_points < n_params,        should return -1
-	    n_params < 2,               should return -1
-	    all x values equal,         should return -1 (singular matrix)
-============================================================================= */
+ * Tests for fit_model which fits a polynomial model using least squares
+ * via Gaussian elimination. Coefficients stored in params from lowest
+ * to highest degree:
+ *     params[0] = a0  (intercept)
+ *     params[1] = a1  (slope)
+ *     params[2] = a2  (quadratic term)
+ *
+ * Happy paths:
+ *     slope = 1,   intercept = 0, n_params = 2, n_points = 10
+ *         exact recovery on clean data
+ *     slope = -1,  intercept = 5, n_params = 2, n_points = 10
+ *         exact recovery with negative slope
+ *     slope = 0,   intercept = 3, n_params = 2, n_points = 10
+ *         exact recovery for flat line
+ *     slope = 0.5, intercept = 0, n_params = 2, n_points = 10
+ *         exact recovery for fractional slope
+ *     slope = 1,   intercept = 0, n_params = 2, n_points = 2
+ *         exact recovery at minimum sample size
+ *     quadratic a0=1, a1=2, a2=0.5, n_params = 3, n_points = 20
+ *         exact recovery of quadratic model
+ *
+ * Edge cases:
+ *     n_points < n_params     should return -1
+ *     n_params < 2            should return -1
+ *     all x values equal      should return -1 (singular matrix)
+ * ========================================================================== */
 
 /* intercept = 0, slope = 1. */
 void test_unit_slope_zero_intercept() {
@@ -269,21 +271,21 @@ void test_all_x_equal() {
 }
 
 /* =============================================================================
-	Tests for find_model_inliers which collects inliers using vertical
-	residual from the polynomial model. Points whose absolute residual is
-	within threshold are appended to inliers_x and inliers_y in place.
-
-	Happy paths:
-		all points on the line, all points collected as inliers
-		no points within threshold, inliers_x and inliers_y remain empty
-		mixed points, only those within threshold collected
-		quadratic model, inliers collected correctly
-
-	Edge cases:
-		threshold <= 0,     should return -1
-		n_params < 2,       should return -1
-		pos < 0,            should return -1 
-============================================================================= */
+ * Tests for find_model_inliers which collects inliers using vertical
+ * residual from the polynomial model. Points whose absolute residual
+ * is within threshold are written to inliers_x and inliers_y in place.
+ *
+ * Happy paths:
+ *     all points on the line      all points collected as inliers
+ *     no points within threshold  inliers_x and inliers_y remain empty
+ *     mixed points                only those within threshold collected
+ *     quadratic model             inliers collected correctly
+ *
+ * Edge cases:
+ *     threshold <= 0              should return -1
+ *     n_params < 2                should return -1
+ *     n_points < 1                should return -1
+ * ========================================================================== */
 
 /* All points on the line. No noise, all should be collected as inliers. */
 void test_all_points_on_line() {
@@ -314,7 +316,6 @@ void test_all_points_on_line() {
 void test_no_points_within_threshold() {
 	float params[] = {0.0f, 1.0f};
 	float threshold = 0.1f;
-	int n = 3;
 	float points_x[N], points_y[N], inliers_x[N], inliers_y[N], test_arr[N];
 	for(int i = 0; i < N; i++) {
 		points_x[i] = (float) i;
@@ -438,23 +439,23 @@ void test_n_params_less_than_2_inliers() {
 }
 
 
-/*==============================================================================
-	Tests for stitch_models which combines inliers from two overlapping graphs
-    into a single refined model using params1 and params2.
-
-    Happy paths:
-        two clean overlapping graphs with same true model
-            combined fit should recover true slope and intercept exactly
-        two noisy overlapping graphs with same true model
-            combined fit should recover true model within tolerance
-
-    Edge cases:
-        n1 < n_params,      should return -1
-        n2 < n_params,      should return -1
-        threshold <= 0,     should return -1
-        no inliers graph 1, should return -1
-        no inliers graph 2, should return -1
-==============================================================================*/
+/* =============================================================================
+ * Tests for stitch_models which combines inliers from two overlapping
+ * graphs into a single refined model using params1 and params2.
+ *
+ * Happy paths:
+ *     two clean overlapping graphs with same true model
+ *         combined fit should recover true slope and intercept exactly
+ *     two noisy overlapping graphs with same true model
+ *         combined fit should recover true model within tolerance
+ *
+ * Edge cases:
+ *     n1 < n_params       should return -1
+ *     n2 < n_params       should return -1
+ *     threshold <= 0      should return -1
+ *     no inliers graph 1  should return -1
+ *     no inliers graph 2  should return -1
+ * ========================================================================== */
 
 /* ---------------------------------------------------------------
  * Helper: fills points_x, points_y with n inliers on the true
@@ -638,23 +639,22 @@ void test_no_inliers_graph2() {
 }
 
 
-/*==============================================================================
-Tests for  points_to_model_distances which computes perpendicular distance
-    from each point to a line defined by slope and intercept.
-
-        distances[i] = |slope * points_x[i] - points_y[i] + intercept|
-                       / sqrt(1 + slope squared)
-
-    Happy paths:
-        all points on the line, all distances equal 0.0
-        points 1 unit above the line, distance = 1 / sqrt(1 + slope squared)
-        slope = 0, points 2 units above, distance = 2.0
-        slope = -1, points 1 unit above, distances positive
-
-    Edge cases:
-        n_points = 0, should return -1
-
-==============================================================================*/
+/* =============================================================================
+ * Tests for points_to_line_distances which computes the perpendicular
+ * distance from each point to a line defined by slope and intercept:
+ *
+ *     distances[i] = |slope * points_x[i] - points_y[i] + intercept|
+ *                    / sqrt(1 + slope^2)
+ *
+ * Happy paths:
+ *     all points on the line          all distances equal 0.0
+ *     points 1 unit above the line    distance = 1 / sqrt(1 + slope^2)
+ *     slope = 0, points 2 units above distance = 2.0
+ *     slope = -1, points 1 unit above distances positive due to abs value
+ *
+ * Edge cases:
+ *     n_points = 0                    should return -1
+ * ========================================================================== */
 
 /* ---------------------------------------------------------------
  * Helper: fills points_x, points_y with n inliers on a line
@@ -688,7 +688,7 @@ void test_points_on_line() {
     float slope = 1.0f, intercept = 0.0f;
     float points_x[N], points_y[N], distances[N];
     _make_line_dist(points_x, points_y, slope, intercept);
-    points_to_model_distances(points_x, points_y, N,
+    points_to_line_distances(points_x, points_y, N,
                              slope, intercept, distances);
     _assert_distances(distances, 0.0f, "points_on_line");
 }
@@ -702,7 +702,7 @@ void test_points_one_unit_above_line() {
     _make_line_dist(points_x, points_y, slope, intercept);
     for (int i = 0; i < N; i++)
         points_y[i] += 1.0f;
-    points_to_model_distances(points_x, points_y, N,
+    points_to_line_distances(points_x, points_y, N,
                              slope, intercept, distances);
     float expected = 1.0f / sqrtf(1.0f + slope * slope);
     _assert_distances(distances, expected, "points_one_unit_above_line");
@@ -716,7 +716,7 @@ void test_zero_slope_points_above_line() {
     _make_line_dist(points_x, points_y, slope, intercept);
     for (int i = 0; i < N; i++)
         points_y[i] += 2.0f;
-    points_to_model_distances(points_x, points_y, N,
+    points_to_line_distances(points_x, points_y, N,
                              slope, intercept, distances);
     _assert_distances(distances, 2.0f, "zero_slope_points_above_line");
 }
@@ -730,7 +730,7 @@ void test_negative_slope_points_above_line() {
     _make_line_dist(points_x, points_y, slope, intercept);
     for (int i = 0; i < N; i++)
         points_y[i] += 1.0f;
-    points_to_model_distances(points_x, points_y, N,
+    points_to_line_distances(points_x, points_y, N,
                              slope, intercept, distances);
     float expected = 1.0f / sqrtf(1.0f + slope * slope);
     _assert_distances(distances, expected, "negative_slope_points_above_line");
@@ -740,29 +740,29 @@ void test_negative_slope_points_above_line() {
 /* n_points = 0, should return -1. */
 void test_n_points_less_than_1() {
     float points_x[N], points_y[N], distances[N];
-    int ret =  points_to_model_distances(points_x, points_y, 0,
+    int ret =  points_to_line_distances(points_x, points_y, 0,
                                        1.0f, 0.0f, distances);
     assert_equal_int(ret, -1, "n_points_less_than_1");
 }
 
 
-/*
-Tests for model_error which measures the Euclidean distance between estimated 
-and true polynomial model parameters:
-
-    sqrt(sum((params[i] - true_params[i])^2 for i in range(n_params)))
-
-Happy paths:
-    exact recovery              error should be 0.0
-    a1 differs only             error should equal abs(a1 - true_a1)
-    a0 differs only             error should equal abs(a0 - true_a0)
-    both differ                 error should equal sqrt(da0^2 + da1^2)
-    negative differences        error should still be positive
-    n_params = 3                error should equal sqrt(da0^2 + da1^2 + da2^2)
-
-Edge cases:
-    n_params < 2                should return -1
-*/
+/* =============================================================================
+ * Tests for model_error which measures the Euclidean distance between
+ * estimated and true polynomial model parameters:
+ *
+ *     sqrt(sum((params[i] - true_params[i])^2 for i in range(n_params)))
+ *
+ * Happy paths:
+ *     exact recovery          error should be 0.0
+ *     a1 differs only         error should equal abs(a1 - true_a1)
+ *     a0 differs only         error should equal abs(a0 - true_a0)
+ *     both differ             error should equal sqrt(da0^2 + da1^2)
+ *     negative differences    error should still be positive
+ *     n_params = 3            error should equal sqrt(da0^2 + da1^2 + da2^2)
+ *
+ * Edge cases:
+ *     n_params < 2            should return -1
+ * ========================================================================== */
 
 /* Estimated params equal true params. Error should be exactly 0.0. */
 void test_model_error_exact_recovery() {

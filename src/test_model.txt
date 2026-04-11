@@ -1,0 +1,68 @@
+***** RUNNING TESTS FOR FIT_MODEL *****
+PASS unit_slope/intercept
+PASS unit_slope/slope
+PASS negative_slope/intercept
+PASS negative_slope/slope
+PASS zero_slope/intercept
+PASS zero_slope/slope
+PASS fractional_slope/intercept
+PASS fractional_slope/slope
+PASS minimum_points/intercept
+PASS minimum_points/slope
+PASS quadratic/a0
+PASS quadratic/a1
+PASS quadratic/a2
+PASS n_points_lt_n_params
+PASS n_params_lt_2
+FAIL all_x_equal: expected -1 got 0
+***** RUNNING TESTS FOR EVAL_MODEL *****
+PASS line_at_x
+PASS quadratic_at_x
+PASS eval_at_zero
+PASS n_params_lt_2
+***** RUNNING TESTS FOR FIND_MODEL_INLIERS *****
+PASS test_all_points_on_line/result
+PASS test_all_points_on_line/n_inliers
+PASS test_all_points_on_line/inliers_x
+PASS test_all_points_on_line/inliers_y
+PASS test_no_points_within_threshold/result
+PASS test_all_points_on_line/n_inliers
+PASS test_no_points_within_threshold/result
+PASS test_no_points_within_threshold/result
+PASS mixed_points/result
+PASS test_all_points_on_line/n_inliers
+PASS mixed_points/inliers_x
+PASS mixed_points/inliers_y
+PASS quadratic_model_inliers/result
+PASS quadratic_model_inliers/n_inliers
+PASS quadratic_model_inliers/inliers_x
+PASS quadratic_model_inliers/inliers_y
+PASS threshold_zero/result
+PASS threshold_negative/result
+PASS n_params_less_than_2_inliers/result
+***** RUNNING TESTS FOR STITCH_MODELS *****
+PASS clean_overlapping_graphs/result
+PASS clean_overlapping_graphs/intercept
+PASS clean_overlapping_graphs/slope
+PASS noisy_overlapping_graphs/result
+PASS noisy_overlapping_graphs/intercept
+PASS noisy_overlapping_graphs/slope
+PASS n1_lt_n_params/result
+PASS n2_lt_n_params/result
+PASS threshold_zero/result
+PASS threshold_negative/result
+PASS no_inliers_graph1/result
+***** RUNNING TESTS FOR POINTS_TO_MODEL_DISTANCE *****
+PASS points_on_line
+PASS points_one_unit_above_line
+PASS zero_slope_points_above_line
+PASS negative_slope_points_above_line
+PASS n_points_less_than_1
+***** RUNNING TESTS FOR MODEL_ERROR *****
+PASS exact_recovery
+PASS a1_differs
+PASS a0_differs
+PASS both_differ
+PASS negative_differences
+PASS n_params_3
+PASS n_params_less_than_2

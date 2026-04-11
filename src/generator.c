@@ -48,9 +48,10 @@ int make_inliers(float* points_x, float* points_y, int n_inliers,
 }
 
 /**
- * Helper function for add_gaussian_noise. Returns a random number drawn from a zero mean gaussian distribution
- * with standard deviation sigma, using the Box-Muller transform.
- * This function is tested indirected via add_gaussian_noise.
+ * Helper function for add_gaussian_noise. Returns a random number drawn from a
+ * zero mean gaussian distribution with standard deviation sigma, using the 
+ * Box-Muller transform. This function is tested indirected via 
+ * add_gaussian_noise.
  * 
  * Source:
  * Box, G. E. P. and Muller, M. E. 1958. A note on the generation of random 
@@ -152,7 +153,7 @@ int add_outliers(float* points_x, float* points_y,
     if (y_max - y_min > 1)
         y_range = y_max - y_min;  
     else 
-        y_range = 1;  // if y_min == y_max, no noise in data, but must add outliers
+        y_range = 1;  // means no noise in data, must add outliers though
     // add outliers to points_x, points_y
     float x, y, y_on_model;
     int idx = n_inliers;
