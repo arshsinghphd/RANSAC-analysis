@@ -62,7 +62,7 @@ int fit_model(float* points_x, float* points_y, int n_points,
         if (points_x[i] > x_max)
             x_max = points_x[i];
     }
-    if (fabs(x_min - x_max) < 1e-4) {     // x_min == x_max with floats
+    if (fabsf(x_min - x_max) < 1e-4) {     // x_min == x_max with floats
         return -1;
     }
     int d = n_params;
