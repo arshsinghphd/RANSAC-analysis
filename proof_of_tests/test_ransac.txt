@@ -1,0 +1,56 @@
+***** RUNNING TESTS FOR COMPUTE_T *****
+PASS clean_data
+PASS gaussian_noise_data
+PASS n_points lt n_params
+***** RUNNING TESTS FOR ESTIMATE_EPSILON *****
+PASS estimate_epsilon_clean_data
+PASS estimate_epsilon_low_outlier_fraction
+PASS estimate_epsilon_medium_outlier_fraction
+PASS estimate_epsilon/n_points_less_than_2
+***** RUNNING TESTS FOR COMPUTE_K *****
+PASS epsilon 10%
+PASS epsilon 30%
+PASS epsilon 50%
+PASS epsilon 70%
+PASS epsilon 90%
+PASS epsilon 50%, n_params 3
+PASS epsilon 50%, fail_pr = 0.02
+PASS epsilon 0
+PASS epsilon 1
+PASS n_params < 2
+PASS fail_pr = 0
+PASS fail_pr = 1
+***** RUNNING TESTS FOR COMPUTE_D *****
+PASS epsilon_20pc
+PASS epsilon_40pc
+PASS epsilon_50pc_n200
+PASS epsilon_0
+PASS epsilon_1
+PASS n_points < 2
+***** RUNNING TESTS FOR FISHER YATES *****
+PASS fisher yates/something_moved
+PASS fisher yates/every_index_present
+PASS fisher_yates/first_m_in_range
+PASS fisher_yates/first_m_distinct
+***** RUNNING TESTS FOR RANSAC *****
+PASS clean_data/result
+PASS clean_data/intercept
+PASS clean_data/slope
+FAIL ransac/low_outlier/intercept: expected 5.000000 got 7.522030 delta 1.250000
+PASS ransac/low_outlier/slope
+PASS ransac/medium_outlier/intercept
+PASS ransac/medium_outlier/slope
+PASS ransac/high_outlier/intercept
+PASS ransac/high_outlier/slope
+PASS ransac/n_params_3/a0
+PASS ransac/n_params_3/a1
+PASS ransac/n_params_3/a2
+PASS ransac/early_stop/inliers_ge_d
+PASS ransac/early_stop/iterations_le_k
+PASS ransac/n_points_lt_2
+PASS ransac/n_params_lt_2
+PASS ransac/k_resample_lt_1
+PASS ransac/threshold_zero
+PASS ransac/threshold_negative
+PASS ransac/expected_inliers_gt_n_points
+PASS ransac/n_points_lt_n_params
