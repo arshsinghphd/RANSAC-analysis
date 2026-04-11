@@ -95,30 +95,6 @@ static void assert_equal_int(int a, int b, const char* label) {
     else        printf("PASS %s\n", label);
 }
 
-
-/** ----------------------------------------------------------------------------
- * Asserts all elements of a equal corresponding elements of b within
- * EPSILON. Reports the first failing index and returns immediately.
- *
- * Params:
- *     a       array of n floats, actual values
- *     b       array of n floats, expected values
- *     n       int, number of elements to compare
- *     label   string, printed on pass or fail
- ----------------------------------------------------------------------------*/
-static void assert_equal_float_array(float* a, float* b, int n,
-                                      const char* label) {
-    for (int i = 0; i < n; i++) {
-        if (fabsf(a[i] - b[i]) > EPSILON) {
-            printf("FAIL %s: index %d expected %f got %f\n",
-                   label, i, b[i], a[i]);
-            return;
-        }
-    }
-    printf("PASS %s\n", label);
-}
-
-
 /** ----------------------------------------------------------------------------
  * Fills points_x and points_y with n inliers on the true linear model
  * y = TRUE_INTERCEPT + TRUE_SLOPE * x, evenly spaced from X_MIN to X_MAX.
@@ -184,18 +160,15 @@ static void _add_outliers(float* points_x, float* points_y,
 void test_clean_data_t() {
 	float points_x[N], points_y[N];
 	float true_epsilon = 0.0f;
-	float params[] = {TRUE_INTERCEPT, TRUE_SLOPE};
 	_make_line(points_x, points_y, N);
 	float t = compute_t(points_x, points_y, N, N_PARAMS);
-	assert_almost_equal(t, 0, "clean_data");
+	assert_almost_equal(t, true_epsilon, "clean_data");
 }
 
 /* 	test threshold for data with mean zero gaussian noise. 
 	should be +/- 3 * NOISE_STD */
 void test_gaussian_noise_data_t() {
 	float points_x[N], points_y[N];
-	float true_epsilon = 0.0f;
-	float params[] = {TRUE_INTERCEPT, TRUE_SLOPE};
 	_make_line(points_x, points_y, N);
 	_add_gaussian_noise(points_y, N, NOISE_STD);
 	float t = compute_t(points_x, points_y, N, N_PARAMS);
@@ -206,8 +179,6 @@ void test_gaussian_noise_data_t() {
 /* test for n_points < n_params, should return -1. */
 void test_n_points_lt_n_params() {
 	float points_x[1], points_y[1];
-	float true_epsilon = 0.0f;
-	float params[] = {TRUE_INTERCEPT, TRUE_SLOPE};
 	_make_line(points_x, points_y, 1);
 	float t = compute_t(points_x, points_y, 1, N_PARAMS);
 	assert_almost_equal(t, -1, "n_points lt n_params");
@@ -247,12 +218,9 @@ void test_estimate_epsilon_clean_data() {
 void test_estimate_epsilon_clean_quadratic() {
     float points_x[N], points_y[N];
     /* fill with inliers only */
-    float a0 = 1.0f;
-    float a1 = 1.0f;
-    float a2 = 1.0f;
-    float params[] = {a0, a1, a2};
+    int n_params = 3;
     // TO DO FINISH THIS TEST
-    float epsilon = estimate_epsilon(points_x, points_y, N, N_PARAMS);
+    float epsilon = estimate_epsilon(points_x, points_y, N, n_params);
     assert_almost_equal(epsilon, 0.0f, "estimate_epsilon_clean_quadratic");
 }
 
