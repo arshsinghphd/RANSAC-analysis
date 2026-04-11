@@ -143,7 +143,7 @@ Returns:
 float estimate_epsilon(float* points_x, float* points_y, int n_points, 
 	int n_params) 
 {
-	if (n_points < 2){
+	if (n_points < n_params){
         return -1;
 	}
     float params[n_params], residuals[n_points];
@@ -166,9 +166,54 @@ float estimate_epsilon(float* points_x, float* points_y, int n_points,
 }
 
 
+/* =============================================================================
+Computes the number of RANSAC iterations k required to guarantee that at
+least one clean sample is drawn with probability 1 - failure_prob using the 
+analytical formula:
 
+    k = ceil(log(failure_prob) / log(1 - (1 - epsilon)^n_params))
 
+Params:
+    epsilon         float, estimated outlier fraction in [0, 1)
+    n_params        int, minimum number of points to fit the model
+    failure_prob    float, acceptable failure probability, default 0.01
 
+Returns:
+    int, 	number of iterations k rounded up (ceiling) to nearest integer
+     1 		if epsilon == 0, clean sample requires only one iteration
+    -1 		for error if epsilon < 0 or epsilon >= 1
+    -1 		for error if n_params < 2
+    -1 		for error if failure_prob <= 0 or failure_prob >= 1
+============================================================================= */
+int compute_k(float epsilon, int n_params, float failure_prob) {
+	// if no outliers 1 iteration is all we need
+	if (epsilon == 0)
+		return 1;
+	if (epsilon < 0 || epsilon >= 1 || n_params < 2 || 
+		failure_prob <= 0 || failure_prob >= 1)
+		return -1;
+	return (int) ceilf(	logf(failure_prob) / 
+						logf(1.0f - powf(1.0f - epsilon, n_params))
+						);
+}
 
+/* =============================================================================
+Computes the expected inlier count d as floor((1 - epsilon) * n_points).
+    This is consistent with the same epsilon used to compute k, ensuring both
+    parameters reflect a coherent assumption about the data.
 
+    Params:
+        epsilon     float, estimated outlier fraction in (0, 1)
+        n_points    int, total number of points
+
+    Returns:
+        int, expected inlier count d
+        -1 for error if epsilon <= 0 or epsilon >= 1
+        -1 for error if n_points < 2
+============================================================================= */
+int compute_d(float epsilon, int n_points) {
+	if (epsilon <= 0 || epsilon >= 1 || n_points < 2)
+		return -1;
+	return floorf((1 - epsilon) * (float) n_points);
+}
 
