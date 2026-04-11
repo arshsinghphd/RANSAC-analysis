@@ -2,21 +2,21 @@
 CC = gcc
 
 # standard flags
-CFLAGS = -Wall -std=c11 -lm
+CFLAGS = -Wall -std=c11
 
 # debug flags — enables DEBUG blocks in code e.g. #ifdef DEBUG
-DFLAGS = -Wall -std=c11 -lm -DDEBUG
+DFLAGS = -Wall -std=c11 -DDEBUG
 
 # plot flags — enables plot output blocks in code e.g. #ifdef PLOT
-PFLAGS = -Wall -std=c11 -lm -DPLOT
+PFLAGS = -Wall -std=c11 -DPLOT
 
 # header files — listed so make knows to recompile if they change
 HEADERS = model.h generator.h ransac.h
 
 # source files shared across targets
-MODEL_FILES     = model.c
-GENERATOR_FILES = model.c generator.c
-RANSAC_FILES    = model.c generator.c ransac.c
+GENERATOR_FILES = generator.c
+MODEL_FILES     = model.c generator.c 
+RANSAC_FILES    = generator.c model.c ransac.c
 
 all: testmodel testgenerator testransac
 
