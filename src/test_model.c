@@ -23,7 +23,6 @@
 #include <string.h>
 #include <math.h>
 
-#include <assert.h>
 #include <string.h>
 
 #define N 10
@@ -214,7 +213,7 @@ void test_minimum_points() {
     assert_almost_equal(params[1], 1, "minimum_points/slope");
 }
 
-
+/* n_params = 3 */
 void test_quadratic_model() {
     int n = 2; 
     float a0 = 1.0f;
@@ -232,41 +231,36 @@ void test_quadratic_model() {
     assert_almost_equal(params[2], a2, "quadratic/a2");
 }
 
+/* n_points < n_params should return -1. */
 void test_n_points_less_than_n_params() {
-	int n = 10; 
     float params[2] = {0.0f, 1.0f};
     int n_params = 2;
-    float points_x[n], points_y[n];
-    float x_min = 0.0;
-    float x_max = (float) n - 1;
-    make_inliers(points_x, points_y, n, params, n_params, x_min, x_max);
-    n = 1; // override to test
+    float points_x[N], points_y[N];
+    make_inliers(points_x, points_y, N, params, n_params, X_MIN, X_MAX);
+    int n = 1; // override to test
     int ret = fit_model(points_x, points_y, n, params, n_params);
     assert_equal_int(ret, -1, "n_points_lt_n_params");
 }
 
+/* n_params < 2 should return -1. */
 void test_n_params_less_than_2() {
-	int n = 10; 
     float params[2] = {0.0f, 1.0f};
-    int n_params = 2;
-    float points_x[n], points_y[n];
-    float x_min = 0.0;
-    float x_max = (float) n - 1;
-    make_inliers(points_x, points_y, n, params, n_params, x_min, x_max);
-    n_params = 1; // override to test
-    int ret = fit_model(points_x, points_y, n, params, n_params);
+    float points_x[N], points_y[N];
+    make_inliers(points_x, points_y, N, params, N_PARAMS, X_MIN, X_MAX);
+    int n_params = 1; // override to test
+    int ret = fit_model(points_x, points_y, N, params, n_params);
     assert_equal_int(ret, -1, "n_params_lt_2");
 }
 
+/* all x are the same, should return -1. */
 void test_all_x_equal() {
-    int n = 10; 
-    float params[2] = {0.0f, 1.0f}; 
-    int n_params = 2;
-    float points_x[n], points_y[n];
-    float x_min = 0.0f; 
-    float x_max = 0.0f; // x_min == x_max
-    make_inliers(points_x, points_y, n, params, n_params, x_min, x_max);
-    int ret = fit_model(points_x, points_y, n, params, n_params);
+    float params[2] = {0.0f, 1.0f};
+    float points_x[N], points_y[N];
+    make_inliers(points_x, points_y, N, params, N_PARAMS, X_MIN, X_MAX);
+    /* force all x values equal to trigger singular matrix */
+    for (int i = 0; i < N; i++)
+        points_x[i] = 5.0f;
+    int ret = fit_model(points_x, points_y, N, params, N_PARAMS);
     assert_equal_int(ret, -1, "all_x_equal");
 }
 
@@ -834,6 +828,11 @@ void test_model_error_n_params_less_than_2() {
   MAIN 
 ==============================================================================*/
 int main() {
+	printf("***** RUNNING TESTS FOR EVAL_MODEL *****\n");
+    test_line_at_x();
+    test_quadratic_at_x();
+    test_eval_at_zero();
+    test_n_params_lt_2();
 	printf("***** RUNNING TESTS FOR FIT_MODEL *****\n");
     test_unit_slope_zero_intercept();
     test_negative_slope();
@@ -844,11 +843,6 @@ int main() {
     test_n_points_less_than_n_params();
     test_n_params_less_than_2();
     test_all_x_equal();
-	printf("***** RUNNING TESTS FOR EVAL_MODEL *****\n");
-    test_line_at_x();
-    test_quadratic_at_x();
-    test_eval_at_zero();
-    test_n_params_lt_2();
     printf("***** RUNNING TESTS FOR FIND_MODEL_INLIERS *****\n");
 	test_all_points_on_line();
 	test_no_points_within_threshold();
@@ -865,7 +859,7 @@ int main() {
 	test_threshold_zero_stitch_models();
 	test_threshold_negative_stitch_models();
 	test_no_inliers_graph1();
-	printf("***** RUNNING TESTS FOR POINTS_TO_MODEL_DISTANCE *****\n");
+	printf("***** RUNNING TESTS FOR POINTS_TO_LINE_DISTANCE *****\n");
 	test_points_on_line();
 	test_points_one_unit_above_line();
 	test_zero_slope_points_above_line();
