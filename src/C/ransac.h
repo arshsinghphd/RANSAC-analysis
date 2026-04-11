@@ -94,7 +94,7 @@ Returns:
 float compute_t(float* points_x, float* points_y, int n_points, int n_params);
 
 
-/* =============================================================================
+/*
 Computes the number of RANSAC iterations k required to guarantee that at
 least one clean sample is drawn with probability 1 - failure_prob using the 
 analytical formula:
@@ -112,23 +112,41 @@ Returns:
     -1      for error if epsilon < 0 or epsilon >= 1
     -1      for error if n_params < 2
     -1      for error if failure_prob <= 0 or failure_prob >= 1
-============================================================================= */
+*/
 int compute_k(float epsilon, int n_params, float failure_prob);
 
 
-/* =============================================================================
+/*
 Computes the expected inlier count d as floor((1 - epsilon) * n_points).
-    This is consistent with the same epsilon used to compute k, ensuring both
-    parameters reflect a coherent assumption about the data.
+This is consistent with the same epsilon used to compute k, ensuring both
+parameters reflect a coherent assumption about the data.
 
-    Params:
-        epsilon     float, estimated outlier fraction in (0, 1)
-        n_points    int, total number of points
+Params:
+    epsilon     float, estimated outlier fraction in (0, 1)
+    n_points    int, total number of points
 
-    Returns:
-        int, expected inlier count d
-        -1 for error if epsilon <= 0 or epsilon >= 1
-        -1 for error if n_points < 2
-============================================================================= */
+Returns:
+    int, expected inlier count d
+    -1 for error if epsilon <= 0 or epsilon >= 1
+    -1 for error if n_points < 2
+
+Reference:
+    Durstenfeld, R. 1964. Algorithm 235: Random permutation. Communications of 
+    the ACM 7, 7, 420.
+*/
 int compute_d(float epsilon, int n_points);
 
+/*
+Partial Fisher-Yates in place shuffle. 
+
+Draws n_params random indices from [0, n_points) into idx[0 .. n_params-1]. 
+Only the first n_params positions are shuffled at O(n_params) cost.
+
+Params:
+    idx         int array of size n_points, initialised 0..n_points-1
+    n_points    int, total number of points
+    n_params    int, number of indices to draw
+
+Returns: 
+    nothing
+*/
