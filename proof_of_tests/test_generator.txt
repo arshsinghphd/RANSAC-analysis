@@ -1,3 +1,5 @@
+gcc -Wall -std=c11 -o test_generator.out test_generator.c generator.c
+./test_generator.out
 ***** MAKE_INLIERS *****
 PASS make_inliers/slope=1/intercept=0/points_x
 PASS make_inliers/slope=1/intercept=0/points_y

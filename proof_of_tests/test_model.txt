@@ -1,3 +1,10 @@
+gcc -Wall -std=c11 -o test_model.out test_model.c model.c generator.c 
+./test_model.out
+***** RUNNING TESTS FOR EVAL_MODEL *****
+PASS line_at_x
+PASS quadratic_at_x
+PASS eval_at_zero
+PASS n_params_lt_2
 ***** RUNNING TESTS FOR FIT_MODEL *****
 PASS unit_slope/intercept
 PASS unit_slope/slope
@@ -14,12 +21,7 @@ PASS quadratic/a1
 PASS quadratic/a2
 PASS n_points_lt_n_params
 PASS n_params_lt_2
-FAIL all_x_equal: expected -1 got 0
-***** RUNNING TESTS FOR EVAL_MODEL *****
-PASS line_at_x
-PASS quadratic_at_x
-PASS eval_at_zero
-PASS n_params_lt_2
+PASS all_x_equal
 ***** RUNNING TESTS FOR FIND_MODEL_INLIERS *****
 PASS test_all_points_on_line/result
 PASS test_all_points_on_line/n_inliers
@@ -52,7 +54,7 @@ PASS n2_lt_n_params/result
 PASS threshold_zero/result
 PASS threshold_negative/result
 PASS no_inliers_graph1/result
-***** RUNNING TESTS FOR POINTS_TO_MODEL_DISTANCE *****
+***** RUNNING TESTS FOR POINTS_TO_LINE_DISTANCE *****
 PASS points_on_line
 PASS points_one_unit_above_line
 PASS zero_slope_points_above_line

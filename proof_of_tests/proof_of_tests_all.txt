@@ -1,0 +1,181 @@
+gcc -Wall -std=c11 -lm -o test_model.out test_model.c generator.c model.c 
+./test_model.out
+***** RUNNING TESTS FOR EVAL_MODEL *****
+PASS line_at_x
+PASS quadratic_at_x
+PASS eval_at_zero
+PASS n_params_lt_2
+***** RUNNING TESTS FOR FIT_MODEL *****
+PASS unit_slope/intercept
+PASS unit_slope/slope
+PASS negative_slope/intercept
+PASS negative_slope/slope
+PASS zero_slope/intercept
+PASS zero_slope/slope
+PASS fractional_slope/intercept
+PASS fractional_slope/slope
+PASS minimum_points/intercept
+PASS minimum_points/slope
+PASS quadratic/a0
+PASS quadratic/a1
+PASS quadratic/a2
+PASS n_points_lt_n_params
+PASS n_params_lt_2
+PASS all_x_equal
+***** RUNNING TESTS FOR FIND_MODEL_INLIERS *****
+PASS test_all_points_on_line/result
+PASS test_all_points_on_line/n_inliers
+PASS test_all_points_on_line/inliers_x
+PASS test_all_points_on_line/inliers_y
+PASS test_no_points_within_threshold/result
+PASS test_all_points_on_line/n_inliers
+PASS test_no_points_within_threshold/result
+PASS test_no_points_within_threshold/result
+PASS mixed_points/result
+PASS test_all_points_on_line/n_inliers
+PASS mixed_points/inliers_x
+PASS mixed_points/inliers_y
+PASS quadratic_model_inliers/result
+PASS quadratic_model_inliers/n_inliers
+PASS quadratic_model_inliers/inliers_x
+PASS quadratic_model_inliers/inliers_y
+PASS threshold_zero/result
+PASS threshold_negative/result
+PASS n_params_less_than_2_inliers/result
+***** RUNNING TESTS FOR STITCH_MODELS *****
+PASS clean_overlapping_graphs/result
+PASS clean_overlapping_graphs/intercept
+PASS clean_overlapping_graphs/slope
+PASS noisy_overlapping_graphs/result
+PASS noisy_overlapping_graphs/intercept
+PASS noisy_overlapping_graphs/slope
+PASS n1_lt_n_params/result
+PASS n2_lt_n_params/result
+PASS threshold_zero/result
+PASS threshold_negative/result
+PASS no_inliers_graph1/result
+***** RUNNING TESTS FOR POINTS_TO_LINE_DISTANCE *****
+PASS points_on_line
+PASS points_one_unit_above_line
+PASS zero_slope_points_above_line
+PASS negative_slope_points_above_line
+PASS n_points_less_than_1
+***** RUNNING TESTS FOR MODEL_ERROR *****
+PASS exact_recovery
+PASS a1_differs
+PASS a0_differs
+PASS both_differ
+PASS negative_differences
+PASS n_params_3
+PASS n_params_less_than_2
+gcc -Wall -std=c11 -lm -o test_generator.out test_generator.c generator.c
+./test_generator.out
+***** MAKE_INLIERS *****
+PASS make_inliers/slope=1/intercept=0/points_x
+PASS make_inliers/slope=1/intercept=0/points_y
+PASS make_inliers/slope=-1/intercept=N/points_x
+PASS make_inliers/slope=-1/intercept=N/points_y
+PASS make_inliers/slope=0.5/intercept=0/points_x
+PASS make_inliers/slope=0.5/intercept=0/points_y
+PASS make_inliers/slope=1/intercept=-0.5/points_x
+PASS make_inliers/slope=1/intercept=-0.5/points_y
+PASS make_inliers/slope=0/intercept=0/points_x
+PASS make_inliers/slope=0/intercept=0/points_y
+PASS make_inliers/quadratic/points_x
+PASS make_inliers/quadratic/points_y
+PASS make_inliers/n<2
+PASS make_inliers/xmin==xmax
+PASS make_inliers/n_params<2
+***** ADD_GAUSSIAN_NOISE *****
+PASS add_gaussian_noise/std=2/noise_added
+PASS add_gaussian_noise/std=2/within_tol
+PASS add_gaussian_noise/std=2.5/noise_added
+PASS add_gaussian_noise/std=2.5/within_tol
+PASS add_gaussian_noise/n<2
+PASS add_gaussian_noise/std=0
+PASS add_gaussian_noise/std<0
+***** ADD_OUTLIERS *****
+PASS add_outliers/happy_path/inliers_unchanged
+PASS add_outliers/happy_path/outliers_outside_band
+PASS add_outliers/n_outliers=0
+PASS add_outliers/y_min==y_max/result
+PASS add_outliers/y_min==y_max/inliers_unchanged
+PASS add_outliers/y_min==y_max/outliers_outside_band
+PASS add_outliers/n_inliers<0
+PASS add_outliers/n_outliers<0
+PASS add_outliers/n_points<2
+PASS add_outliers/std=0
+PASS add_outliers/std<0
+PASS add_outliers/n_params<2
+PASS add_outliers/x_min==x_max
+***** ADD_STRUCTURAL_BIAS *****
+PASS add_structural_bias/bias=0/result
+PASS add_structural_bias/bias=0
+PASS add_structural_bias/bias=1/result
+PASS add_structural_bias/bias=1
+PASS add_structural_bias/bias=linear/result
+PASS add_structural_bias/bias=linear
+PASS add_structural_bias/bias=sin/result
+PASS add_structural_bias/bias=sin
+PASS add_structural_bias/NULL
+PASS add_structural_bias/pr<0
+PASS add_structural_bias/pr>1
+PASS add_structural_bias/n<2
+gcc -Wall -std=c11 -lm -o test_ransac.out test_ransac.c generator.c model.c ransac.c
+./test_ransac.out
+***** RUNNING TESTS FOR COMPUTE_T *****
+PASS clean_data
+PASS gaussian_noise_data
+PASS n_points lt n_params
+***** RUNNING TESTS FOR ESTIMATE_EPSILON *****
+PASS estimate_epsilon_clean_data
+PASS estimate_epsilon_low_outlier_fraction
+PASS estimate_epsilon_medium_outlier_fraction
+PASS estimate_epsilon/n_points_less_than_2
+***** RUNNING TESTS FOR COMPUTE_K *****
+PASS epsilon 10%
+PASS epsilon 30%
+PASS epsilon 50%
+PASS epsilon 70%
+PASS epsilon 90%
+PASS epsilon 50%, n_params 3
+PASS epsilon 50%, fail_pr = 0.02
+PASS epsilon 0
+PASS epsilon 1
+PASS n_params < 2
+PASS fail_pr = 0
+PASS fail_pr = 1
+***** RUNNING TESTS FOR COMPUTE_D *****
+PASS epsilon_20pc
+PASS epsilon_40pc
+PASS epsilon_50pc_n200
+PASS epsilon_0
+PASS epsilon_1
+PASS n_points < 2
+***** RUNNING TESTS FOR FISHER YATES *****
+PASS fisher yates/something_moved
+PASS fisher yates/every_index_present
+PASS fisher_yates/first_m_in_range
+PASS fisher_yates/first_m_distinct
+***** RUNNING TESTS FOR RANSAC *****
+PASS clean_data/result
+PASS clean_data/intercept
+PASS clean_data/slope
+PASS ransac/low_outlier/intercept
+PASS ransac/low_outlier/slope
+PASS ransac/medium_outlier/intercept
+PASS ransac/medium_outlier/slope
+PASS ransac/high_outlier/intercept
+PASS ransac/high_outlier/slope
+PASS ransac/n_params_3/a0
+PASS ransac/n_params_3/a1
+PASS ransac/n_params_3/a2
+PASS ransac/early_stop/inliers_ge_d
+PASS ransac/early_stop/iterations_le_k
+PASS ransac/n_points_lt_2
+PASS ransac/n_params_lt_2
+PASS ransac/k_resample_lt_1
+PASS ransac/threshold_zero
+PASS ransac/threshold_negative
+PASS ransac/expected_inliers_gt_n_points
+PASS ransac/n_points_lt_n_params
