@@ -457,7 +457,7 @@ Tests fisher_yates draws m distinct indices from [0, N). Asserts:
 1. At least one value is not in its original position (something moved)
 2. All values 0 .. N-1 are present exactly once (valid permutation)
 ============================================================================= */
-void test_fisher_yates_first_m_distinct_in_range() {
+void test_fisher_yates() {
 	int idx[N];
 	int m = 2;
 	fisher_yates(idx, N, m);
@@ -488,6 +488,25 @@ void test_fisher_yates_first_m_distinct_in_range() {
 	assert_equal_int(something_moved, 1, "fisher yates/something_moved");
 	assert_equal_int(every_index_present, 1, 
 		"fisher yates/every_index_present");
+}
+
+void test_fisher_yates_first_m_distinct() {
+    int idx[N];
+    int m = 3;
+    fisher_yates(idx, N, m);
+    /* check all first m values are in range [0, N) */
+    int in_range = 1;
+    for (int i = 0; i < m; i++)
+        if (idx[i] < 0 || idx[i] >= N)
+            in_range = 0;
+    /* check first m values are all distinct */
+    int distinct = 1;
+    for (int i = 0; i < m; i++)
+        for (int j = i + 1; j < m; j++)
+            if (idx[i] == idx[j])
+                distinct = 0;
+    assert_equal_int(in_range, 1, "fisher_yates/first_m_in_range");
+    assert_equal_int(distinct, 1, "fisher_yates/first_m_distinct");
 }
 
 /* =============================================================================
