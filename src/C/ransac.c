@@ -221,26 +221,26 @@ int compute_d(float epsilon, int n_points) {
 /* =============================================================================
 Partial Fisher-Yates in place shuffle. 
 
-Draws n_params random indices from [0, n_points) into idx[0 .. n_params-1]. 
-Only the first n_params positions are shuffled at O(n_params) cost.
+Draws n random indices from [0, n) into idx[0 .. n-1]. 
+Only the first m positions are shuffled at O(m) cost.
 
 Params:
-    idx         int array of size n_points, initialised 0..n_points-1
-    n_points    int, total number of points
-    n_params    int, number of indices to draw
+    idx int array of size n_points, initialised 0..n_points-1
+    n 	int, total number of points
+    m   int, number of indices to draw
 
 Reference:
     Durstenfeld, R. 1964. Algorithm 235: Random permutation. Communications of 
     the ACM 7, 7, 420.
 ============================================================================= */
-void fisher_yates(int* idx, int n_points, int n_params) {
-    /* initialise index array 0..n_points-1 */
-    for (int j = 0; j < n_points; j++)
+void fisher_yates(int* idx, int n, int m) {
+    /* initialise index array 0..n-1 */
+    for (int j = 0; j < n; j++)
         idx[j] = j;
-    /* partial shuffle — only first n_params positions needed */
-    for (int j = 0; j < n_params; j++) {
-    	// random in [j, n_points)
-        int k   = j + rand() % (n_points - j);
+    /* partial shuffle — only first m positions needed */
+    for (int j = 0; j < m; j++) {
+    	// random in [j, n)
+        int k   = j + rand() % (n - j);
         // swap idx[j] and idx[k]
         int tmp = idx[j];                       
         idx[j]  = idx[k];

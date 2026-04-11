@@ -139,14 +139,15 @@ int compute_d(float epsilon, int n_points);
 /*
 Partial Fisher-Yates in place shuffle. 
 
-Draws n_params random indices from [0, n_points) into idx[0 .. n_params-1]. 
-Only the first n_params positions are shuffled at O(n_params) cost.
+Draws n_params random indices from [0, n) into idx[0 .. m-1]. 
+Only the first n_params positions are shuffled at O(m) cost.
 
 Params:
-    idx         int array of size n_points, initialised 0..n_points-1
-    n_points    int, total number of points
-    n_params    int, number of indices to draw
+    idx pointer to an int array of size n, initialized to indices [0, n-1]
+    n   int, total number of points
+    m   int, number of indices to draw
 
 Returns: 
-    nothing
+    nothing, changes idx in place
 */
+void fisher_yates(int* idx, int n, int m);

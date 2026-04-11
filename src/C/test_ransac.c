@@ -453,6 +453,44 @@ void test_n_points_less_than_2_d() {
 }
 
 /* =============================================================================
+Tests fisher_yates draws m distinct indices from [0, N). Asserts:
+1. At least one value is not in its original position (something moved)
+2. All values 0 .. N-1 are present exactly once (valid permutation)
+============================================================================= */
+void test_fisher_yates_first_m_distinct_in_range() {
+	int idx[N];
+	int m = 2;
+	fisher_yates(idx, N, m);
+
+	// something moved
+	int something_moved = 0; // boolean-like false
+	for(int i = 0; i < N; i++){
+		if(idx[i] != i) {
+			something_moved = 1;
+			break;
+		}
+	}
+
+	int seen[N];
+	for (int i = 0; i < N; i++)
+    	seen[i] = 0;
+    // pass idx once
+	for (int i = 0; i < N; i++)
+    	seen[idx[i]] = 1;
+    // if every index is not in seen this will turn to 0
+	int every_index_present = 1;
+	for (int i = 0; i < N; i++) {
+    	if (seen[i] == 0){
+    	    every_index_present = 0;
+    	}
+	}
+
+	assert_equal_int(something_moved, 1, "fisher yates/something_moved");
+	assert_equal_int(every_index_present, 1, 
+		"fisher yates/every_index_present");
+}
+
+/* =============================================================================
   MAIN 
 ============================================================================= */
 int main() {
@@ -485,6 +523,8 @@ int main() {
 	test_epsilon_0_d();
 	test_epsilon_1_d();
 	test_n_points_less_than_2_d();
+	printf("***** RUNNING TESTS FOR FISHER YATES *****\n");
+	test_fisher_yates_first_m_distinct_in_range();
 	return 0;
 }
 
