@@ -220,7 +220,7 @@ Looking at the flow chart. For each of the $k$ iterations:
 
 | Step | Description | Time Complexity of Step |
 |:-|:-|:-|
-| 1 | sample$m$points | $O(m)$ |
+| 1 | sample $m$ points | $O(m)$ |
 | 2 | fit line to sample | $O(m)$ |
 | 3 | compute distances of each point to the model | $O(N)$ |
 | 4 | count inliers | $O(N)$ |
@@ -434,13 +434,26 @@ HIGHLIGHTS:
 2. Keeping cartesian points also allows me to represent my analysis using simple and easy to interpret graphs.
 3.  
 -->
+## Implementation
 
-### Design Structure
+### Language, Libraries, and Design Philosophy
+
+The implementation was developed in two stages. I am more familiar with Python and my code writing speed in Python is much father than in C. So first I developed a  Python prototype to validate correctness of my thoughts and ideas taken from the original paper and other texts which do not procide any pseudocodes. I explored design decisions and testing in Python as well with one big limitation. In this phase I limiting myself to the simple linear model case. This approach allowed me to very quickly get familiar with RANSAC and the challenges in its implementation, and when writing in C I was able to do it much faster based on the previous python codes that I had very carefully kept C-adjacent as I explain further below. 
+
+In the second phase I translated the tests and functions to C test-by-test and function-by-function under a test-driven discipline, but improving the design to accommodate flexible models at the same time. 
+
+I do not present code snippets to the Python prototype, but the entire set of codes is in the folder [other/python_linear](other/python_linear). These are not true Python codes since I used only the standard library — `math`, `random`, and `unittest` — with no NumPy, SciPy, or other numerical libraries. This constraint was deliberate: every operation that could not be expressed in standard C was avoided from the start, making the translation straightforward and mechanical. The C implementation likewise uses only `math.h`, `stdlib.h`, `stdio.h`, and `time.h`.
+
+While I am working on RANSAC that is a key algorithm used in computer vision, a key design choice was to abstract away from image pixels entirely and work with two-dimensional Cartesian point sets instead. This eliminates image I/O, coordinate transformations, and feature detection complexity, allowing the focus to remain on the algorithm itself. It also has an analytic benefit: Cartesian points can be generated with exact ground truth — known slope, intercept, noise distribution, and outlier fraction — making it possible to measure model recovery error precisely and plot results as clean, interpretable graphs. This would not be possible if the data came from real images, where ground truth is unknown.
+
+### Module Structure
+
+The implementation is organized across four modules, shown in the flowchart below.
+
 ```mermaid
 flowchart TD
     A([caller]) --> B
-
-    B["ransac.py
+    B["ransac.c
     estimate_epsilon()
     compute_t()
     compute_k()
@@ -448,91 +461,91 @@ flowchart TD
     B --> C
     B --> D
     B --> E
-
-    C["model.py
-    fit_line()
+    C["model.c
+    fit_model()
     called on m sample
     and on final inlier set"]
-
-    D["model.py
-    points_to_line_distances()
+    D["model.c
+    find_model_inliers()
     called once per iteration
     and once after loop"]
-
-    E["evaluate.py
+    E["model.c
     model_error()
     called by caller to assess
     quality of recovered model"]
-
     C --> F
     D --> F
-
-    F["ransac.py
+    F["ransac.c
     ransac()
-    returns best slope,
-    intercept, inlier count,
+    returns best params,
+    inlier count,
     iterations run"]
-
     F --> A
 ```
 
+`generator.c` produces synthetic data; `model.c` provides fitting, inlier collection, and error measurement; and `ransac.c` implements the algorithm and its parameter helpers. The caller interacts only with `ransac.c` and `model.c` through their public headers.
 
-### Salient Design Decisions:
+### Data Representation
 
-Python:
-* C correspondence:
-  * separate `data_x` and `data_y` arrays
-  * functions that modify these in-place
-  * all functions return -1 for error and 0 for success 
-  * use only rand() 
-  * do not use any other python packages - create gaussian noise manually using Box-Muller[5]
-  * For random sampling I am using Fisher-Yates sampling [6]
-  * ransac resampling refitting on inliers was initially done by moving inliers to the front, changing the user passed list. The in-place compacting was replaced with new lists (not C-correspondent) while looking for a bug for simoplification.
-  * `return_array` layout for ransac() with an eye for a future C struct
+Points are stored as separate flat arrays `points_x` and `points_y` rather than as an array of `(x, y)` tuples. This was a deliberate choice for two reasons. First, separate arrays are mutable in place in C without pointer arithmetic on struct members, making in-place noise injection and outlier appending straightforward. Second, this layout maps directly to the Vandermonde accumulation in `fit_model`, where `points_x[i]` and `points_y[i]` are accessed independently in tight loops. Had tuples been used, each access would require a stride of two.
 
-* Separate lists of x and y rather than tuples for mutability.
-* `return_array` layout for ransac() with an eye for a future C struct
-* Different kind of noise as separate functions to allow testing the efficacy of RANSAC with different kind of errors. 
-* `fit_line` uses least squares (added a special section for this)
-* `points_to_line_distances` uses geometric (perpendicular) distance (added a section for this)
-* In RANSAC The refit is a post-processing step, not part of the RANSAC iteration — cite Fischler and Bolles
-* All tests of RANSAC fail sometimes (1 in 100 times as designed), since RANSAC is a stochastic, randomized good-enough model.
+Model parameters are stored as a flat array of $m$ coefficients from lowest to highest degree: `params[0]` $= a_0$, `params[1]` $= a_1$, and so on. The `return_array` of `ransac()` is similarly a flat array with a documented layout:
 
+```
+return_array[0]               number of inliers in best model
+return_array[1]               number of iterations actually run
+return_array[2..2+m-1]        best model params (a0, a1, ...)
+```
+
+This layout was designed with a future C struct in mind. A natural next step would be to replace `return_array` with a `RansacResult` struct, making the fields named rather than positional. The flat array was kept for the initial implementation to avoid introducing struct syntax before the algorithm was fully tested.
+
+### Noise and Outlier Generation
+
+Noise is injected as separate functions — `add_gaussian_noise`, `add_laplace_noise`, and `add_structural_bias` — rather than as a single combined generator. This separation serves the empirical analysis directly: by swapping noise functions, the effect of each noise type on RANSAC recovery can be measured in isolation. Gaussian noise models sensor measurement error; Laplace noise has heavier tails and models occasional large deviations; structural bias models systematic error such as lens distortion or calibration drift that affects a fraction $p_r$ of points coherently rather than randomly. The `add_structural_bias` function accepts a function pointer `float (*bias_fn)(float)`, allowing any bias shape — constant, linear, or periodic — to be injected without modifying the generator.
+
+### Polynomial Least Squares via the Normal Equations
+
+Given $N$ points $(x_i, y_i)$, a polynomial model of degree $m - 1$ requiring $m$ coefficients is fit by minimizing the sum of squared vertical residuals:
+
+$$\min_{\mathbf{a}} \sum_{i=1}^{N} \left( y_i - \sum_{j=0}^{m-1} a_j x_i^j \right)^2$$
+
+Arranging the data into a Vandermonde design matrix $X \in \mathbb{R}^{N \times m}$, where $X_{ij} = x_i^j$, and a response vector $\mathbf{y} \in \mathbb{R}^N$, the solution satisfies the normal equations $X^\top X \, \mathbf{a} = X^\top \mathbf{y}$. The entries are accumulated as:
+
+$$(X^\top X)_{rc} = \sum_{i=1}^{N} x_i^{r+c}, \qquad (X^\top \mathbf{y})_r = \sum_{i=1}^{N} x_i^r \, y_i$$
+
+Powers of $x_i$ are precomputed up to degree $2(m-1)$ and reused across both accumulations to avoid redundant `pow` calls. The normal equations are solved via Gaussian elimination with partial pivoting on the augmented matrix $[X^\top X \mid X^\top \mathbf{y}]$. A zero pivot indicates a singular matrix — corresponding to the degenerate case where all $x_i$ are equal — and the function returns an error. The coefficient vector is recovered by back substitution. For $m = 2$ this reduces to ordinary least squares line fitting, but the implementation handles all degrees uniformly without special-casing the linear model.
+
+### Vertical Residual as the Inlier Distance Metric
+
+The distance from a point $(x_i, y_i)$ to the polynomial model is measured as the vertical residual:
+
+$$\text{distance}_i = \left| \sum_{j=0}^{m-1} a_j x_i^j - y_i \right|$$
+
+This is the absolute difference between the predicted and observed $y$ value. For line models with small slope, this approximates the perpendicular distance, but the vertical residual is preferred here because it extends naturally to polynomial models of any degree, for which perpendicular distance has no simple closed form. The absolute value ensures the distance is non-negative regardless of which side of the model the point lies on. A separate function `points_to_line_distances` computes the true perpendicular distance for linear models only, and is retained for completeness and comparison.
+
+### The RANSAC Loop and the Final Refit
+
+The core loop samples $m$ random indices using a partial Fisher-Yates shuffle — only the first $m$ positions are shuffled at $O(m)$ cost rather than $O(N)$ — fits a candidate model to the sample, counts inliers via vertical residual, and tracks the best model found. An early stop exits the loop as soon as `expected_inliers` are reached, avoiding redundant iterations when a good model is found early.
+
+A critical implementation detail follows Fischler and Bolles directly [1]: the final refit on all inliers of the best consensus set is a post-processing step, not part of the RANSAC iteration. Inside the loop, the model is fit only to the $m$-point sample. After the loop, all inliers of the best model are collected and the model is refit on the full consensus set. This two-stage design is what gives RANSAC its accuracy: the loop finds the consensus, and the refit uses that consensus to produce a statistically efficient estimate.
+
+```c
+/* INSERT: ransac() main loop */
+
+/* INSERT: _final_refit call */
+```
+
+### Stochastic Behavior and Test Design
+
+Because RANSAC is a randomized algorithm, its tests are inherently probabilistic. With a failure probability of $p = 0.01$, approximately one test run in one hundred will fail even on a correct implementation. This is not a bug — it is the designed behavior of the algorithm, and it means that a single test failure is not evidence of a defect. The test suite is designed to reflect this: tolerance deltas are set wide enough to accommodate the noise level of the synthetic data, and the empirical analysis repeats each experiment multiple times to report average behavior rather than a single run. The theoretical guarantee is that with $k$ iterations computed from the $k$ formula, RANSAC finds a correct model with probability at least $1 - p$. The tests verify this at the chosen $p = 0.01$ level.
 
 ### Parameter Estimation Helper Functions
 
-Rather than requiring the caller to supply $\varepsilon$, $k$, $d$, and $t$ directly, four helper functions are provided to estimate these parameters from the data itself. 
+Rather than requiring the caller to supply $\varepsilon$, $k$, $d$, and $t$ directly, four helpers derive these values from the data. `estimate_epsilon` fits a least squares line to all points, computes vertical residuals, and returns the fraction exceeding $\bar{e} + 2\sigma$ as an estimate of $\varepsilon$. `compute_t` uses the same distribution to set $t = \bar{e} + 2\sigma$, consistent with Fischler and Bolles [1]. `compute_k` applies the analytical formula:
 
-`estimate_epsilon` fits a least squares line to all points, computes the residuals, and returns the fraction of points whose residual exceeds $\bar{e} + 2\sigma$ as an estimate of the outlier fraction $\varepsilon$. 
+$$k = \left\lceil \frac{\log(p_{\text{fail}})}{\log\left(1 - (1-\varepsilon)^m\right)} \right\rceil$$
 
-`compute_t` uses the same residual distribution to set the inlier threshold as $t = \bar{e} + 2\sigma$, consistent with the recommendation of Fischler and Bolles [1]. 
-
-`compute_k` applies the analytical formula $k = \lceil \log(p) / \log(1 - (1 - \epsilon)^n) \rceil$ with a default failure probability of $p = 0.01$, returning the iteration count rounded up to the nearest integer. 
-
-`compute_d` sets the expected inlier count as $threshold = \lfloor (1 - \epsilon) \times N \rfloor$, ensuring consistency with the same $\varepsilon$ used to compute $k$. The caller therefore only needs to provide the raw point data and the minimum sample size $N$, and the parameter estimation is handled automatically. 
-
-This design also makes the relationship between $\varepsilon$, $k$, $d$, and $t$ explicit and testable — each helper is a small pure function that can be verified independently, consistent with the test-driven development approach used throughout this project. In the empirical analysis, the true $\varepsilon$ used to generate the synthetic data is compared against the value returned by `estimate_epsilon`, providing a direct measure of how accurately the helper recovers the outlier fraction under varying noise conditions.
-
-
-### Least Squares Line Fitting
-
-Given $N$ points $(x_i, y_i)$, the slope $m$ and intercept $b$ of the best fitting line $y = mx + b$ are estimated by minimizing the sum of squared residuals. The closed form solution is:
-
-$$m = \frac{n \sum x_i y_i - \sum x_i \sum y_i}{n \sum x_i^2 - \left(\sum x_i\right)^2}$$
-
-$$b = \frac{\sum y_i - m \sum x_i}{n}$$
-
-The denominator $n \sum x_i^2 - \left(\sum x_i\right)^2$ is zero when all $x_i$ are equal, corresponding to a vertical line whose slope is undefined. This case is detected and rejected as an error in the implementation.
-
-
-### Perpendicular Distance from a Point to a Line
-
-Given a line defined by slope $m$ and intercept $b$, written in general form as $mx - y + b = 0$, the perpendicular distance from a point $(x_i, y_i)$ to the line is:
-
-$$threshold_i = \frac{|m x_i - y_i + b|}{\sqrt{1 + m^2}}$$
-
-This is the geometric distance — the length of the shortest path from the point to the line, which is always perpendicular to it. The absolute value ensures the distance is non-negative regardless of which side of the line the point lies on. RANSAC uses this distance to classify each point as an inlier if $threshold_i < t$, or an outlier otherwise.
-
+and `compute_d` computes $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. Both `estimate_epsilon` and `compute_t` are unreliable at high outlier fractions because the preliminary fit is corrupted by the outliers it is trying to characterize — the same problem RANSAC was designed to solve. In this project $\varepsilon$ is known exactly from the synthetic data generation process, so the helpers serve as a demonstration of the estimation procedure for real-world settings where the true $\varepsilon$ is unknown. This design also makes the relationship between $\varepsilon$, $k$, $d$, and $t$ explicit and independently testable, consistent with the test-driven approach used throughout.
 
 ## Summary
 <!-- 
