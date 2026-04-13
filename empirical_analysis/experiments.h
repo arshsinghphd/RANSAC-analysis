@@ -31,7 +31,7 @@
 #define X_MAX       999.0f      /* upper bound of x range             */
 #define NOISE_STD   0.5f        /* gaussian noise standard deviation  */
 #define FAIL_PROB   0.01f       /* RANSAC failure probability         */
-#define N_REPEATS   20          /* independent runs per condition     */
+#define N_REPEATS   100          /* independent runs per condition     */
 
 /* ---------------------------------------------------------------
  * True model parameters — lowest to highest degree.
