@@ -8,13 +8,6 @@
 #include "experiments.h"
 
 /* -----------------------------------------------------------------------------
- * True model parameters
------------------------------------------------------------------------------ */
-const float TRUE_PARAMS_LINEAR[]    = TRUE_PARAMS_LINEAR;
-const float TRUE_PARAMS_QUADRATIC[] = TRUE_PARAMS_QUADRATIC;
-
-
-/* -----------------------------------------------------------------------------
  * Bias functions
 ----------------------------------------------------------------------------- */
 
@@ -74,4 +67,91 @@ void make_data(float* points_x, float* points_y,
         add_outliers(points_x, points_y, n_inliers, n_outliers,
                      params, n_params, noise_std > 0.0f ? noise_std
                                                         : NOISE_STD);
+}
+
+
+/* ---------------------------------------------------------------
+ * run_ransac
+ * --------------------------------------------------------------- */
+RansacResult run_ransac(float* points_x, float* points_y,
+                         int n_points, int n_params,
+                         const float* true_params,
+                         float epsilon, float t, int d, int k,
+                         int repeat, int index) {
+    RansacResult res;
+    res.index       = index;
+    res.n           = n_points;
+    res.m           = n_params;
+    res.epsilon     = epsilon;
+    res.t           = t;
+    res.d           = d;
+    res.k           = k;
+    res.repeat      = repeat;
+    res.model_error = -1.0f;
+    res.time_us     = 0.0f;
+
+    float return_array[2 + n_params];
+
+    /* time the ransac call */
+    clock_t start = clock();
+    int ret = ransac(points_x, points_y, n_points, n_params,
+                     k, t, d, return_array);
+    clock_t end = clock();
+
+    res.time_us = (float)(end - start) / CLOCKS_PER_SEC * 1e6f;
+
+    if (ret == -1)
+        return res;
+
+    /* compute model error */
+    float est_params[n_params];
+    float true_p[n_params];
+    for (int j = 0; j < n_params; j++) {
+        est_params[j] = return_array[2 + j];
+        true_p[j]     = true_params[j];
+    }
+    res.model_error = model_error(est_params, true_p, n_params);
+
+    return res;
+}
+
+
+/* Development tests */
+
+int main(void) {
+    srand((unsigned int) time(NULL));
+
+    printf("experiments.c sanity check\n");
+    printf("---------------------------\n");
+
+    /* linear model, epsilon = 0.3 */
+    float true_params[] = _TRUE_PARAMS_LINEAR;
+    int   n_params  = 2;
+    float epsilon   = 0.3f;
+    int   n_inliers = (int)((1.0f - epsilon) * N_TOTAL);
+    int   n_outliers = N_TOTAL - n_inliers;
+    int   d         = compute_d(epsilon, N_TOTAL);
+    int   k         = compute_k(epsilon, n_params, FAIL_PROB);
+
+    float points_x[N_TOTAL], points_y[N_TOTAL];
+    float t;
+
+    make_data(points_x, points_y, n_inliers, n_outliers,
+              true_params, n_params, NOISE_STD, &t,
+              0, NULL, 0.0f);
+
+    printf("n_inliers  = %d\n", n_inliers);
+    printf("n_outliers = %d\n", n_outliers);
+    printf("t          = %.4f\n", t);
+    printf("d          = %d\n", d);
+    printf("k          = %d\n", k);
+
+    RansacResult res = run_ransac(points_x, points_y, N_TOTAL,
+                                  n_params, true_params,
+                                  epsilon, t, d, k, 0, 0);
+
+    printf("model_error = %.6f\n", res.model_error);
+    printf("time_us     = %.2f\n", res.time);
+
+    return 0;
 }
