@@ -28,10 +28,10 @@
  * --------------------------------------------------------------- */
 #define N_TOTAL     1000        /* total points per run, always fixed */
 #define X_MIN       0.0f        /* lower bound of x range             */
-#define X_MAX       999.0f      /* upper bound of x range             */
+#define X_MAX       1.0f        /* upper bound of x range, assume scaled data */
 #define NOISE_STD   0.5f        /* gaussian noise standard deviation  */
 #define FAIL_PROB   0.01f       /* RANSAC failure probability         */
-#define N_REPEATS   100          /* independent runs per condition     */
+#define N_REPEATS   100         /* independent runs per condition     */
 
 /* ---------------------------------------------------------------
  * True model parameters — lowest to highest degree.

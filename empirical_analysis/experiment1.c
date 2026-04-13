@@ -10,7 +10,7 @@
  *
  * Output:
  *     results/exp1.csv
- *     columns: index, n, epsilon, t, d, m, k, repeat, time_us, model_error
+ *     columns: index, n, epsilon, d, m, k, t, repeat, time_mu_s, model_error
  *
  * Usage:
  *     make exp1

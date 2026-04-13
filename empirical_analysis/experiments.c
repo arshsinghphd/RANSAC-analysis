@@ -21,7 +21,7 @@ float bias_linear_bias(float x) {
 }
 
 float bias_periodic(float x) {
-    return sinf(x);
+    return sinf(2.0f * M_PI * x);  // since we are scaling data [0 .. 1]
 }
 
 
