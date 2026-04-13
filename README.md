@@ -431,7 +431,15 @@ All experiments write the same CSV files with the column names as follow:
 $index$, $N$, $\varepsilon$, $d$, $m$, $k$, $t$, $repeat$, $time$, and $model\_error$.
 
 
-### Empirical Analysis 
+### A Note on Numerical Precision
+
+All computations use single-precision floating point (`float`), which stores numbers with about seven significant digits. This matches the C implementation and is the natural choice for a system designed with embedded targets in mind, where memory is limited and `double` precision doubles the cost per value.
+
+The limitation of single precision becomes visible when fitting high-degree polynomials. The least squares solver builds a matrix $X^\top X$ whose entries are sums of powers of $x_i$. As the polynomial degree grows, those powers grow rapidly — for degree 6 over $x \in [0, 9]$, the largest entry reaches roughly $10^{15}$, far beyond what seven digits of precision can represent accurately. When Gaussian elimination then tries to solve a system built from such large numbers, small rounding errors get amplified into large errors in the recovered coefficients. The result is a model that looks numerically valid but is wildly wrong — not because RANSAC failed, but because the underlying solver lost precision.
+
+This is a known issue with the Vandermonde design matrix, it becomes harder and harder to solve accurately as the polynomial degree increases. In practice it is fixed by scaling $x$ to a small range such as $[0, 1]$, or by switching to `double` precision, which provides fifteen significant digits and pushes the stable range to roughly degree 14. For this project, $x$ is scaled to $[0, 1]$. A small number of runs across all experiments produce unrealistically large model errors due to this effect; these are filtered from the analysis at a threshold of `model_error > 100` and noted as precision concerns rather than RANSAC failures.
+
+Switching to `double` throughout would be a straightforward change — replace `float` with `double` in all data arrays and function signatures — and is recommended for future works.
 
 
 ## Application
@@ -459,6 +467,7 @@ PROSAC (PROgressive SAmple Consensus), random samples are initially added from t
 inliers (Chum and Matas 2005). Raguram, Chum et al. (2012) provide a unified framework from
 which most of these techniques can be derived as well as a nice experimental comparison.
 -->
+
 
 ## Implementation
 
@@ -634,6 +643,9 @@ The theoretical guarantee is that with $k$ iterations computed from the $k$ form
 - What did you learn?
 -->
 
+Future:
+
+Switching to `double` throughout would be a straightforward change — replace `float` with `double` in all data arrays and function signatures — and is recommended for future works.
 
 ## LLM Use Disclosure 
 I did not any LLM to write codes. I implemented my codes based on my reading of the original Fishler and Bolles paper [1] and its representation in other text books [2, 3, 4]. Although I had done so by hand, I had not implemented solution of a system of equations (vandermont matrix) using gaussian elimination before. I learnt to do that from youtube video tutorials [7, 8].
