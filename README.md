@@ -351,7 +351,17 @@ I have organize the empirical analysis around three questions, each probing a di
 
 The number of iterations required to draw at least one clean sample with probability $p = 0.99$ is given analytically by $k = \log(1 - p) / \log(1 - (1 - \varepsilon)^{n})$, where $\varepsilon$ is the outlier fraction and $n$ is the minimum sample size. As $\varepsilon$ gets close to 1, $k$ grows without bound. The first experiment asks at what outlier fraction RANSAC fails in practice when $k$ is held fixed at a reasonable value.
 
-The iteration count $k$ is fixed at the value computed for $\varepsilon = 0.5$, and $\varepsilon$ is varied from $0.1$ to $0.9$. This experiment is run for both the linear model ($n = 2$) and the quadratic model ($n = 3$). The recovered model error — the Euclidean distance between the estimated and true parameter vectors — is recorded at each value of $\varepsilon$. The experiment is repeated across three values of $N$ to separate the effect of dataset size from the effect of outlier fraction.
+The iteration count $k$ is fixed at the value computed for $\varepsilon = 0.5$, and $\varepsilon$ is varied from $0.1$ to $0.9$. The experiment is repeated across three values of $N$ to separate the effect of dataset size from the effect of outlier fraction.
+
+For $\varepsilon = 0.5$, $p$ = 0.99:
+
+$k (n = 2) = \frac{\log(1 - 0.99)}{\log(1 - (1 - 0.5)^2)} = \frac{\log(0.01)}{\log(1 - 0.25)} = \frac{-4.605}{-0.2877} \approx 17$.
+
+$k (n = 3) = \frac{\log(1 - 0.99)}{\log(1 - (1 - 0.5)^3)} = \frac{\log(0.01)}{\log(1 - 0.125)} = \frac{-4.605}{-0.1335} \approx 35$.
+
+Thus, this experiment is first run the linear model ($n = 2$) keeping $k$ constant at 17, and then for the quadratic model ($n = 3$) keping $k$ constant at 35. 
+
+The recovered model error — the Euclidean distance between the estimated and true parameter vectors — is recorded at each value of $\varepsilon$. 
 
 The expected result is a sharp increase in model error above a critical $\varepsilon$, with the linear model tolerating a higher outlier fraction than the quadratic model for the same $k$. This asymmetry is a direct consequence of the exponential term $(1 - \varepsilon)^n$ in the iteration formula: each additional parameter in the model amplifies the sensitivity to outliers.
 
