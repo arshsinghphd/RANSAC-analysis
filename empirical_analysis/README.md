@@ -25,9 +25,13 @@ Each experiment is repeated `N_REPEATS = ` times with different random seeds. Me
 ```
 final-paper-arshsinghphd/
 |
-+--- src/
++--- src/(All C functions)
 |   |
-│   +--- C/                 # C functions (generator.c, model.c, ransac.c)
+|   +--- generator.c 
+|   |
+|   +--- model.c
+|   |
+|   +--- ransac.c
 |
 +--- emperical_analysis/
 |   |
