@@ -420,7 +420,11 @@ This is a single scalar that captures error across all model parameters simultan
 
 #### Experiment Parameters
 
-The three experiments share a common parameter baseline. The inlier count is fixed at $N_{\text{inlier}} = 10,000$ unless stated otherwise. The inlier threshold $t$ is estimated from the noisy inlier data before outliers are added, using $t = \bar{e} + 2\sigma$ applied to the vertical residuals of a preliminary least squares fit. The expected inlier count $d$ is computed from the true $\varepsilon$ as $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. The iteration count $k$ is computed from the true $\varepsilon$ and the model degree using the analytical formula with failure probability $p_{\text{fail}} = 0.01$, except in Experiment 3 where $k$ is fixed at a budget of $k = 100$ to observe the breakdown point.
+The three experiments share a common parameter baseline.
+
+For all experiments, $N = 1000$ points are used, split between inliers and outliers according to the outlier fraction $\varepsilon$. This choice is larger than the $N = 100$ commonly used in illustrative examples, and is motivated by two practical considerations. First, timing resolution: the C implementation runs fast enough that at $N = 100$ individual function calls complete in nanoseconds, making wall-clock timing unreliable. At $N = 1000$ the dominant operations — normal equation accumulation in `fit_model` and residual computation in `find_model_inliers` — run long enough to be measured reliably in microseconds using `clock()`. Second, statistical stability: at $\varepsilon = 0.1$ and $N = 100$ only 10 outlier points are added, which is too few to represent a stable outlier distribution. At $N = 1000$ the same fraction produces 100 outliers, giving a more representative and repeatable experiment across the `N_REPEATS = 20` independent runs.
+
+The inlier threshold $t$ is estimated from the noisy inlier data before outliers are added, using $t = \bar{e} + 2\sigma$ applied to the vertical residuals of a preliminary least squares fit. The expected inlier count $d$ is computed from the true $\varepsilon$ as $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. The iteration count $k$ is computed from the true $\varepsilon$ and the model degree using the analytical formula with failure probability $p_{\text{fail}} = 0.01$, except in Experiment 3 where $k$ is fixed at a budget of $k = 100$ to observe the breakdown point.
 
 ### Empirical Analysis 
 
