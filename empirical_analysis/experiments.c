@@ -118,40 +118,40 @@ RansacResult run_ransac(float* points_x, float* points_y,
 
 /* Development tests */
 
-int main(void) {
-    srand((unsigned int) time(NULL));
+// int main(void) {
+//     srand((unsigned int) time(NULL));
 
-    printf("experiments.c sanity check\n");
-    printf("---------------------------\n");
+//     printf("experiments.c sanity check\n");
+//     printf("---------------------------\n");
 
-    /* linear model, epsilon = 0.3 */
-    float true_params[] = _TRUE_PARAMS_LINEAR;
-    int   n_params  = 2;
-    float epsilon   = 0.3f;
-    int   n_inliers = (int)((1.0f - epsilon) * N_TOTAL);
-    int   n_outliers = N_TOTAL - n_inliers;
-    int   d         = compute_d(epsilon, N_TOTAL);
-    int   k         = compute_k(epsilon, n_params, FAIL_PROB);
+//     /* linear model, epsilon = 0.3 */
+//     float true_params[] = _TRUE_PARAMS_LINEAR;
+//     int   n_params  = 2;
+//     float epsilon   = 0.3f;
+//     int   n_inliers = (int)((1.0f - epsilon) * N_TOTAL);
+//     int   n_outliers = N_TOTAL - n_inliers;
+//     int   d         = compute_d(epsilon, N_TOTAL);
+//     int   k         = compute_k(epsilon, n_params, FAIL_PROB);
 
-    float points_x[N_TOTAL], points_y[N_TOTAL];
-    float t;
+//     float points_x[N_TOTAL], points_y[N_TOTAL];
+//     float t;
 
-    make_data(points_x, points_y, n_inliers, n_outliers,
-              true_params, n_params, NOISE_STD, &t,
-              0, NULL, 0.0f);
+//     make_data(points_x, points_y, n_inliers, n_outliers,
+//               true_params, n_params, NOISE_STD, &t,
+//               0, NULL, 0.0f);
 
-    printf("n_inliers  = %d\n", n_inliers);
-    printf("n_outliers = %d\n", n_outliers);
-    printf("t          = %.4f\n", t);
-    printf("d          = %d\n", d);
-    printf("k          = %d\n", k);
+//     printf("n_inliers  = %d\n", n_inliers);
+//     printf("n_outliers = %d\n", n_outliers);
+//     printf("t          = %.4f\n", t);
+//     printf("d          = %d\n", d);
+//     printf("k          = %d\n", k);
 
-    RansacResult res = run_ransac(points_x, points_y, N_TOTAL,
-                                  n_params, true_params,
-                                  epsilon, t, d, k, 0, 0);
+//     RansacResult res = run_ransac(points_x, points_y, N_TOTAL,
+//                                   n_params, true_params,
+//                                   epsilon, t, d, k, 0, 0);
 
-    printf("model_error = %.6f\n", res.model_error);
-    printf("time_mu_s     = %.2f\n", res.time_mu_s);
+//     printf("model_error = %.6f\n", res.model_error);
+//     printf("time_mu_s     = %.2f\n", res.time_mu_s);
 
-    return 0;
-}
+//     return 0;
+// }
