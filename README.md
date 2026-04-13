@@ -426,6 +426,11 @@ For all experiments, $N = 1000$ points are used, split between inliers and outli
 
 The inlier threshold $t$ is estimated from the noisy inlier data before outliers are added, using $t = \bar{e} + 2\sigma$ applied to the vertical residuals of a preliminary least squares fit. The expected inlier count $d$ is computed from the true $\varepsilon$ as $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. The iteration count $k$ is computed from the true $\varepsilon$ and the model degree using the analytical formula with failure probability $p_{\text{fail}} = 0.01$, except in Experiment 3 where $k$ is fixed at a budget of $k = 100$ to observe the breakdown point.
 
+All experiments write the same CSV files with the column names as follow: 
+
+$index$, $N$, $\varepsilon$, $d$, $m$, $k$, $t$, $repeat$, $time$, and $model\_error$.
+
+
 ### Empirical Analysis 
 
 
