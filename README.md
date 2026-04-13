@@ -271,37 +271,6 @@ Quadratic:  same, compare against linear
 Complexity: at what m does RANSAC fail for reasonable but fixed k, threshold, N?
 -->
 
-## Empirical Analysis
-
-The empirical analysis is organized around three questions, each probing a different limit of the RANSAC algorithm. The first two fix the model degree and vary the data conditions; the third fixes the data conditions and varies the model degree. Together they trace the boundary between what RANSAC can and cannot recover, and connect the theoretical parameter analysis of Section 2 to observed behavior on synthetic data.
-
-### How Does RANSAC Break Down as Outlier Fraction Increases?
-
-The number of iterations required to draw at least one clean sample with probability $p = 0.99$ is given analytically by $k = \log(1 - p) / \log(1 - (1 - \varepsilon)^{n})$, where $\varepsilon$ is the outlier fraction and $n$ is the minimum sample size. As $\varepsilon$ increases toward 1, $k$ grows without bound. The first experiment asks at what outlier fraction RANSAC fails in practice when $k$ is held fixed at a reasonable value.
-
-This experiment is run for both the linear model ($n = 2$) and the quadratic model ($n = 3$). The iteration count $k$ is fixed at the value computed for $\varepsilon = 0.5$, and $\varepsilon$ is varied from $0.1$ to $0.9$. The recovered model error — the Euclidean distance between the estimated and true parameter vectors — is recorded at each value of $\varepsilon$. The experiment is repeated across three values of $N$ to separate the effect of dataset size from the effect of outlier fraction.
-
-The expected result is a sharp increase in model error above a critical $\varepsilon$, with the linear model tolerating a higher outlier fraction than the quadratic model for the same $k$. This asymmetry is a direct consequence of the exponential term $(1 - \varepsilon)^n$ in the iteration formula: each additional parameter in the model amplifies the sensitivity to outliers.
-
-### At What Structural Bias Probability Does RANSAC Fail?
-
-The previous experiment places outliers randomly and far from the true model, a condition RANSAC is designed to handle. Structural bias presents a qualitatively different challenge: a systematic deviation that corrupts a fraction $p_r$ of the inlier points in a coherent direction. Unlike random outliers, structural bias cannot be rejected by RANSAC if the corrupted points are numerous enough to form their own consensus set, since RANSAC selects the model with the largest inlier count regardless of whether that model is the true one.
-
-This experiment introduces three bias types — constant, linear, and periodic — and varies $p_r$ from $0.0$ to $1.0$ in increments of $0.1$. At each value of $p_r$, RANSAC is run and model error is recorded. The outlier fraction is held fixed at $\varepsilon = 0.3$, and the experiment is run for both the linear and quadratic models. The expected result is a critical threshold $p_r^*$ above which RANSAC consistently recovers the biased model rather than the true one. This threshold is expected to vary with bias type: periodic bias averages to zero over the $x$ range and is expected to be more benign than constant or linear bias, which introduce a persistent shift. Comparing results across model degrees reveals whether higher-degree models are more or less susceptible to structured corruption.
-
-### At What Model Degree Does RANSAC Fail for a Fixed Iteration Budget?
-
-The iteration formula reveals that the required $k$ grows exponentially with the minimum sample size $n$. For $\varepsilon = 0.5$ and $p = 0.99$, the theoretical requirements are:
-
-| Model degree | $n$ | $k$ required |
-|---|---|---|
-| Linear | 2 | 17 |
-| Quadratic | 3 | 35 |
-| Cubic | 4 | 72 |
-| Degree 5 | 6 | 293 |
-| Degree 10 | 11 | 4,607 |
-
-The third experiment asks at what degree RANSAC fails when $k$ is fixed at a practical budget of $k = 100$ and the outlier fraction is held at $\varepsilon = 0.5$. Model error is recorded for polynomial degrees 2 through 8. The degree at which error rises sharply identifies the practical limit of RANSAC under this budget, and is expected to agree with the theoretical prediction above. This experiment thus serves as an empirical validation of the iteration formula: theory predicts the breakdown point analytically, and the experiment confirms it on synthetic data. The result motivates the adoption of adaptive variants such as PROSAC [8] or LO-RANSAC [9] when the model complexity or outlier fraction exceeds what a fixed iteration budget can accommodate.
 
 ## RANSAC Parameters
 
@@ -374,21 +343,70 @@ The third approach uses iterative refinement: start with a conservative overesti
 
 I implement the first approach as `estimate_epsilon` and its limitations are documented. But since true $\varepsilon$ is known from synthetic generation it is used directly in experiments.
 
+## Empirical Analysis
+
+I have organize the empirical analysis around three questions, each probing a different limit of the RANSAC algorithm. The first two fix the model degree and vary the data conditions; the third fixes the data conditions and varies the model degree. Together they test the boundaries of what RANSAC can and cannot recover. These are direct tests of the the theoretical parameter analysis of Section 2 to observed behavior using synthetic data.
+
+### How Does RANSAC Break Down as Outlier Fraction Increases?
+
+The number of iterations required to draw at least one clean sample with probability $p = 0.99$ is given analytically by $k = \log(1 - p) / \log(1 - (1 - \varepsilon)^{n})$, where $\varepsilon$ is the outlier fraction and $n$ is the minimum sample size. As $\varepsilon$ gets close to 1, $k$ grows without bound. The first experiment asks at what outlier fraction RANSAC fails in practice when $k$ is held fixed at a reasonable value.
+
+The iteration count $k$ is fixed at the value computed for $\varepsilon = 0.5$, and $\varepsilon$ is varied from $0.1$ to $0.9$. This experiment is run for both the linear model ($n = 2$) and the quadratic model ($n = 3$). The recovered model error — the Euclidean distance between the estimated and true parameter vectors — is recorded at each value of $\varepsilon$. The experiment is repeated across three values of $N$ to separate the effect of dataset size from the effect of outlier fraction.
+
+The expected result is a sharp increase in model error above a critical $\varepsilon$, with the linear model tolerating a higher outlier fraction than the quadratic model for the same $k$. This asymmetry is a direct consequence of the exponential term $(1 - \varepsilon)^n$ in the iteration formula: each additional parameter in the model amplifies the sensitivity to outliers.
+
+### At What Structural Bias Probability Does RANSAC Fail?
+
+The previous experiment places outliers randomly and far from the true model, a condition RANSAC is designed to handle. Structural bias presents a qualitatively different challenge: a systematic deviation that corrupts a fraction $p_r$ of the inlier points in a coherent direction. Unlike random outliers, structural bias cannot be rejected by RANSAC if the corrupted points are numerous enough to form their own consensus set, since RANSAC selects the model with the largest inlier count regardless of whether that model is the true one.
+
+This experiment introduces three bias types — constant, linear, and periodic — and varies $p_r$ from $0.0$ to $1.0$ in increments of $0.1$ to otherwise noiseless and outlier free data. At each value of $p_r$, RANSAC is run and model error is recorded. The outlier fraction is held fixed at moderate $\varepsilon = 0.3$, and the experiment is run for both the linear and quadratic models. 
+
+The expected result is a critical threshold $p_r^*$ above which RANSAC consistently recovers the biased model rather than the true one. This threshold is expected to vary with bias type: periodic bias averages to zero over the $x$ range and is expected to be more benign than constant or linear bias, which introduce a persistent shift. Comparing results across model degrees reveals whether higher-degree models are more or less susceptible to structured corruption.
+
+### At What Model Degree Does RANSAC Fail for a Budgeted or Fixed Iteration Count?
+
+The formula for estimating the numver of iterations, $k$, reveals that it grows exponentially with the minimum sample size $n$. For $\varepsilon = 0.5$ and $p = 0.99$, the theoretical requirements are:
+
+| Model degree | $n$ | $k$ required |
+|---|---|---|
+| Linear | 2 | 17 |
+| Quadratic | 3 | 35 |
+| Cubic | 4 | 72 |
+| Degree 5 | 6 | 293 |
+| Degree 10 | 11 | 4,607 |
+
+The third experiment asks at what degree RANSAC fails when $k$ is fixed at a fixed budget of $k = 100$ and the outlier fraction is held at moderate $\varepsilon = 0.5$. Model error is recorded for polynomial degrees 2 through 8. The degree at which error rises sharply identifies the practical limit of RANSAC under this budget, and is expected to agree with the theoretical prediction above. This experiment thus serves as an empirical validation of the iteration formula: theory predicts the breakdown point analytically, and the experiment confirms it on synthetic data. The result motivates the adoption of adaptive variants such as PROSAC [8] or LO-RANSAC [9] when the model complexity or outlier fraction exceeds what a fixed iteration budget can accommodate.
+
+
 ### Experimental Setup
 
-#### Generating Noisy Data
-* Gaussian Noise:
-  * Using Box-Muller for gaussian noise [5].
-* Laplace Noise:
-  * Why laplace noise?
-    * Gaussian:  tails decay as exp(-x²)
-    * Laplace:   tails decay as exp(-|x|), slower decay and heavier tails
-    * The Laplace distribution looks like two exponential curves back to back, centered at a mean (0 in case of noise).
-    * noise drawn from Laplace distribution has a higher probability of generating points far from the mean than Gaussian with the same scale. This makes it a good model for measurement errors that occasionally produce large deviations — more realistic than pure Gaussian.
-* Outliers or Classification Errors
-* Structural Errors
+#### Synthetic Data Generation
 
+In these experiments I abstract away from images and use catesian graph points instead. All experiments use points generated from known polynomial models which I call generators or generator models. This allows the true parameters to be compared directly against RANSAC's recovered parameters. This gives an exact measure of model error that would be impossible with real image data. Each dataset is constructed in four stages: inlier generation, noise injection, outlier placement, and optional structural bias. Each stage is implemented as a separate function, allowing any combination to be composed independently and tested in isolation.
 
+**Inlier generation.** A set of $N_{\text{inlier}}$ points is placed exactly on the true polynomial model $y = a_0 + a_1 x + \cdots + a_{m-1} x^{m-1}$, with $x$ values spaced evenly across a fixed range $[x_{\min}, x_{\max}]$. The true parameters are fixed at $a_0 = 5$, $a_1 = 2$ for linear experiments, and $a_0 = 1$, $a_1 = 1$, $a_2 = 1$ for quadratic experiments.
+
+**Gaussian noise.** Zero-mean Gaussian noise with standard deviation $\sigma$ is added to the $y$ values of all inlier points. This models sensor measurement error — the dominant noise type in most physical measurement systems. Gaussian noise is generated using the Box-Muller transform [5], which produces exactly Gaussian samples from two uniform random draws without rejection sampling:
+
+$$z = \sqrt{-2 \ln u_1} \cos(2\pi u_2), \qquad u_1, u_2 \sim \text{Uniform}(0, 1)$$
+
+The noise standard deviation $\sigma$ is set to $0.5$ in all experiments unless stated otherwise, giving a signal-to-noise ratio that is realistic but tractable.
+
+**Outliers.** Classification errors — points that lie far outside the inlier band — are appended to the dataset after noise injection. Outliers are placed in an $x$ range that extends two data ranges beyond the inlier $x$ extent, and at $y$ values guaranteed to lie outside the inlier band $|y - \hat{y}| > 2\sigma$. This construction guarantees that every appended point is a true classification error and not an accidental inlier, giving exact control over the outlier fraction $\varepsilon = N_{\text{outlier}} / (N_{\text{inlier}} + N_{\text{outlier}})$.
+
+**Structural bias.** Structural bias is a systematic deviation applied to a random fraction $p_r$ of inlier points using a deterministic function $b(x)$. Unlike Gaussian noise, which is independent at each point and averages to zero over the dataset, structural bias introduces a coherent shift that RANSAC cannot distinguish from a different true model if $p_r$ is large enough. Three bias functions are used: constant bias $b(x) = c$, linear bias $b(x) = \alpha x$, and periodic bias $b(x) = \sin(x)$. Periodic bias is expected to be more benign than constant or linear bias because it averages to near zero over a full period, reducing its net effect on the consensus set.
+
+#### Measuring Recovery Quality
+
+Model recovery quality is measured as the Euclidean distance between the estimated parameter vector $\hat{\mathbf{a}}$ and the true parameter vector $\mathbf{a}^*$:
+
+$$\text{error} = \|\hat{\mathbf{a}} - \mathbf{a}^*\|_2 = \sqrt{\sum_{j=0}^{m-1} (\hat{a}_j - a_j^*)^2}$$
+
+This is a single scalar that captures error across all model parameters simultaneously, regardless of polynomial degree. Because RANSAC is stochastic, each experiment is repeated $R = 20$ times with different random seeds and the mean error and standard deviation are reported.
+
+#### Experiment Parameters
+
+The three experiments share a common parameter baseline. The inlier count is fixed at $N_{\text{inlier}} = 100$ unless stated otherwise. The inlier threshold $t$ is estimated from the noisy inlier data before outliers are added, using $t = \bar{e} + 2\sigma$ applied to the vertical residuals of a preliminary least squares fit. The expected inlier count $d$ is computed from the true $\varepsilon$ as $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. The iteration count $k$ is computed from the true $\varepsilon$ and the model degree using the analytical formula with failure probability $p_{\text{fail}} = 0.01$, except in Experiment 3 where $k$ is fixed at a budget of $k = 100$ to observe the breakdown point.
 
 ### Empirical Analysis 
 
@@ -487,7 +505,7 @@ flowchart TD
 
 ### Data Representation
 
-Points are stored as separate flat arrays `points_x` and `points_y` rather than as an array of `(x, y)` tuples. This was a deliberate choice for two reasons. First, separate arrays are mutable in place in C without pointer arithmetic on struct members, making in-place noise injection and outlier appending straightforward. Second, this layout maps directly to the Vandermonde accumulation in `fit_model`, where `points_x[i]` and `points_y[i]` are accessed independently in tight loops. Had tuples been used, each access would require a stride of two.
+Points are stored as separate flat arrays `points_x` and `points_y` rather than as an array of `(x, y)` tuples. This was a deliberate choice for two reasons. First, separate arrays are mutable in place in C without pointer arithmetic on struct members, making in-place noise injection and outlier appending straightforward. Second, this layout maps directly to the Vandermonde accumulation in `fit_model`, where `points_x[i]` and `points_y[i]` are accessed independently in tight loops.
 
 Model parameters are stored as a flat array of $m$ coefficients from lowest to highest degree: `params[0]` $= a_0$, `params[1]` $= a_1$, and so on. The `return_array` of `ransac()` is similarly a flat array with a documented layout:
 
@@ -497,11 +515,47 @@ return_array[1]               number of iterations actually run
 return_array[2..2+m-1]        best model params (a0, a1, ...)
 ```
 
-This layout was designed with a future C struct in mind. A natural next step would be to replace `return_array` with a `RansacResult` struct, making the fields named rather than positional. The flat array was kept for the initial implementation to avoid introducing struct syntax before the algorithm was fully tested.
+A natural next step would be to replace `return_array` with a `RansacResult` struct, making the fields named rather than positional.
 
 ### Noise and Outlier Generation
 
-Noise is injected as separate functions — `add_gaussian_noise`, `add_laplace_noise`, and `add_structural_bias` — rather than as a single combined generator. This separation serves the empirical analysis directly: by swapping noise functions, the effect of each noise type on RANSAC recovery can be measured in isolation. Gaussian noise models sensor measurement error; Laplace noise has heavier tails and models occasional large deviations; structural bias models systematic error such as lens distortion or calibration drift that affects a fraction $p_r$ of points coherently rather than randomly. The `add_structural_bias` function accepts a function pointer `float (*bias_fn)(float)`, allowing any bias shape — constant, linear, or periodic — to be injected without modifying the generator.
+Noise is injected as separate functions — `add_gaussian_noise`, `add_outlier`, and `add_structural_bias` — rather than as a single combined generator. This separation serves the empirical analysis directly: by swapping noise functions, the effect of each noise type on RANSAC recovery can be measured in isolation.
+
+ Gaussian noise models sensor measurement error. 
+ 
+ ```c
+
+ ```
+ 
+ Outliers are what Fischler and Bolles call classification errors, these are strictly outside the 2 * $\sigma$ band around the model. 
+ 
+ ```c
+
+ ```
+
+ Structural bias models systematic error such as lens distortion that affects a fraction $p_r$ of points coherently rather than randomly. The `add_structural_bias` function accepts a function pointer `float (*bias_fn)(float)`, allowing any bias shape — constant, linear, or periodic — to be injected without modifying the generator.
+
+```c
+
+```
+
+### Parameter Estimation Helper Functions
+
+Rather than requiring the caller to supply $\varepsilon$, $k$, $d$, and $t$ directly, four helpers derive these values from the data.
+
+`estimate_epsilon` fits a least squares line to all points, computes vertical residuals, and returns the fraction exceeding $\bar{e} + 2\sigma$ as an estimate of $\varepsilon$. 
+ 
+`compute_t` uses the same distribution to set $t = \bar{e} + 2\sigma$, consistent with Fischler and Bolles [1]. 
+
+`compute_k` applies the analytical formula:
+$k = \left\lceil \frac{\log(p_{\text{fail}})}{\log\left(1 - (1-\varepsilon)^m\right)} \right\rceil$.
+
+`compute_d` computes $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. 
+
+Both `estimate_epsilon` and `compute_t` are unreliable at high outlier fractions because the preliminary fit is corrupted by the outliers it is trying to characterize — the same problem RANSAC was designed to solve. 
+
+In this project $\varepsilon$ is known exactly from the synthetic data generation process, so the helpers serve as a demonstration of the estimation procedure for real-world settings where the true $\varepsilon$ is unknown. This design also makes the relationship between $\varepsilon$, $k$, $d$, and $t$ explicit and independently testable.
+
 
 ### Polynomial Least Squares via the Normal Equations
 
@@ -513,19 +567,24 @@ Arranging the data into a Vandermonde design matrix $X \in \mathbb{R}^{N \times 
 
 $$(X^\top X)_{rc} = \sum_{i=1}^{N} x_i^{r+c}, \qquad (X^\top \mathbf{y})_r = \sum_{i=1}^{N} x_i^r \, y_i$$
 
-Powers of $x_i$ are precomputed up to degree $2(m-1)$ and reused across both accumulations to avoid redundant `pow` calls. The normal equations are solved via Gaussian elimination with partial pivoting on the augmented matrix $[X^\top X \mid X^\top \mathbf{y}]$. A zero pivot indicates a singular matrix — corresponding to the degenerate case where all $x_i$ are equal — and the function returns an error. The coefficient vector is recovered by back substitution. For $m = 2$ this reduces to ordinary least squares line fitting, but the implementation handles all degrees uniformly without special-casing the linear model.
+I precomputed powers of $x_i$ are precomputed up to degree $2(m-1)$ and reused these to avoid redundant `pow` calls. 
 
-### Vertical Residual as the Inlier Distance Metric
+I solve normal equations are solved via Gaussian elimination with partial pivoting and back substitution [7, 8]. A zero pivot indicates a singular matrix and the function returns an error. The coefficient vector is recovered by back substitution. For $m = 2$ this reduces to ordinary least squares line fitting, but the implementation handles all degrees without making any special case for the linear model.
+
+```C
+
+```
+### Vertical Residual as the Distance From Model
 
 The distance from a point $(x_i, y_i)$ to the polynomial model is measured as the vertical residual:
 
 $$\text{distance}_i = \left| \sum_{j=0}^{m-1} a_j x_i^j - y_i \right|$$
 
-This is the absolute difference between the predicted and observed $y$ value. For line models with small slope, this approximates the perpendicular distance, but the vertical residual is preferred here because it extends naturally to polynomial models of any degree, for which perpendicular distance has no simple closed form. The absolute value ensures the distance is non-negative regardless of which side of the model the point lies on. A separate function `points_to_line_distances` computes the true perpendicular distance for linear models only, and is retained for completeness and comparison.
+This is the absolute difference between the predicted and observed $y$ value. In the linear model with Python I had used perpendicular distance, but the vertical residual is preferred here because it extends naturally to polynomial models of any degree, for which perpendicular distance has no simple closed form. The absolute value ensures the distance is non-negative regardless of which side of the model the point lies on. A separate function `points_to_line_distances` computes the true perpendicular distance for linear models only, and is retained for completeness and comparison.
 
 ### The RANSAC Loop and the Final Refit
 
-The core loop samples $m$ random indices using a partial Fisher-Yates shuffle — only the first $m$ positions are shuffled at $O(m)$ cost rather than $O(N)$ — fits a candidate model to the sample, counts inliers via vertical residual, and tracks the best model found. An early stop exits the loop as soon as `expected_inliers` are reached, avoiding redundant iterations when a good model is found early.
+The core loop samples $m$ random indices using a partial Fisher-Yates shuffle — only the first $m$ positions are shuffled at $O(m)$ cost rather than $O(N)$ — fits a candidate model to the sample, counts inliers based on vertical distance from the model, and tracks the best model as the one with the highest number of inliers. An early stop exits the loop as soon as `expected_inliers` are reached. A better one may be found later on, but RANSAC's philosphy is after all to find a good-enough model and save time and computation cost.
 
 A critical implementation detail follows Fischler and Bolles directly [1]: the final refit on all inliers of the best consensus set is a post-processing step, not part of the RANSAC iteration. Inside the loop, the model is fit only to the $m$-point sample. After the loop, all inliers of the best model are collected and the model is refit on the full consensus set. This two-stage design is what gives RANSAC its accuracy: the loop finds the consensus, and the refit uses that consensus to produce a statistically efficient estimate.
 
@@ -537,15 +596,14 @@ A critical implementation detail follows Fischler and Bolles directly [1]: the f
 
 ### Stochastic Behavior and Test Design
 
-Because RANSAC is a randomized algorithm, its tests are inherently probabilistic. With a failure probability of $p = 0.01$, approximately one test run in one hundred will fail even on a correct implementation. This is not a bug — it is the designed behavior of the algorithm, and it means that a single test failure is not evidence of a defect. The test suite is designed to reflect this: tolerance deltas are set wide enough to accommodate the noise level of the synthetic data, and the empirical analysis repeats each experiment multiple times to report average behavior rather than a single run. The theoretical guarantee is that with $k$ iterations computed from the $k$ formula, RANSAC finds a correct model with probability at least $1 - p$. The tests verify this at the chosen $p = 0.01$ level.
+[proof_of_tests_all.txt](proof_of_tests/proof_of_tests_all.txt) 
 
-### Parameter Estimation Helper Functions
+Because RANSAC is a randomized algorithm, its tests are inherently probabilistic. With a failure probability of $p = 0.01$, approximately one test run in one hundred will fail even on a correct implementation. This is not a bug — it is the designed behavior of the algorithm, and it means that a single test failure is not evidence of a defect. The test suite is designed to reflect this: tolerance deltas are set wide enough to accommodate the noise level of the synthetic data.
 
-Rather than requiring the caller to supply $\varepsilon$, $k$, $d$, and $t$ directly, four helpers derive these values from the data. `estimate_epsilon` fits a least squares line to all points, computes vertical residuals, and returns the fraction exceeding $\bar{e} + 2\sigma$ as an estimate of $\varepsilon$. `compute_t` uses the same distribution to set $t = \bar{e} + 2\sigma$, consistent with Fischler and Bolles [1]. `compute_k` applies the analytical formula:
+Although the [tests I report](proof_of_tests/proof_of_tests_all.txt) pass, there were a few tests that fail randomly and pass on another the next run. The empirical analysis repeats each experiment multiple times to report average behavior rather than a single run. 
 
-$$k = \left\lceil \frac{\log(p_{\text{fail}})}{\log\left(1 - (1-\varepsilon)^m\right)} \right\rceil$$
+The theoretical guarantee is that with $k$ iterations computed from the $k$ formula, RANSAC finds a correct model with probability at least $1 - p$. The tests verify this at the chosen $p = 0.01$ level.
 
-and `compute_d` computes $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. Both `estimate_epsilon` and `compute_t` are unreliable at high outlier fractions because the preliminary fit is corrupted by the outliers it is trying to characterize — the same problem RANSAC was designed to solve. In this project $\varepsilon$ is known exactly from the synthetic data generation process, so the helpers serve as a demonstration of the estimation procedure for real-world settings where the true $\varepsilon$ is unknown. This design also makes the relationship between $\varepsilon$, $k$, $d$, and $t$ explicit and independently testable, consistent with the test-driven approach used throughout.
 
 ## Summary
 <!-- 
@@ -555,12 +613,13 @@ and `compute_d` computes $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. Both `
 
 
 ## LLM Use Disclosure 
-I did not any LLM to write any part of the code. I implemented my codes using pseudocodes presented in the texts in the reference section. I used MS Word for checking the report for syntax and grammar.
+I did not any LLM to write codes. I implemented my codes based on my reading of the original Fishler and Bolles paper [1] and its representation in other text books [2, 3, 4]. Although I had done so by hand, I had not implemented solution of a system of equations (vandermont matrix) using gaussian elimination before. I learnt to do that from youtube video tutorials [7, 8].
 
-Claude: I used Calude for planning a 4-week time-line. I also used Claude to add doc strings at the end. I also used Clause for trouble shooting when I was unable to figure a bug in helper functions for testing which caused persistent test failures.
+Claude: I used Calude for planning a 4-week time-line. I also used Claude to add doc strings at the end. I also used Clause for trouble shooting when I was unable to figure a bug in functions which caused persistent test failures.
 
-Google Gemini: I used Google Gemini to look up many unknown terms when I encountered them in the text books.
+Google Gemini: I used Google Gemini to look up many unknown terms and to search for better ways of doing something. 
 
+I used MS Word for checking the report for syntax and grammar.
 
 ## References
 
@@ -578,22 +637,10 @@ Google Gemini: I used Google Gemini to look up many unknown terms when I encount
 
 [7] Cappetta, R. 2018. Gaussian Elimination with Back Substitution. YouTube. Retrieved from https://youtu.be/8cnxU-Pmb3w on Apr 7, 2026.
 
+[8] Piedad, E. 2020. *2.2 - Gaussian Elimination Method (code & example) - Engineering Numerical Methods w/Python 3*. YouTube. Retrieved from https://www.youtube.com/watch?v=HtTzFA5KTTQ on April 7, 2026.
+
 <!-- PROSAC -->
 [8] Chum, O. and Matas, J. 2005. Matching with PROSAC — progressive sample consensus. In Proceedings of the 2005 IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR '05), Vol. 1, 220–226. IEEE. https://doi.org/10.1109/CVPR.2005.221.
 
 <!-- LO-RANSAC -->
 [9] Chum, O., Matas, J., and Kittler, J. 2003. Locally optimized RANSAC. In Proceedings of the 25th DAGM Symposium on Pattern Recognition, Lecture Notes in Computer Science, Vol. 2781, 236–243. Springer, Berlin, Heidelberg. https://doi.org/10.1007/978-3-540-45243-0_31
-
-<!-- Time Line
-Days 1-3  (now-Apr 5):   finish generate.py + model.py
-Days 4-6  (Apr 6-8):     ransac.py + evaluate.py
-Days 7-9  (Apr 9-11):    end-to-end test + experiments
-Days 10-12(Apr 12-14):   empirical analysis + plots
-Days 13-15(Apr 15-17):   report writing + cleanup
-
-Good to do:
-Days 13-15(Apr 18-20):   Translate to C
-Days 10-12(Apr 21-):   empirical analysis + plots
-Days 13-15(Apr 15-17):   report writing + cleanup
-
--->
