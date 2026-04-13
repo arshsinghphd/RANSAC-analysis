@@ -14,9 +14,9 @@
 #ifndef EXPERIMENTS_H
 #define EXPERIMENTS_H
 
-#include "../src/C/generator.h"
-#include "../src/C/model.h"
-#include "../src/C/ransac.h"
+#include "../src/generator.h"
+#include "../src/model.h"
+#include "../src/ransac.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,8 +38,8 @@
  *     linear:    y = 5 + 2x
  *     quadratic: y = 1 + x + x^2
  * --------------------------------------------------------------- */
-#define TRUE_PARAMS_LINEAR    {5.0f, 2.0f}
-#define TRUE_PARAMS_QUADRATIC {1.0f, 1.0f, 1.0f}
+#define _TRUE_PARAMS_LINEAR    {5.0f, 2.0f}
+#define _TRUE_PARAMS_QUADRATIC {1.0f, 1.0f, 1.0f}
 
 /* ---------------------------------------------------------------
  * Result struct — maps one RANSAC run to one CSV row.
