@@ -4,3 +4,7 @@ works/
 *.pyc
 
 **/__pycache__
+
+# venv and ipynb for empirical analysis
+empirical_analysis/.venv
+empirical_analysis/.ipynb*
