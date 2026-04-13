@@ -353,11 +353,15 @@ The number of iterations required to draw at least one clean sample with probabi
 
 The iteration count $k$ is fixed at the value computed for $\varepsilon = 0.5$, and $\varepsilon$ is varied from $0.1$ to $0.9$. The experiment is repeated across three values of $N$ to separate the effect of dataset size from the effect of outlier fraction.
 
-For $\varepsilon = 0.5$, $p$ = 0.99:
+For $\varepsilon = 0.5$, $p$ = 0.99, and $\log_2$:
 
-$k (n = 2) = \frac{\log(1 - 0.99)}{\log(1 - (1 - 0.5)^2)} = \frac{\log(0.01)}{\log(1 - 0.25)} = \frac{-4.605}{-0.2877} \approx 17$.
+For $n = 2$:
 
-$k (n = 3) = \frac{\log(1 - 0.99)}{\log(1 - (1 - 0.5)^3)} = \frac{\log(0.01)}{\log(1 - 0.125)} = \frac{-4.605}{-0.1335} \approx 35$.
+$$k = \frac{\log_2(0.01)}{\log_2(1 - (0.5)^2)} = \frac{-6.644}{\log_2(0.75)} = \frac{-6.644}{-0.415} \approx 17$$
+
+For $n = 3$:
+
+$$k = \frac{\log_2(0.01)}{\log_2(1 - (0.5)^3)} = \frac{-6.644}{\log_2(0.875)} = \frac{-6.644}{-0.193} \approx 35.$$
 
 Thus, this experiment is first run the linear model ($n = 2$) keeping $k$ constant at 17, and then for the quadratic model ($n = 3$) keping $k$ constant at 35. 
 
@@ -416,7 +420,7 @@ This is a single scalar that captures error across all model parameters simultan
 
 #### Experiment Parameters
 
-The three experiments share a common parameter baseline. The inlier count is fixed at $N_{\text{inlier}} = 100$ unless stated otherwise. The inlier threshold $t$ is estimated from the noisy inlier data before outliers are added, using $t = \bar{e} + 2\sigma$ applied to the vertical residuals of a preliminary least squares fit. The expected inlier count $d$ is computed from the true $\varepsilon$ as $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. The iteration count $k$ is computed from the true $\varepsilon$ and the model degree using the analytical formula with failure probability $p_{\text{fail}} = 0.01$, except in Experiment 3 where $k$ is fixed at a budget of $k = 100$ to observe the breakdown point.
+The three experiments share a common parameter baseline. The inlier count is fixed at $N_{\text{inlier}} = 10,000$ unless stated otherwise. The inlier threshold $t$ is estimated from the noisy inlier data before outliers are added, using $t = \bar{e} + 2\sigma$ applied to the vertical residuals of a preliminary least squares fit. The expected inlier count $d$ is computed from the true $\varepsilon$ as $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. The iteration count $k$ is computed from the true $\varepsilon$ and the model degree using the analytical formula with failure probability $p_{\text{fail}} = 0.01$, except in Experiment 3 where $k$ is fixed at a budget of $k = 100$ to observe the breakdown point.
 
 ### Empirical Analysis 
 
