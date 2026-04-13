@@ -88,7 +88,7 @@ RansacResult run_ransac(float* points_x, float* points_y,
     res.k           = k;
     res.repeat      = repeat;
     res.model_error = -1.0f;
-    res.time_us     = 0.0f;
+    res.time_mu_s     = 0.0f;
 
     float return_array[2 + n_params];
 
@@ -98,7 +98,7 @@ RansacResult run_ransac(float* points_x, float* points_y,
                      k, t, d, return_array);
     clock_t end = clock();
 
-    res.time_us = (float)(end - start) / CLOCKS_PER_SEC * 1e6f;
+    res.time_mu_s = (float)(end - start) / CLOCKS_PER_SEC * 1e6f;
 
     if (ret == -1)
         return res;
@@ -151,7 +151,7 @@ int main(void) {
                                   epsilon, t, d, k, 0, 0);
 
     printf("model_error = %.6f\n", res.model_error);
-    printf("time_us     = %.2f\n", res.time);
+    printf("time_mu_s     = %.2f\n", res.time_mu_s);
 
     return 0;
 }

@@ -44,7 +44,7 @@
 /* ---------------------------------------------------------------
  * Result struct — maps one RANSAC run to one CSV row.
  * Fields correspond directly to CSV columns:
- *     index, n, epsilon, t, d, m, k, repeat, time_us, model_error
+ *     index, n, epsilon, t, d, m, k, repeat, time_mu_s, model_error
  * --------------------------------------------------------------- */
 typedef struct {
     int   index;
@@ -55,7 +55,7 @@ typedef struct {
     int   d;
     int   k;
     int   repeat;
-    float time_us;
+    float time_mu_s;
     float model_error;
 } RansacResult;
 
