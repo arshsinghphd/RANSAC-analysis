@@ -1,0 +1,12 @@
+gcc -Wall -std=c11 -o exp1.out experiment1.c experiments.c ../src/model.c ../src/generator.c ../src/ransac.c -lm
+./exp1.out
+model m=2  k_fixed=17
+model m=3  k_fixed=35
+Experiment 1 done. Results written to results/exp1.csv
+gcc -Wall -std=c11 -o exp2.out experiment2.c experiments.c ../src/model.c ../src/generator.c ../src/ransac.c -lm
+./exp2.out
+model m=2 k=17
+model m=3 k=35
+Experiment 2 done. Results written to results/exp2.csv
+gcc -Wall -std=c11 -o exp3.out experiment3.c experiments.c ../src/model.c ../src/generator.c ../src/ransac.c -lm
+./exp3.out
