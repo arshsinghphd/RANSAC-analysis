@@ -10,3 +10,27 @@ model m=3 k=35
 Experiment 2 done. Results written to results/exp2.csv
 gcc -Wall -std=c11 -o exp3.out experiment3.c experiments.c ../src/model.c ../src/generator.c ../src/ransac.c -lm
 ./exp3.out
+
+--- k_budget = 100 ---
+degree=2 n_params=3 k_theory=35
+degree=3 n_params=4 k_theory=72
+degree=4 n_params=5 k_theory=146
+degree=5 n_params=6 k_theory=293
+degree=6 n_params=7 k_theory=588
+degree=7 n_params=8 k_theory=1177
+degree=8 n_params=9 k_theory=2356
+degree=9 n_params=10 k_theory=4714
+degree=10 n_params=11 k_theory=9430
+
+--- k_budget = 1000 ---
+degree=2 n_params=3 k_theory=35
+degree=3 n_params=4 k_theory=72
+degree=4 n_params=5 k_theory=146
+degree=5 n_params=6 k_theory=293
+degree=6 n_params=7 k_theory=588
+degree=7 n_params=8 k_theory=1177
+degree=8 n_params=9 k_theory=2356
+degree=9 n_params=10 k_theory=4714
+degree=10 n_params=11 k_theory=9430
+
+Experiment 3 done. Results written to results/exp3.csv
