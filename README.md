@@ -378,14 +378,9 @@ This is a single scalar that captures error across all model parameters simultan
 
 The three experiments share a common parameter baseline.
 
-For all experiments, $N = 1000$ points are used, split between inliers and outliers according to the outlier fraction $\varepsilon$. This choice is larger than the $N = 100$ commonly used in illustrative examples, and is motivated by two practical considerations. First, timing resolution: the C implementation runs fast enough that at $N = 100$ individual function calls complete in nanoseconds, making wall-clock timing unreliable. At $N = 1000$ the dominant operations — normal equation accumulation in `fit_model` and residual computation in `find_model_inliers` — run long enough to be measured reliably in microseconds using `clock()`. Second, statistical stability: at $\varepsilon = 0.1$ and $N = 100$ only 10 outlier points are added, which is too few to represent a stable outlier distribution. At $N = 1000$ the same fraction produces 100 outliers, giving a more representative and repeatable experiment across the `N_REPEATS = 20` independent runs.
+For all experiments, $N = 1000$ points are used, split between inliers and outliers according to the outlier fraction $\varepsilon$. This choice is larger than the $N = 100$ commonly used in illustrative examples, and is motivated by two practical considerations. First, timing resolution: the C implementation runs fast enough that at $N = 100$ individual function calls complete in nanoseconds, making wall-clock timing unreliable. At $N = 1000$ the dominant operations — normal equation accumulation in `fit_model` and residual computation in `find_model_inliers` — run long enough to be measured reliably in microseconds using `clock()`. Second, statistical stability: at $\varepsilon = 0.1$ and $N = 100$ only 10 outlier points are added, which is too few to represent a stable outlier distribution. At $N = 1000$ the same fraction produces 100 outliers, giving a more representative and repeatable experiment across the `N_REPEATS = 100` independent runs.
 
-The inlier threshold $t$ is estimated from the noisy inlier data before outliers are added, using $t = \bar{e} + 2\sigma$ applied to the vertical residuals of a preliminary least squares fit. The expected inlier count $d$ is computed from the true $\varepsilon$ as $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. The iteration count $k$ is computed from the true $\varepsilon$ and the model degree using the analytical formula with failure probability $p_{\text{fail}} = 0.01$, except in Experiment 3 where $k$ is fixed at a budget of $k = 100$ to observe the breakdown point.
-
-All experiments write the same CSV files with the column names as follow: 
-
-$index$, $N$, $\varepsilon$, $d$, $m$, $k$, $t$, $repeat$, $time$, and $model\_error$.
-
+The inlier threshold $t$ is estimated from the noisy inlier data before outliers are added, using $t = \bar{e} + 2\sigma$ applied to the vertical residuals of a preliminary least squares fit. The expected inlier count $d$ is computed from the true $\varepsilon$ as $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. The iteration count $k$ is computed from the true $\varepsilon$ and the model degree using the analytical formula with failure probability $p_{\text{fail}} = 0.01$.
 
 ### A Note on Numerical Precision
 
@@ -393,8 +388,7 @@ All computations use single-precision floating point (`float`), which stores num
 
 The limitation of single precision becomes visible when fitting high-degree polynomials. The least squares solver builds a matrix $X^\top X$ whose entries are sums of powers of $x_i$. As the polynomial degree grows, those powers grow rapidly — for degree 6 over $x \in [0, 9]$, the largest entry reaches roughly $10^{15}$, far beyond what seven digits of precision can represent accurately. When Gaussian elimination then tries to solve a system built from such large numbers, small rounding errors get amplified into large errors in the recovered coefficients. The result is a model that looks numerically valid but is wildly wrong — not because RANSAC failed, but because the underlying solver lost precision.
 
-This is a known issue with the Vandermonde design matrix, it becomes harder and harder to solve accurately as the polynomial degree increases. In practice it is fixed by scaling $x$ to a small range such as $[0, 1]$, or by switching to `double` precision, which provides fifteen significant digits and pushes the stable range to roughly degree 14. For this project, $x$ is scaled to $[0, 1]$. A small number of runs across all experiments produce unrealistically large model errors due to this effect and are precision concerns rather than RANSAC failures.
-
+This is a known issue with the Vandermonde design matrix, it becomes harder and harder to solve accurately as the polynomial degree increases. In practice it is fixed by scaling $x$ to a small range such as $[0, 1]$, or by switching to `double` precision, which provides fifteen significant digits and pushes the stable range to roughly degree 14. For this project, $x$ is scaled to $[0, 1]$ and I use `double` precision for gaussian elimination in the function `fit_model` in `model.c`. Yet, a small number of runs across all experiments produce unrealistically large model errors due to this effect and are precision concerns rather than RANSAC failures. I ignore these by plotting mean and the confidence interval is 10th percentile to 90th percentile of the value.
 
 Experiment 01, 02, and 03, confirm the theoretical relationship of parameters with time complexity using run times and efficacy using model error.
 
@@ -455,6 +449,14 @@ The expected result is a sharp increase in model error above a critical $\vareps
 ![Exp1](figures/exp1_outlier_fraction.png)
 
 
+
+### Structural Bias and RANSAC Failure
+Experiment 2 — explores 
+
+Fix $\varepsilon = 0.3$. Vary $p_r$ from 0.0 to 1.0 in steps of 0.1.
+Three bias types: constant, linear, periodic. Linear and quadratic models. `N` is 1000. Repeat `N_REPEATS` times.
+
+![Exp2](figures/exp2.png)
 
 ## Application
 <!-- 
