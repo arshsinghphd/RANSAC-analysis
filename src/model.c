@@ -52,37 +52,31 @@ int fit_model(float* points_x, float* points_y, int n_points,
     if (n_points < n_params || n_params < 2) {
         return -1;
     }
-
-    // test if x_min == x_max
     float x_min = points_x[0];
     float x_max = points_x[0];
     for (int i = 0; i < n_points; i++) {
-        if (points_x[i] < x_min)
-            x_min = points_x[i];
-        if (points_x[i] > x_max)
-            x_max = points_x[i];
+        if (points_x[i] < x_min) x_min = points_x[i];
+        if (points_x[i] > x_max) x_max = points_x[i];
     }
-    if (fabsf(x_min - x_max) < 1e-4) {     // x_min == x_max with floats
+    if (fabsf(x_min - x_max) < 1e-4)
         return -1;
-    }
+
     int d = n_params;
 
-    /* build X^T X (d x d array) and X^T y (d array) */
-    float XtX[d][d];
-    float Xty[d];
+    double XtX[d][d];
+    double Xty[d];
     for (int i = 0; i < d; i++) {
-        Xty[i] = 0.0f;
+        Xty[i] = 0.0;
         for (int j = 0; j < d; j++)
-            XtX[i][j] = 0.0f;
+            XtX[i][j] = 0.0;
     }
 
     for (int i = 0; i < n_points; i++) {
-        float xi = points_x[i];
-        float yi = points_y[i];
+        double xi = (double) points_x[i];
+        double yi = (double) points_y[i];
 
-        /* precompute powers of xi: xpow[k] = xi^k */
-        float xpow[2 * d];
-        xpow[0] = 1.0f;
+        double xpow[2 * d];
+        xpow[0] = 1.0;
         for (int k = 1; k < 2 * d; k++)
             xpow[k] = xpow[k - 1] * xi;
 
@@ -93,44 +87,38 @@ int fit_model(float* points_x, float* points_y, int n_points,
         }
     }
 
-    /* build augmented matrix [XtX | Xty] */
-    float aug[d][d + 1];
+    double aug[d][d + 1];
     for (int r = 0; r < d; r++) {
         for (int c = 0; c < d; c++)
             aug[r][c] = XtX[r][c];
         aug[r][d] = Xty[r];
     }
 
-    /* forward elimination with partial pivoting */
     for (int col = 0; col < d; col++) {
-        int max_row = col;
-        float max_val = fabsf(aug[col][col]);
+        int    max_row = col;
+        double max_val = fabs(aug[col][col]);
         for (int row = col + 1; row < d; row++) {
-            if (fabsf(aug[row][col]) > max_val) {
-                max_val = fabsf(aug[row][col]);
+            if (fabs(aug[row][col]) > max_val) {
+                max_val = fabs(aug[row][col]);
                 max_row = row;
             }
         }
-        if (max_val == 0.0f){
+        if (max_val == 0.0)
             return -1;
-        }
 
-        /* swap rows col and max_row */
         for (int k = 0; k <= d; k++) {
-            float tmp = aug[col][k];
-            aug[col][k] = aug[max_row][k];
+            double tmp      = aug[col][k];
+            aug[col][k]     = aug[max_row][k];
             aug[max_row][k] = tmp;
         }
-
         for (int row = col + 1; row < d; row++) {
-            float factor = aug[row][col] / aug[col][col];
+            double factor = aug[row][col] / aug[col][col];
             for (int k = col; k <= d; k++)
                 aug[row][k] -= factor * aug[col][k];
         }
     }
 
-    /* back substitution */
-    float coeffs[d];
+    double coeffs[d];
     for (int row = d - 1; row >= 0; row--) {
         coeffs[row] = aug[row][d];
         for (int k = row + 1; k < d; k++)
@@ -138,13 +126,11 @@ int fit_model(float* points_x, float* points_y, int n_points,
         coeffs[row] /= aug[row][row];
     }
 
-    /* store coefficients in params modifying it in-place */
     for (int i = 0; i < d; i++)
-        params[i] = coeffs[i];
+        params[i] = (float) coeffs[i];
 
     return 0;
 }
-
 
 /**
  * Collects inliers from points_x and points_y by computing the vertical
