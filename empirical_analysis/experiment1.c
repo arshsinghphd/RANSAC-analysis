@@ -86,7 +86,7 @@ int main(void) {
                                               r, index++);
 
                 /* write one CSV row */
-                fprintf(fp, "%d,%d,%.1f,%d,%d,%d,%.4f,%d,%.2f,%.6f\n",
+                fprintf(fp, "%d,%d,%.2f,%d,%d,%d,%.4f,%d,%.2f,%.6f\n",
                         res.index, res.n, res.epsilon, res.d, 
                         res.m, res.k, res.t, res.repeat,
                         res.time_mu_s, res.model_error);
