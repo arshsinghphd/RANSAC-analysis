@@ -28,7 +28,7 @@
 
 #define EXP3_CSV  "results/exp3.csv"
 #define DEGREE_MIN 2
-#define DEGREE_MAX 10
+#define DEGREE_MAX 8
 #define DEGREE_STEPS (DEGREE_MAX - DEGREE_MIN + 1)
 #define EPS_FIXED  0.5f
 #define N_BUDGETS  2
