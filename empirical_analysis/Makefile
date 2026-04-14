@@ -20,7 +20,7 @@ SHARED = experiments.c \
          $(SRC)/generator.c \
          $(SRC)/ransac.c
 
-all: exp01 exp02 exp03 exp1 exp2
+all: exp01 exp02 exp03 exp1 exp2 exp3
 
 # compile and run experiments.c sanity check
 # $ make check
@@ -60,9 +60,15 @@ exp2: experiment2.c $(SHARED) $(HEADERS)
 	$(CC) $(CFLAGS) -o exp2.out experiment2.c $(SHARED) $(LFLAGS)
 	./exp2.out
 
+# compile and run experiment 3 — effect of budget k
+# $ make exp3
+exp3: experiment3.c $(SHARED) $(HEADERS)
+	$(CC) $(CFLAGS) -o exp3.out experiment3.c $(SHARED) $(LFLAGS)
+	./exp3.out
+
 # run all experiments in sequence
 # $ make run
-run: exp01 exp02 exp03 exp1 exp2 
+run: exp01 exp02 exp03 exp1 exp2 exp3
 
 # remove all compiled output
 # $ make clean

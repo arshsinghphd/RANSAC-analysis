@@ -347,50 +347,6 @@ I implement the first approach as `estimate_epsilon` and its limitations are doc
 
 I have organize the empirical analysis around three questions, each probing a different limit of the RANSAC algorithm. The first two fix the model degree and vary the data conditions; the third fixes the data conditions and varies the model degree. Together they test the boundaries of what RANSAC can and cannot recover. These are direct tests of the the theoretical parameter analysis of Section 2 to observed behavior using synthetic data.
 
-### How Does RANSAC Break Down as Outlier Fraction Increases?
-
-The number of iterations required to draw at least one clean sample with probability $p = 0.99$ is given analytically by $k = \log(1 - p) / \log(1 - (1 - \varepsilon)^{n})$, where $\varepsilon$ is the outlier fraction and $n$ is the minimum sample size. As $\varepsilon$ gets close to 1, $k$ grows without bound. The first experiment asks at what outlier fraction RANSAC fails in practice when $k$ is held fixed at a reasonable value.
-
-The iteration count $k$ is fixed at the value computed for $\varepsilon = 0.5$, and $\varepsilon$ is varied from $0.1$ to $0.9$. The experiment is repeated across three values of $N$ to separate the effect of dataset size from the effect of outlier fraction.
-
-For $\varepsilon = 0.5$, $p$ = 0.99, and $\log_2$:
-
-For $n = 2$:
-
-$$k = \frac{\log_2(0.01)}{\log_2(1 - (0.5)^2)} = \frac{-6.644}{\log_2(0.75)} = \frac{-6.644}{-0.415} \approx 17$$
-
-For $n = 3$:
-
-$$k = \frac{\log_2(0.01)}{\log_2(1 - (0.5)^3)} = \frac{-6.644}{\log_2(0.875)} = \frac{-6.644}{-0.193} \approx 35.$$
-
-Thus, this experiment is first run the linear model ($n = 2$) keeping $k$ constant at 17, and then for the quadratic model ($n = 3$) keping $k$ constant at 35. 
-
-The recovered model error — the Euclidean distance between the estimated and true parameter vectors — is recorded at each value of $\varepsilon$. 
-
-The expected result is a sharp increase in model error above a critical $\varepsilon$, with the linear model tolerating a higher outlier fraction than the quadratic model for the same $k$. This asymmetry is a direct consequence of the exponential term $(1 - \varepsilon)^n$ in the iteration formula: each additional parameter in the model amplifies the sensitivity to outliers.
-
-### At What Structural Bias Probability Does RANSAC Fail?
-
-The previous experiment places outliers randomly and far from the true model, a condition RANSAC is designed to handle. Structural bias presents a qualitatively different challenge: a systematic deviation that corrupts a fraction $p_r$ of the inlier points in a coherent direction. Unlike random outliers, structural bias cannot be rejected by RANSAC if the corrupted points are numerous enough to form their own consensus set, since RANSAC selects the model with the largest inlier count regardless of whether that model is the true one.
-
-This experiment introduces three bias types — constant, linear, and periodic — and varies $p_r$ from $0.0$ to $1.0$ in increments of $0.1$ to otherwise noiseless and outlier free data. At each value of $p_r$, RANSAC is run and model error is recorded. The outlier fraction is held fixed at moderate $\varepsilon = 0.3$, and the experiment is run for both the linear and quadratic models. 
-
-The expected result is a critical threshold $p_r^*$ above which RANSAC consistently recovers the biased model rather than the true one. This threshold is expected to vary with bias type: periodic bias averages to zero over the $x$ range and is expected to be more benign than constant or linear bias, which introduce a persistent shift. Comparing results across model degrees reveals whether higher-degree models are more or less susceptible to structured corruption.
-
-### At What Model Degree Does RANSAC Fail for a Budgeted or Fixed Iteration Count?
-
-The formula for estimating the numver of iterations, $k$, reveals that it grows exponentially with the minimum sample size $n$. For $\varepsilon = 0.5$ and $p = 0.99$, the theoretical requirements are:
-
-| Model degree | $n$ | $k$ required |
-|---|---|---|
-| Linear | 2 | 17 |
-| Quadratic | 3 | 35 |
-| Cubic | 4 | 72 |
-| Degree 5 | 6 | 293 |
-| Degree 10 | 11 | 4,607 |
-
-The third experiment asks at what degree RANSAC fails when $k$ is fixed at a fixed budget of $k = 100$ and the outlier fraction is held at moderate $\varepsilon = 0.5$. Model error is recorded for polynomial degrees 2 through 8. The degree at which error rises sharply identifies the practical limit of RANSAC under this budget, and is expected to agree with the theoretical prediction above. This experiment thus serves as an empirical validation of the iteration formula: theory predicts the breakdown point analytically, and the experiment confirms it on synthetic data. The result motivates the adoption of adaptive variants such as PROSAC [8] or LO-RANSAC [9] when the model complexity or outlier fraction exceeds what a fixed iteration budget can accommodate.
-
 
 ### Experimental Setup
 
@@ -437,9 +393,67 @@ All computations use single-precision floating point (`float`), which stores num
 
 The limitation of single precision becomes visible when fitting high-degree polynomials. The least squares solver builds a matrix $X^\top X$ whose entries are sums of powers of $x_i$. As the polynomial degree grows, those powers grow rapidly — for degree 6 over $x \in [0, 9]$, the largest entry reaches roughly $10^{15}$, far beyond what seven digits of precision can represent accurately. When Gaussian elimination then tries to solve a system built from such large numbers, small rounding errors get amplified into large errors in the recovered coefficients. The result is a model that looks numerically valid but is wildly wrong — not because RANSAC failed, but because the underlying solver lost precision.
 
-This is a known issue with the Vandermonde design matrix, it becomes harder and harder to solve accurately as the polynomial degree increases. In practice it is fixed by scaling $x$ to a small range such as $[0, 1]$, or by switching to `double` precision, which provides fifteen significant digits and pushes the stable range to roughly degree 14. For this project, $x$ is scaled to $[0, 1]$. A small number of runs across all experiments produce unrealistically large model errors due to this effect; these are filtered from the analysis at a threshold of `model_error > 100` and noted as precision concerns rather than RANSAC failures.
+This is a known issue with the Vandermonde design matrix, it becomes harder and harder to solve accurately as the polynomial degree increases. In practice it is fixed by scaling $x$ to a small range such as $[0, 1]$, or by switching to `double` precision, which provides fifteen significant digits and pushes the stable range to roughly degree 14. For this project, $x$ is scaled to $[0, 1]$. A small number of runs across all experiments produce unrealistically large model errors due to this effect and are precision concerns rather than RANSAC failures.
 
-Switching to `double` throughout would be a straightforward change — replace `float` with `double` in all data arrays and function signatures — and is recommended for future works.
+
+Experiment 01, 02, and 03, confirm the theoretical relationship of parameters with time complexity using run times and efficacy using model error.
+
+### Time Vs RANSAC Resampling Iterations $k$
+![Exp01](figures/exp01_time_vs_k.png)
+
+The graph plots the data from Experiment 01.
+
+The graph confirms that wall-clock time grows linearly with the number of iterations `k`, as expected from the algorithm's structure — each iteration fits a model to a minimal random sample and counts inliers, both O(N) operations, so total cost is O(k·N). The two models track closely, with the quadratic (`m=3`) slightly slower than the linear (`m=2`) at every `k` value, reflecting the additional cost of fitting one extra parameter in the normal
+equations. Model error remains flat across all `k` values for both models, confirming that beyond the theoretically required number of iterations, additional iterations do not improve accuracy — they only increase runtime. This linear relationship between `k` and time is the key computational cost of RANSAC and motivates the importance of choosing `k` carefully rather than running an arbitrarily large budget.
+
+### Time Vs Fraction of Outliers ($\varepsilon$)
+
+![Exp02](figures/exp02_time_vs_epsilon.png)
+
+The graph plots the data from Experiment 02.
+
+Experiment 02 confirms that time should reduce as $\varepsilon$ increases. A notable feature of the wall-clock time profile is that time peaks near ε = 0.5 and then decreases at higher outlier fractions. The flat part of the curve is due to the fact that at low $\varepsilon$ we expect large $d$ and the RANSAC usually does not terminate due to early stop, but due to exhaustion of $k$ which is set for $\varepsilon = 0.5$.
+
+The decreases after $\varepsilon = 0.5$ is the expected behavior: it is due to RANSAC's early stopping condition: the algorithm terminates as soon as it finds a consensus set of size d, the minimum expected inlier count derived from epsilon. As epsilon increases, d shrinks — fewer points need to agree for RANSAC to declare success. At high outlier fractions, even a poor model can accumulate d inliers quickly by chance, causing early termination. Paradoxically, this means RANSAC runs fastest precisely when the data is most contaminated, though the returned model is correspondingly less reliable, as confirmed by the rising model error on the secondary axis.
+
+
+### Time Vs Threshold ($t$)
+
+![Exp03](figures/exp03_time_vs_threshold.png)
+
+The graph plots the data from Experiment 03.
+
+Experiment 03 confirms that as we increase threshold: allow more observations to fall into inliers, the time for the model to run decreases. But such models are also not accurate as is confirmed by the curve of error moving in the upward direction. 
+
+The graph also confirms that these results are more pronounced for higher degree models ($m = 3$) than lower ($m = 2$).
+
+Note that the first increase or flat part of the curve is due to the fact that we have kept noise at 2, for small t up to 2, even true inliers may fall outside the threshold due to noise — so RANSAC struggles to find d inliers and runs many iterations before succeeding or exhausting k. That's the slow region. Beyond multiplier 2, the threshold is so wide that outliers start counting as inliers too, inflating the consensus set size past d quickly and triggering early stopping — hence the drop.
+
+
+### How Does RANSAC Break Down as Outlier Fraction Increases?
+
+The number of iterations required to draw at least one clean sample with probability $p = 0.99$ is given analytically by $k = \log(1 - p) / \log(1 - (1 - \varepsilon)^{n})$, where $\varepsilon$ is the outlier fraction and $n$ is the minimum sample size. As $\varepsilon$ gets close to 1, $k$ grows without bound. The first experiment asks at what outlier fraction RANSAC fails in practice when $k$ is held fixed at a reasonable value.
+
+The iteration count $k$ is fixed at the value computed for $\varepsilon = 0.5$, and $\varepsilon$ is varied from $0.1$ to $0.9$. The experiment is repeated across three values of $N$ to separate the effect of dataset size from the effect of outlier fraction.
+
+For $\varepsilon = 0.5$, $p$ = 0.99, and $\log_2$:
+
+For $n = 2$:
+
+$$k = \frac{\log_2(0.01)}{\log_2(1 - (0.5)^2)} = \frac{-6.644}{\log_2(0.75)} = \frac{-6.644}{-0.415} \approx 17$$
+
+For $n = 3$:
+
+$$k = \frac{\log_2(0.01)}{\log_2(1 - (0.5)^3)} = \frac{-6.644}{\log_2(0.875)} = \frac{-6.644}{-0.193} \approx 35.$$
+
+Thus, this experiment is first run the linear model ($n = 2$) keeping $k$ constant at 17, and then for the quadratic model ($n = 3$) keping $k$ constant at 35. 
+
+The recovered model error — the Euclidean distance between the estimated and true parameter vectors — is recorded at each value of $\varepsilon$. 
+
+The expected result is a sharp increase in model error above a critical $\varepsilon$, with the linear model tolerating a higher outlier fraction than the quadratic model for the same $k$. This asymmetry is a direct consequence of the exponential term $(1 - \varepsilon)^n$ in the iteration formula: each additional parameter in the model amplifies the sensitivity to outliers.
+
+![Exp1](figures/exp1_outlier_fraction.png)
+
 
 
 ## Application
@@ -642,10 +656,32 @@ The theoretical guarantee is that with $k$ iterations computed from the $k$ form
 - Provide a summary of your findings
 - What did you learn?
 -->
+### 
 
-Future:
+### Summary of Findings
 
-Switching to `double` throughout would be a straightforward change — replace `float` with `double` in all data arrays and function signatures — and is recommended for future works.
+
+### Learning/Future Work
+
+Use QR decomposition method for estimating model rather than Gaussian elimination on normal equation. 
+
+A key limitation of this implementation is how the polynomial fitting step solves for model parameters. The code builds a matrix from powers of x and solves the resulting system using Gaussian elimination on the normal equations. For low-degree polynomials this works well, but as the degree increases the matrix becomes increasingly difficult to solve accurately — a property called ill-conditioning. Switching the internal arithmetic from float to double improved results at degree 3, but degree 4 and above still produced unreliable fits. A more robust approach would use QR decomposition [10], which avoids forming the problematic matrix entirely and is standard practice in numerical computing libraries. For this reason, experiments involving model complexity are restricted to degrees 2 and 3 and experiment 3: At What Model Degree Does RANSAC Fail for a Budgeted or Fixed Iteration Count? was entirely scrapped. 
+
+I had an experiment asking at what degree RANSAC fails when $k$ is at a fixed budget of $k = 100$ and $k = 1000$ and the outlier fraction is held at moderate $\varepsilon = 0.5$.  Based on the theoretical $k$ required, I expected to see that for $k = 100$ models up to degree 4 are well estimated in tight bounds of error, but later the error band is too wide (catastrophic failure). And so show this is due to $k$, a higher $k = 1000$ as well, showing failer at degree 8. But in reality my models started failiting at m = 4 for all $k$. For this reason, experiments involving model complexity are restricted to degrees 2 and 3. I also do not report experiment 3 in the report, although it is still kept in the empirical_analysis folder [experiment3.c](empirical_analysis/experiment3.c).
+
+| Model degree | $m$ | Theoretical $k$ |
+|---|---|---|
+| Linear | 2 | 17 |
+| Quadratic | 3 | 35 |
+| Cubic | 4 | 72 |
+| Degree 5 | 5 | 146 |
+| Degree 6 | 6 | 293 |
+| Degree 7 | 7 | 588 |
+| Degree 8 | 8 | 1177 |
+
+#### Model Errors are Enormous for $m$ > 3 for all $k$
+![exp3](figures/exp3_model_degree.png)
+
 
 ## LLM Use Disclosure 
 I did not any LLM to write codes. I implemented my codes based on my reading of the original Fishler and Bolles paper [1] and its representation in other text books [2, 3, 4]. Although I had done so by hand, I had not implemented solution of a system of equations (vandermont matrix) using gaussian elimination before. I learnt to do that from youtube video tutorials [7, 8].
@@ -679,3 +715,5 @@ I used MS Word for checking the report for syntax and grammar.
 
 <!-- LO-RANSAC -->
 [9] Chum, O., Matas, J., and Kittler, J. 2003. Locally optimized RANSAC. In Proceedings of the 25th DAGM Symposium on Pattern Recognition, Lecture Notes in Computer Science, Vol. 2781, 236–243. Springer, Berlin, Heidelberg. https://doi.org/10.1007/978-3-540-45243-0_31
+
+[10] Golub, G. H. and Van Loan, C. F. 1996. Matrix Computations, 3rd ed. Johns Hopkins University Press, Baltimore, MD. Chapter 5.
