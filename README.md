@@ -19,15 +19,14 @@
     - [Flow Chart for RANSAC Algorithm](#flow-chart-for-ransac-algorithm)
     - [Proof of Correctness](#proof-of-correctness)
     - [Time Complexity Analysis](#time-complexity-analysis)
-      - [Best, Worst, and Average Cases](#best-worst-and-average-cases)
+      - [Best, Worst, and Average Cases: Time Complexity](#best-worst-and-average-cases-time-complexity)
     - [Space Complexity](#space-complexity)
-      - [Best, Worst, and Average Cases](#best-worst-and-average-cases-1)
-  - [RANSAC Parameters](#ransac-parameters)
-    - [Threshold distance $t$](#threshold-distance-t)
+      - [Best, Worst, and Average Cases: Space Complexity](#best-worst-and-average-cases-space-complexity)
+  - [RANSAC Parameters: Forming Hypothesis for Empirical Analysis](#ransac-parameters-forming-hypothesis-for-empirical-analysis)
     - [Iteration count $k$](#iteration-count-k)
-    - [Table: $k$ for various $\\varepsilon$ for $p = 0.01$ and for line fitting where $m = 2$.](#table-k-for-various-varepsilon-for-p--001-and-for-line-fitting-where-m--2)
-    - [Expected inlier count d](#expected-inlier-count-d)
-    - [Estimating the Outlier Fraction $\\varepsilon$](#estimating-the-outlier-fraction-varepsilon)
+      - [Table: $k$ for various $\\varepsilon$ for $p = 0.01$ and for line fitting where $m = 2$.](#table-k-for-various-varepsilon-for-p--001-and-for-line-fitting-where-m--2)
+    - [Expected Inlier count $d$ or Outlier Fraction $\\varepsilon$](#expected-inlier-count-d-or-outlier-fraction-varepsilon)
+    - [Threshold distance $t$](#threshold-distance-t)
   - [Empirical Analysis](#empirical-analysis)
     - [Experimental Setup](#experimental-setup)
       - [Synthetic Data Generation](#synthetic-data-generation)
@@ -115,10 +114,12 @@ As Fisher and Bolles state (rephrased) RANSAC inverts the logic of least squares
 
 In this way, RANSAC trades computational cost for robustness. RANSAC avoids giving overt weightage to large outliers by working with small random samples and only committing to points that agree with the candidate model. The cost is that many candidate models are tested before finding one with sufficient consensus or support, but this makes RANSAC robust to large proportions of outliers.
 
+<!-- graph: stitching using RANSAC -->
+
 
 
 ### History of RANSAC
-<!-- [Show example of location determination - the one in the paper.] -->
+<!-- [discuss example of location determination - the one in the paper.] -->
 
 The original paper by Fischler and Bolles [1] demonstrated the application of RANSAC in *location determination problem* in computer vision. Today, RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and data fitting, particularly in 2-D image stitching and structure from motion. The method has now been applied to a wide array of other problems [2, 3, 4]. I will disuss these in the section [Applications](#application).
 
@@ -152,9 +153,10 @@ Make sure to include the following:
 <!-- Formal Definition -->
 
 ### Algorithm
-The RANSAC paradigm is more formally stated [1] as follows.
 
-Given a model that requires a minimum of $m$ data points to instantiate its free parameters, and two arrays $points\_x$ and $points\_y$ of $N$ data points such that $N \ge m$, RANSAC proceeds as follows:
+The RANSAC paradigm is more formally stated as follows [1].
+
+Given a model that requires a minimum of $m$ data points to instantiate its free parameters, and two arrays $points\_x$ and $points\_y$ of $N$ data points such that $N \ge m$, RANSAC proceeds as follows.
 
 1. Randomly select a subset $S_1$ of $m$ data points from $points\_x$ and $points\_y$ and instantiate the model. Use the instantiated model $M_1$ to determine the subset $S_1^*$ of points in $points\_x$ and $points\_y$ whose perpendicular distance from $M_1$ is within the threshold $t$. The array $S_1^*$ is called the consensus array of $S_1$.
 
@@ -164,7 +166,10 @@ Given a model that requires a minimum of $m$ data points to instantiate its free
 
 4. If, after $k$ trials, no consensus array of size $d$ or greater has been found, refit the model using the largest consensus array found across all trials. If no consensus array was found at all, terminate in failure.
 
+The Algorithm can be presented as the following flowchart.
+
 ### Flow Chart for RANSAC Algorithm
+
 ```mermaid
 flowchart TD
     A([Start]) --> B1
@@ -290,7 +295,7 @@ So the overall time complexity = $O(k \cdot N)$
 
 $k$ itself depends only on $\varepsilon$ and $m$ (minimum parameters to be estimated), not on $N$. So the time complexity of the analysis is linear in $N$. 
 
-#### Best, Worst, and Average Cases
+#### Best, Worst, and Average Cases: Time Complexity
 The best case occurs when the early stopping condition is triggered on the first iteration — a clean sample is drawn immediately and the consensus set meets $d$. In this case only one pass over the data is needed, giving $O(N)$. 
 
 The worst case occurs when no early stop is triggered and all $k$ iterations run to exhaustion, giving $O(k \times N)$. 
@@ -311,31 +316,16 @@ I only implement arrays. The rate limiting size is `N`. So the space complexity 
 |`sample_y` | $O(m)$  constant |
 
 
-#### Best, Worst, and Average Cases
+#### Best, Worst, and Average Cases: Space Complexity
 Space complexity is $O(N)$ in all cases. The algorithm allocates a distances array of size $N$ per iteration, and a separate inlier array of at most $N$ elements for the final refit. No additional memory scales with $k$ — running more iterations does not increase memory usage, only runtime.
 
 
-## RANSAC Parameters
+## RANSAC Parameters: Forming Hypothesis for Empirical Analysis 
 
 RANSAC is governed by three parameters that jointly determine both the quality of the estimated model and the computational cost of finding it. These are: 
-* the threshold distance $t$, 
-  * $t$ in the original paper;
-* the number of iterations $k$, 
-  * $k$ in the original paper; and 
-* the expected inlier count $d$, 
-  * $t$ in the original paper.
-
-
-### Threshold distance $t$
-
-The threshold $t$ defines the boundary between inliers and outliers. A point is classified as an inlier if its perpendicular distance from the candidate model falls below $t$. Setting $t$ too small causes RANSAC to reject points that are legitimate inliers corrupted by small measurement noise, starving the consensus set. Setting $t$ too large causes it to accept outliers as inliers, corrupting the consensus set from the other direction. In practice, $t$ is derived from the data itself rather than set in advance. Fischler and Bolles suggest setting $t$ at one or two standard deviations beyond the measured average residual error, that is 
-
-$$threshold = \bar{e} + 2\sigma.$$
-
-Where,
-* $\bar{e}$ is the mean residual error and 
-* $\sigma$ is its standard deviation computed over the full point set.
-
+* the number of iterations ($k$ in the original paper),
+* the expected inlier count ($d$ in the original paper), and
+* the threshold distance ($t$ in the original paper).
 
 ### Iteration count $k$
 
@@ -345,11 +335,12 @@ If $\varepsilon$ is the outlier fraction and $m$ is the minimum sample size, the
 
 $$k = \frac{\log(p)}{\log(1 - (1 - \varepsilon)^{m})}$$
 
-This formula shows how $k$ depends on the outlier fraction and the model complexity. The probability of failure $p$ in this function is provided externally. Fischler and Bolles suggest a failure probability of $p = 0.01$, meaning RANSAC is given a 99 percent chance of finding at least one clean sample across all $k$ iterations. This is the standard practical choice in the literature. 
+This formula shows how $k$ depends on the outlier fraction and the model complexity. The probability of failure $p$ in this function is provided externally. Fischler and Bolles suggest a failure probability of $p = 0.01$, meaning RANSAC is given a 99 percent chance of finding at least one clean sample across all $k$ iterations. $p = 0.01$ is the standard choice in the model-fitting. 
 
 As the outlier fraction ($\varepsilon$) grows $k$ grows rapidly to maintain the same confidence level as shown in the table below for $p = 0.01$ and for line fitting where $m = 2$. 
 
-### Table: $k$ for various $\varepsilon$ for $p = 0.01$ and for line fitting where $m = 2$.
+
+#### Table: $k$ for various $\varepsilon$ for $p = 0.01$ and for line fitting where $m = 2$.
 | Outlier fraction $\varepsilon$ | Required iterations $k$ for 99% confidence |
 |---|---|
 | 0.10 | 2 |
@@ -360,31 +351,41 @@ As the outlier fraction ($\varepsilon$) grows $k$ grows rapidly to maintain the 
 
 This exponential growth motivates the early stop parameter $d$ — at high outlier fractions, running all $k$ iterations is computationally expensive, and terminating early when a sufficiently good model is found provides significant practical savings.
 
+It is clear that increasing $k$ will lead to more iterations and thus more time, but also more likely that we will reach the true underlying model. I test this hypothesis in Experiment 1, by fixing other parameters.
 
-### Expected inlier count d
+### Expected Inlier count $d$ or Outlier Fraction $\varepsilon$
 
-The expected inlier count $d$ serves as an early stopping criterion. Once a candidate model achieves a consensus set of size at least $d$, the search terminates without exhausting all $k$ iterations. At an outlier fraction of 0.90 the required iteration count reaches 459, making early stopping practically important. 
+The expected inlier count ($d$) serves as an early stopping criterion. Once a candidate model achieves a consensus set of size at least $d$, the search terminates without exhausting all $k$ iterations. At an outlier fraction of 0.90 the required iteration count reaches 459, making early stopping practically important. 
 
 The parameters $k$ and $d$ have opposing roles: $k$ is a safety net that pushes the iteration count up to guarantee confidence, while $d$ is an exit condition that pulls it down as soon as a good enough model is found. Setting $d$ too conservatively — close to $N$ — causes RANSAC to always run all $k$ iterations. Setting it too aggressively — close to $m$ — risks accepting a suboptimal model. 
 
-Because both depend on the same assumption about the data, they should be set consistently using the same outlier fraction $\epsilon$:
+Because both $d$ and $\varepsilon$ depend on the same assumption about the data, they should be set consistently using the same outlier fraction $\epsilon$:
 
-$$expected\_inliers = \lfloor (1 - epsilon) \times N \rfloor$$
+$$d = \lfloor (1 - epsilon) \times N \rfloor$$
 
-Estimating $\varepsilon$ is discussed in the following section.
+Choosing a good value for $\varepsilon$ is more subtle than it appears because the problem is circular: $\varepsilon$ is needed to set $k$ and $d$, but the true outlier fraction is only known after the inliers have been identified. Three data-driven approaches can be used in practice [3]. 
+
+The first approach uses the residual distribution: fit a rough model to all the data using least squares, compute the residuals, and treat points with residuals beyond $\bar{e} + 2\sigma$ as likely outliers. The fraction of such points estimates $\varepsilon$. The second approach plots a histogram of residuals from the least squares fit. A dataset with outliers typically shows a bimodal distribution — a tight cluster of inlier residuals near zero and a diffuse spread of outlier residuals further out. The fraction in the diffuse spread gives $\varepsilon$. The third approach uses iterative refinement: start with a conservative overestimate such as $\epsilon = 0.5$, run RANSAC, observe the inlier fraction of the best model, update $\varepsilon$, and rerun until convergence. 
+
+I implement the first approach as `estimate_epsilon` in `ransac.c` and its limitations are documented. 
+
+It is clear that as $\varepsilon$ increses we expect expect $d$ to be lower, which means RANSAC's early stopping will be triggered if randomly we reach a model that has $d$ or less inliers. This means that with increasing $d$ we expect the RANSAC to return model that are further away from the true model, but we also expect the RANSAC to run much faster. I test this hypothesis in Experiment 2 by fixing other parameters and varying values of $\varepsilon$. Since true $\varepsilon$ is known from synthetic generation it is used directly for inference in experiments.
 
 
-### Estimating the Outlier Fraction $\varepsilon$
+### Threshold distance $t$
 
-Choosing a good value for $\varepsilon$ is more subtle than it appears because the problem is circular: $\varepsilon$ is needed to set $k$ and $d$, but the true outlier fraction is only known after the inliers have been identified. Three data-driven approaches are common in practice [2, 4]. 
+The threshold $t$ defines the boundary between inliers and outliers. A point is classified as an inlier if its vertical distance from the candidate model falls below $t$. Setting $t$ too small causes RANSAC to reject points that are legitimate inliers corrupted by small measurement noise, starving the consensus set. Setting $t$ too large causes it to accept outliers as inliers, corrupting the consensus set from the other direction.
 
-The first approach uses the residual distribution: fit a rough model to all the data using least squares, compute the residuals, and treat points with residuals beyond $\bar{e} + 2\sigma$ as likely outliers. The fraction of such points estimates $\varepsilon$. 
+In practice, $t$ is derived from the data itself rather than set in advance. Fischler and Bolles suggest setting $t$ at one or two standard deviations beyond the measured average residual error, that is 
 
-The second approach plots a histogram of residuals from the least squares fit. A dataset with outliers typically shows a bimodal distribution — a tight cluster of inlier residuals near zero and a diffuse spread of outlier residuals further out. The fraction in the diffuse spread gives $\varepsilon$. 
+$$threshold = \bar{e} + 2\sigma.$$
 
-The third approach uses iterative refinement: start with a conservative overestimate such as $\epsilon = 0.5$, run RANSAC, observe the inlier fraction of the best model, update $\varepsilon$, and rerun until convergence. 
+Where,
+* $\bar{e}$ is the mean residual error and 
+* $\sigma$ is its standard deviation computed over the full point set.
 
-I implement the first approach as `estimate_epsilon` and its limitations are documented. But since true $\varepsilon$ is known from synthetic generation it is used directly in experiments.
+In theory, when we make threshold for error ($t$)  smaller we should get more accurate models that take longer to run. As we relax this, make $t$ larger, we the models should be estimated quicker, but these models should be more and more imperfect. This hypothesis is tested in Experiment 3.
+
 
 ## Empirical Analysis
 <!-- 
@@ -400,9 +401,8 @@ Linear:     breakdown vs outlier fraction + structural bias pr
 Quadratic:  same, compare against linear
 Complexity: at what m does RANSAC fail for reasonable but fixed k, threshold, N?
 -->
-I have organize the empirical analysis around five questions, each probing a different aspect of RANSAC algorithm.  These are direct tests of the the theoretical parameter analysis of Section 2 to observed behavior using synthetic data. 
 
-The first three explore how the run-time varies with one of the parameters keeping the other two fixed. The fourt and fifth model fix the model degree and vary the data conditions. Together fourth and fifth test the boundaries of what RANSAC can and cannot recover.
+I have organize the empirical analysis around five questions, each probing a different aspect of RANSAC algorithm. First three are direct tests of the the theoretical parameter analysis of Section 2 to observed behavior using synthetic data. Together fourth and fifth test the boundaries of what RANSAC can and cannot recover by fixing the model degree and varing the data conditions.
 
 ### Experimental Setup
 
@@ -428,7 +428,7 @@ Model recovery quality is measured as the Euclidean distance between the estimat
 
 $$\text{error} = \|\hat{\mathbf{a}} - \mathbf{a}^*\|_2 = \sqrt{\sum_{j=0}^{m-1} (\hat{a}_j - a_j^*)^2}$$
 
-This is a single scalar that captures error across all model parameters simultaneously, regardless of polynomial degree. Because RANSAC is stochastic, each experiment is repeated $R = 20$ times with different random seeds and the mean error and standard deviation are reported.
+This is a single scalar that captures error across all model parameters simultaneously, regardless of polynomial degree. Because RANSAC is stochastic, each experiment is repeated $R = 100$ times with different random seeds and the mean error and standard deviation are reported.
 
 #### Experiment Parameters
 
@@ -444,7 +444,7 @@ All computations use single-precision floating point (`float`), which stores num
 
 The limitation of single precision becomes visible when fitting high-degree polynomials. The least squares solver builds a matrix $X^\top X$ whose entries are sums of powers of $x_i$. As the polynomial degree grows, those powers grow rapidly — for degree 6 over $x \in [0, 9]$, the largest entry reaches roughly $10^{15}$, far beyond what seven digits of precision can represent accurately. When Gaussian elimination then tries to solve a system built from such large numbers, small rounding errors get amplified into large errors in the recovered coefficients. The result is a model that looks numerically valid but is wildly wrong — not because RANSAC failed, but because the underlying solver lost precision.
 
-This is a known issue with the Vandermonde design matrix, it becomes harder and harder to solve accurately as the polynomial degree increases. In practice it is fixed by scaling $x$ to a small range such as $[0, 1]$, or by switching to `double` precision, which provides fifteen significant digits and pushes the stable range to roughly degree 14. For this project, $x$ is scaled to $[0, 1]$ and I use `double` precision for gaussian elimination in the function `fit_model` in `model.c`. Yet, a small number of runs across all experiments produce unrealistically large model errors due to this effect and are precision concerns rather than RANSAC failures. I ignore these by plotting mean and the confidence interval is 10th percentile to 90th percentile of the value.
+Solving normal equation accurately with gaussian elimination becomes harder as the polynomial degree increases. For this project, $x$ is scaled to $[0, 1]$ and I use `double` precision for gaussian elimination in the function `fit_model` in `model.c`. Yet, a small number of runs across all experiments produce unrealistically large model errors due to this effect and are precision concerns rather than RANSAC failures. I ignore these by plotting mean and the confidence interval is 10th percentile to 90th percentile of the value.
 
 Experiment 01, 02, and 03, confirm the theoretical relationship of parameters with time complexity using run times and efficacy using model error.
 
@@ -541,11 +541,17 @@ The red dashed horizontal line marks the breakdown threshold, defined as the mea
 - Make sure to provide sources for your information.
 -->
 
-RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and data fitting, particularly in image stitching and structure from motion. Allow me to motivate its need and define image stitching. 
+RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and robust model fitting, particularly in computer vision tasks such as image stitching and structure from motion. To motivate its need, consider the problem of image stitching. Many real-world applications require a field of view far wider than a single camera can capture — from the panoramic and video stabilisation features familiar to smartphone users, to industrial applications such as satellite and aerial imaging, medical imaging, autonomous navigation, and augmented reality, anywhere a spatial context is needed that a single image cannot provide.
 
-Many real-world computer vision tasks require a field of view far wider than what a single camera can capture. Many smart-phone owners may be familiar with the features of camera such as panoramic imaged, and video stabilization. Image stitching is also needed in industrial applications such as satellite and aerial imaging, medical imaging, autonomous navigation, and augmented reality — anywhere a spatial context is needed that a single image cannot provide.
+In image stitching, the goal is to align two or more overlapping images by estimating a geometric transformation — such as a homography — that maps points from one image to corresponding points in another. This requires finding reliable feature correspondences between images. However, automated feature matching is inherently noisy: many matched point pairs will be incorrect due to repetitive textures, illumination differences, and other artefacts. These incorrect matches are outliers, and handling them gracefully and efficiently is precisely the problem RANSAC was designed to solve.
 
-In image stitching, the goal is to align two or more overlapping images by estimating a geometric transformation — such as a homography — that maps points from one image to corresponding points in another. This requires finding reliable feature correspondences between images. However, automated feature matching is inherently noisy: many matched point pairs will be incorrect, either due to repetitive textures, illumination differences etc. These incorrect matches, or outliers, is exactly what are handled gracefully and efficiently by RANSAC.
+Classical least squares fitting is sensitive to outliers because squaring the residuals amplifies the influence of large errors, pulling the estimated model toward the contaminated data. RANSAC avoids this by inverting the fitting logic entirely: rather than fitting all the data and trying to clean up afterwards, it repeatedly draws the smallest possible random sample, fits a model to that sample, and counts how many remaining points agree with it within a tolerance. The hypothesis that collects the most support — the largest consensus set — is returned as the final model. Because the minimal sample is drawn randomly, even a dataset with a majority of outliers has a non-negligible probability of yielding an all-inlier sample in sufficiently many iterations.
+
+Several variants of RANSAC have been proposed to reduce its computational cost. When the number of measurements is large, scoring every point against every hypothesis is expensive. Preemptive RANSAC addresses this by scoring only a subset of measurements in an initial round, selecting the most plausible hypotheses for further evaluation rather than running each to completion [8]. PROSAC (Progressive Sample Consensus) takes a
+different approach — rather than drawing samples uniformly at random, it
+preferentially samples from the most confident matches first, increasing
+the probability of finding a good inlier set early and reducing the number
+of iterations needed [9].
 
 <!--
 When the number of measurements is quite large, it may be preferable to only score a subset
@@ -793,11 +799,15 @@ I did not any LLM to write codes. I implemented my codes based on my reading of 
 
 [8] Piedad, E. 2020. *2.2 - Gaussian Elimination Method (code & example) - Engineering Numerical Methods w/Python 3*. YouTube. Retrieved from https://www.youtube.com/watch?v=HtTzFA5KTTQ on April 7, 2026.
 
+<!-- Preemptive RANSAC -->
+[9] D. Nister, “Preemptive RANSAC for live structure and motion estimation,” Machine vision and applications, vol. 16, no. 5, pp. 321–329, Dec. 2005, doi: 10.1007/s00138-005-0006-y
+
 <!-- PROSAC -->
-[8] Chum, O. and Matas, J. 2005. Matching with PROSAC — progressive sample consensus. In Proceedings of the 2005 IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR '05), Vol. 1, 220–226. IEEE. https://doi.org/10.1109/CVPR.2005.221.
+[10] Chum, O. and Matas, J. 2005. Matching with PROSAC — progressive sample consensus. In Proceedings of the 2005 IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR '05), Vol. 1, 220–226. IEEE. https://doi.org/10.1109/CVPR.2005.221.
 
 <!-- LO-RANSAC -->
-[9] Chum, O., Matas, J., and Kittler, J. 2003. Locally optimized RANSAC. In Proceedings of the 25th DAGM Symposium on Pattern Recognition, Lecture Notes in Computer Science, Vol. 2781, 236–243. Springer, Berlin, Heidelberg. https://doi.org/10.1007/978-3-540-45243-0_31
+[11] Chum, O., Matas, J., and Kittler, J. 2003. Locally optimized RANSAC. In Proceedings of the 25th DAGM Symposium on Pattern Recognition, Lecture Notes in Computer Science, Vol. 2781, 236–243. Springer, Berlin, Heidelberg. https://doi.org/10.1007/978-3-540-45243-0_31
 
 <!-- QR decomposition -->
-[10] Reilly, J. (2025). The QR Decomposition. In: Fundamentals of Linear Algebra for Signal Processing. Springer, Cham. https://doi-org.ezproxy.neu.edu/10.1007/978-3-031-68915-4_6
+[12] Reilly, J. (2025). The QR Decomposition. In: Fundamentals of Linear Algebra for Signal Processing. Springer, Cham. https://doi-org.ezproxy.neu.edu/10.1007/978-3-031-68915-4_6
+
