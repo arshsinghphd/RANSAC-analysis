@@ -20,7 +20,7 @@ SHARED = experiments.c \
          $(SRC)/generator.c \
          $(SRC)/ransac.c
 
-all: exp1 exp2 exp3 exp4 exp5 exp6 exp01 exp02 exp03
+all: exp1 exp2 exp3 exp4 exp5 exp6
 
 # compile and run experiments.c sanity check
 # $ make check
@@ -69,6 +69,10 @@ exp6: experiment6.c $(SHARED) $(HEADERS)
 # run all experiments in sequence
 # $ make run
 run: exp1 exp2 exp3 exp4 exp5 exp6
+
+example: motivating_example.c $(SHARED) $(HEADERS)
+	$(CC) $(CFLAGS) -o example.out motivating_example.c $(SHARED) $(LFLAGS)
+	./example.out
 
 # remove all compiled output
 # $ make clean

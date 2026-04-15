@@ -1,0 +1,56 @@
+gcc -Wall -std=c11 -o exp1.out experiment1.c experiments.c ../src/model.c ../src/generator.c ../src/ransac.c -lm
+./exp1.out
+
+--- m=2 ---
+
+--- m=3 ---
+
+Experiment 1 done. Results written to results/exp1.csv
+gcc -Wall -std=c11 -o exp2.out experiment2.c experiments.c ../src/model.c ../src/generator.c ../src/ransac.c -lm
+./exp2.out
+
+--- m=2  k=17 ---
+
+--- m=3  k=35 ---
+
+Experiment 02 done. Results written to results/exp2.csv
+gcc -Wall -std=c11 -o exp3.out experiment3.c experiments.c ../src/model.c ../src/generator.c ../src/ransac.c -lm
+./exp3.out
+
+--- m=2  k=17 ---
+
+--- m=3  k=35 ---
+
+Experiment 03 done. Results written to results/exp3.csv
+gcc -Wall -std=c11 -o exp4.out experiment4.c experiments.c ../src/model.c ../src/generator.c ../src/ransac.c -lm
+./exp4.out
+model m=2  k_fixed=17
+model m=3  k_fixed=35
+Experiment 1 done. Results written to results/exp4.csv
+gcc -Wall -std=c11 -o exp5.out experiment5.c experiments.c ../src/model.c ../src/generator.c ../src/ransac.c -lm
+./exp5.out
+model m=2 k=17
+model m=3 k=35
+Experiment 2 done. Results written to results/exp5.csv
+gcc -Wall -std=c11 -o exp6.out experiment6.c experiments.c ../src/model.c ../src/generator.c ../src/ransac.c -lm
+./exp6.out
+
+--- k_budget = 100 ---
+degree=2 n_params=3 k_theory=35
+degree=3 n_params=4 k_theory=72
+degree=4 n_params=5 k_theory=146
+degree=5 n_params=6 k_theory=293
+degree=6 n_params=7 k_theory=588
+degree=7 n_params=8 k_theory=1177
+degree=8 n_params=9 k_theory=2356
+
+--- k_budget = 1000 ---
+degree=2 n_params=3 k_theory=35
+degree=3 n_params=4 k_theory=72
+degree=4 n_params=5 k_theory=146
+degree=5 n_params=6 k_theory=293
+degree=6 n_params=7 k_theory=588
+degree=7 n_params=8 k_theory=1177
+degree=8 n_params=9 k_theory=2356
+
+Experiment 3 done. Results written to results/exp6.csv
