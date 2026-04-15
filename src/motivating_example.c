@@ -28,12 +28,7 @@ goodness of fit.
 // fraction of outliers
 #define EPS 0.2
 
-
-#include<stdio.h>
-#include<math.h>
-#include "generator.h"
-#include "model.h"
-#include "ransac.h"
+#include "experiments.h"
 
 int main() {
 	return 0
