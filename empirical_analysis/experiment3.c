@@ -91,6 +91,6 @@ int main(void) {
     }
 
     fclose(fp);
-    printf("\nExperiment 03 done. Results written to %s\n", EXP3_CSV);
+    printf("\nExperiment 3 done. Results written to %s\n", EXP3_CSV);
     return 0;
 }
