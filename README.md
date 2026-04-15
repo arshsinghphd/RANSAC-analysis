@@ -424,11 +424,11 @@ The noise standard deviation $\sigma$ is set to $0.5$ in all experiments unless 
 
 #### Measuring Recovery Quality
 
-Model recovery quality is measured as the Euclidean distance between the estimated parameter vector $\hat{\mathbf{a}}$ and the true parameter vector $\mathbf{a}^*$:
+In this analysis model recovery quality is measured as the Euclidean distance between the estimated parameter vector $\hat{\mathbf{a}}$ and the true parameter vector $\mathbf{a}^*$:
 
-$$\text{error} = \|\hat{\mathbf{a}} - \mathbf{a}^*\|_2 = \sqrt{\sum_{j=0}^{m-1} (\hat{a}_j - a_j^*)^2}$$
+$$\text{model\_error} = \|\hat{\mathbf{a}} - \mathbf{a}^*\|_2 = \sqrt{\sum_{j=0}^{m-1} (\hat{a}_j - a_j^*)^2}$$
 
-This is a single scalar that captures error across all model parameters simultaneously, regardless of polynomial degree. Because RANSAC is stochastic, each experiment is repeated $R = 100$ times with different random seeds and the mean error and standard deviation are reported.
+This is a single parameter that captures error across all model parameters simultaneously, regardless of polynomial degree. Because RANSAC is stochastic, each experiment is repeated $R = 100$ times with different random seeds and the mean error and standard deviation are reported.
 
 #### Experiment Parameters
 
@@ -444,12 +444,15 @@ All computations use single-precision floating point (`float`), which stores num
 
 The limitation of single precision becomes visible when fitting high-degree polynomials. The least squares solver builds a matrix $X^\top X$ whose entries are sums of powers of $x_i$. As the polynomial degree grows, those powers grow rapidly — for degree 6 over $x \in [0, 9]$, the largest entry reaches roughly $10^{15}$, far beyond what seven digits of precision can represent accurately. When Gaussian elimination then tries to solve a system built from such large numbers, small rounding errors get amplified into large errors in the recovered coefficients. The result is a model that looks numerically valid but is wildly wrong — not because RANSAC failed, but because the underlying solver lost precision.
 
-Solving normal equation accurately with gaussian elimination becomes harder as the polynomial degree increases. For this project, $x$ is scaled to $[0, 1]$ and I use `double` precision for gaussian elimination in the function `fit_model` in `model.c`. Yet, a small number of runs across all experiments produce unrealistically large model errors due to this effect and are precision concerns rather than RANSAC failures. I ignore these by plotting mean and the confidence interval is 10th percentile to 90th percentile of the value.
+Ideally, after discovering this, I should've  avoided gaussian elimination approach altogether, but for this class project, I did not have enough time to undestand the QR decomposition, implement, and test it. So I have tried by best to work within its confines: $x$ is scaled to $[0, 1]$ and I use `double` precision for gaussian elimination in the function `fit_model` in `model.c`. Yes, I am not able to use $m$ > 4. Even in $m = 3$, a small number of runs across all experiments produce unrealistically large model errors due to this and are precision concerns rather than RANSAC failures. I ignore these by plotting mean and the confidence interval is 10th percentile to 90th percentile of the value.
 
-Experiment 01, 02, and 03, confirm the theoretical relationship of parameters with time complexity using run times and efficacy using model error.
+In the next 5 sections I discuss the empirical results of my experiments using graphs. Experiment 1, 2, and 3, test the theoretical relationship of parameters with time complexity using run times and efficacy using model error. Experiments 4 and 5 test the limits of RANSAC against $\varepsilon$ and amount of bias in the data, respectively, with a focus on breakdown of the model as measured by the model error against the known true model.
 
 ### Experiment 1: Time Vs RANSAC Resampling Iterations $k$
+
+
 ![Exp01](figures/exp1.png)
+
 Experiment 1 measures how wall-clock time scales with the number of RANSAC iterations $k$. The outlier fraction is fixed at $\varepsilon = 0.5$ and $k$ is varied from 10 to 500 in steps of 10, giving 50 conditions. Both the linear ($m=2$) and quadratic ($m=3$) models are tested, each repeated 100 times per condition with $N = 1000$ points throughout. Model error is also recorded at each condition to confirm whether additional iterations improve
 accuracy beyond the theoretically required budget.
 
@@ -468,11 +471,9 @@ Experiment 2 measures how wall-clock time varies with the outlier fraction $\var
 
 The graph plots wall-clock time (μs) against outlier fraction $\varepsilon$, varied from 0.05 to 0.95 in steps of 0.05, with $k$ fixed at 17 throughout. Two models are shown — linear ($m=2$) in blue and quadratic ($m=3$) in red — each as a solid line with markers showing the median time across repeats and a shaded band covering the 10th to 90th percentile. A secondary y-axis on the right shows mean model error for each model as a dashed line, using the same colors.
 
-The graph confirms that as $m$ increases the time for all $\varepsilon$ increases.
+The "avalanche" decreases after $\varepsilon = 0.5$ is the expected behavior: it is due to RANSAC's early stopping condition: the algorithm terminates as soon as it finds a consensus set of size d, the minimum expected inlier count derived from epsilon. As epsilon increases, d shrinks — fewer points need to agree for RANSAC to declare success. At high outlier fractions, even a poor model can accumulate d inliers quickly by chance, causing early termination. Paradoxically, this means RANSAC runs fastest precisely when the data is most contaminated, though the returned model is correspondingly less reliable, as confirmed by the rising model error on the secondary axis.
 
-This graph also confirms that time should reduce as $\varepsilon$ increases. A notable feature of the wall-clock time profile is that time peaks near ε = 0.5 and then decreases at higher outlier fractions. The flat part of the curve is due to the fact that at low $\varepsilon$ we expect large $d$ and the RANSAC usually does not terminate due to early stop, but due to exhaustion of $k$ which is set for $\varepsilon = 0.5$.
-
-The decreases after $\varepsilon = 0.5$ is the expected behavior: it is due to RANSAC's early stopping condition: the algorithm terminates as soon as it finds a consensus set of size d, the minimum expected inlier count derived from epsilon. As epsilon increases, d shrinks — fewer points need to agree for RANSAC to declare success. At high outlier fractions, even a poor model can accumulate d inliers quickly by chance, causing early termination. Paradoxically, this means RANSAC runs fastest precisely when the data is most contaminated, though the returned model is correspondingly less reliable, as confirmed by the rising model error on the secondary axis.
+Allowing for this design limitation, the graph confirms that as $m$ increases the time for all $\varepsilon$ increases. This graph also confirms that time should reduce as $\varepsilon$ increases. A notable feature of the wall-clock time profile is that time peaks near ε = 0.5 and then decreases at higher outlier fractions. The flat part of the curve is due to the fact that at low $\varepsilon$ we expect large $d$ and the RANSAC usually does not terminate due to early stop, but due to exhaustion of $k$ which is set for $\varepsilon = 0.5$.
 
 
 ### Experiment 3: Time Vs Threshold ($t$)
@@ -483,11 +484,9 @@ Experiment 3 measures how wall-clock time varies with the inlier threshold $t$, 
 
 The plot shows median time with a 10th to 90th percentile band on the primary axis, and mean model error on the secondary axis.
 
-The plot confirms that as we increase threshold $t$: allow more observations to fall into inliers in every iteration of RANSAC, the time for the model to run decreases. But such models are also not accurate as is confirmed by the curve of error moving in the upward direction. 
+The initial increase of the time (while error falls) is due to the fact that we have injected noise at 2 * $noise\_std$ and add outliers that outside this band. Thus for small $t$ up to 2, even true (but noisy) inliers may fall outside the threshold. RANSAC struggles to find $d$ inliers and runs many iterations before succeeding and exhausts $k$ in most runs. That's the slow region. Beyond the externally set multiplier 2, the threshold is so wide that outliers start falling into inliers too, inflating the consensus set size past $d$ quickly and triggers early stopping — hence the drop.
 
-The graph also confirms that these results are more pronounced for higher degree models ($m = 3$) than lower ($m = 2$).
-
-Note that the initial increase of the time (while error falls) is due to the fact that we have kept noise at 2 * $noise\_std$ and add outliers to fall outside this band, thus for small $t$ up to 2, even true noisy inliers may fall outside the threshold. RANSAC struggles to find $d$ inliers and runs many iterations before succeeding or exhausting $k$. That's the slow region. Beyond multiplier 2, the threshold is so wide that outliers start falling into inliers too, inflating the consensus set size past $d$ quickly and triggers early stopping — hence the drop.
+Allowing for the above design limitation, the plot confirms that as we increase threshold $t$: allow more observations to fall into inliers in every iteration of RANSAC, the time for the model to run decreases. But such models are also not accurate as is confirmed by the curve of error moving in the upward direction. The graph also confirms that these results are more pronounced for higher degree models ($m = 3$) than lower ($m = 2$).
 
 
 ### Experiment 4: How Does RANSAC Break Down as Outlier Fraction Increases?
