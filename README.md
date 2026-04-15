@@ -5,7 +5,6 @@
 
 ## Table of Content
 
-
 - [Research Paper](#research-paper)
   - [Table of Content](#table-of-content)
   - [Repository Structure](#repository-structure)
@@ -14,6 +13,7 @@
       - [Assumptions](#assumptions)
     - [Linear Regression Approach](#linear-regression-approach)
     - [RANSAC Approach](#ransac-approach)
+    - [Comparison of Goodness of Fit: Model Error (Mean Squared Error)](#comparison-of-goodness-of-fit-model-error-mean-squared-error)
     - [History of RANSAC](#history-of-ransac)
   - [Analysis of Algorithm](#analysis-of-algorithm)
     - [Algorithm](#algorithm)
@@ -118,26 +118,20 @@ I am doing something novel in this report, something inbetween: I abstract away 
 
 
 ### Motivating Problem: Stitching Two Overlapping Graphs
-We are assigned the task of stitching together the two following graphs with overlapping x-range.
+We are assigned the task of stitching together the two following graphs with overlapping x-range. 
 
-<!-- graph 1 -->
-
-<!-- graph 2 -->
-
-<!-- Some description of the graph data -->
+![data](figures/example_data.png)
 
 #### Assumptions
-It is known that the two graphs are built from the same linear model, but over different ranges of $x$. 
+It is known that the two graphs are built from the same linear model, but over different ranges of $x$. Graph 1 over [0, 0.59], graph2 over [0.4, 0.99]. It is built from intercept of 5.0 and slope of 2.0.
 
-It is also known that the data is noisy with three possible kinds of errors as follow. 
-   * Random gaussian noise (mean zero) 
-   * Heavy-tailed laplace noise (also mean zero)
-   * Classification errors or outliers that are not mean zero. 
+It is also known that each of the data is noisy with three possible kinds of errors as follow. 
+   * Random gaussian noise (mean zero) with standard deviation of 0.5.
+   * About 20 classification errors or outliers that are not mean zero that lie outside the band of noise.
 
 It is also known that there is no appreciable continuous range of $x$ with systematic bias. Systematic bias is when the error is not random, but is correlated with $x$.
 
 I will show how the problem solving will look like for linear regression and then I will show what the RANSAC solution looks like.
-
 
 ### Linear Regression Approach
 
@@ -147,10 +141,11 @@ I will show how the problem solving will look like for linear regression and the
 -->
 
 <!-- graph: stitching using OLS -->
-
-### RANSAC Approach
+![data](figures/example_ols.png)
 
 Least squares produces a solution in a single pass using all points and always terminates in one pass regardless of outlier fraction - but is effected disproportionately by outliers. It gives outliers disproportionate influence through the squaring of large residuals. Thus least sqaures may return completely inaccurate models.
+
+### RANSAC Approach
 
 RANSAC is robust, that is it can deal with large proportions of outliers, random large errors that are not mean zero, that Fisher and Bolles call classification errors [1]. It is also known that it *cannot* deal with pervasive systematic bias. [Later](#experiment-5-structural-bias-and-ransac-failure) in this report I share my findings about the robustness of RANSAC against different systematic bias. 
 
@@ -159,14 +154,19 @@ Fisher and Bolles state that RANSAC inverts the logic of least squares: instead 
 In this way, RANSAC trades computational cost for robustness. RANSAC avoids giving overt weightage to large outliers by working with small random samples and only committing to points that agree with the candidate model. The cost is that many candidate models are tested before finding one with sufficient consensus or support, but this makes RANSAC robust to large proportions of outliers.
 
 <!-- graph: stitching using RANSAC -->
+![data](figures/example_ransac.png)
 
 
+### Comparison of Goodness of Fit: Model Error (Mean Squared Error)
+
+![data](figures/example_combined.png)
+
+In the image above the RANSAC model can hardly we differentiated from the original model, while OLS is unduly effected by the positive outliers. Although since RANSAC is a randomized model we may end up with models that are far worse that OLS with probability 1%.
 
 ### History of RANSAC
 <!-- [discuss example of location determination - the one in the paper.] -->
 
 The original paper by Fischler and Bolles [1] demonstrated the application of RANSAC in *location determination problem* in computer vision. Today, RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and data fitting, particularly in 2-D image stitching and structure from motion. The method has now been applied to a wide array of other problems [2, 3, 4]. I will disuss these in the section [Applications](#application).
-
 
 The rest of the paper is organized as follows: 
 
