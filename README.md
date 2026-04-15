@@ -103,14 +103,18 @@ I will show how the problem solving will look like for linear regression and the
 * how/why it is not robust
 -->
 
+<!-- graph: stitching using OLS -->
+
 ### RANSAC Approach
+
 Least squares produces a solution in a single pass using all points and always terminates in one pass regardless of outlier fraction - but is effected disproportionately by outliers. It gives outliers disproportionate influence through the squaring of large residuals. Thus least sqaures may return completely inaccurate models.
 
-RANSAC is robust, that is it can deal with large proportions of outliers, random large errors that are not mean zero, that Fisher and Bolles call classification errors [2, 3, 4]. It is also known that it *cannot* deal with pervasive systematic bias.
+RANSAC is robust, that is it can deal with large proportions of outliers, random large errors that are not mean zero, that Fisher and Bolles call classification errors [2, 3, 4]. It is also known that it *cannot* deal with pervasive systematic bias. [Later](#experiment-5-structural-bias-and-ransac-failure) in this report I share my findings about the robustness of RANSAC against different systematic bias. 
 
 As Fisher and Bolles state (rephrased) RANSAC inverts the logic of least squares: instead of fitting all the data first and cleaning up afterward, it starts with the smallest possible sample, finds a model, then recruits only the points that agree with it - these are called the model support. It does this repeatedly - many candidate models are estimated. The model with the largest support is deemed the best fit. 
 
 In this way, RANSAC trades computational cost for robustness. RANSAC avoids giving overt weightage to large outliers by working with small random samples and only committing to points that agree with the candidate model. The cost is that many candidate models are tested before finding one with sufficient consensus or support, but this makes RANSAC robust to large proportions of outliers.
+
 
 
 ### History of RANSAC
@@ -166,9 +170,9 @@ flowchart TD
     A([Start]) --> B1
 
     B1[" Choose:
-    1. the number of iterations (k_resamples)
-    2. Acceptable error from the model (threshold)
-    3. Expected number of inliers (expected_inliers)"]
+    1. the number of iterations (k)
+    2. Acceptable error from the model (threshold, t)
+    3. Expected number of inliers (d)"]
     B1 --> B2
 
     B2["Initiate: 
