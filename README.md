@@ -42,6 +42,7 @@
   - [Implementation](#implementation)
     - [Language, Libraries, and Design Philosophy](#language-libraries-and-design-philosophy)
     - [Module Structure](#module-structure)
+    - [File Structure](#file-structure)
     - [Data Representation](#data-representation)
     - [Noise and Outlier Generation](#noise-and-outlier-generation)
     - [Parameter Estimation Helper Functions](#parameter-estimation-helper-functions)
@@ -513,7 +514,8 @@ The plot shows median model error on the y-axis against $\varepsilon$ on the x-a
 
 The two subplots share the same x-axis but have different y-limits, reflecting that $m=3$ accumulates larger errors before breakdown due to the higher minimum sample size required per iteration.
 
-The expected result is a sharp increase in model error above a critical $\varepsilon$, with the linear model tolerating a higher outlier fraction than the quadratic model for the same $k$. This asymmetry is a direct consequence of the exponential term $(1 - \varepsilon)^n$ in the iteration formula: each additional parameter in the model amplifies the sensitivity to outliers.
+The expected result is a sharp increase in model error above a critical $\varepsilon$, with the linear model tolerating a higher outlier fraction (0.65)  than the quadratic model (0.35) for the same $k$. This asymmetry is a direct consequence of the exponential term $(1 - \varepsilon)^n$ in the iteration formula: each additional parameter in the model amplifies the sensitivity to outliers.
+
 
 ![Exp4](figures/exp4.png)
 
@@ -546,23 +548,14 @@ In image stitching, the goal is to align two or more overlapping images by estim
 
 Classical least squares fitting is sensitive to outliers because squaring the residuals amplifies the influence of large errors, pulling the estimated model toward the contaminated data. RANSAC avoids this by inverting the fitting logic entirely: rather than fitting all the data and trying to clean up afterwards, it repeatedly draws the smallest possible random sample, fits a model to that sample, and counts how many remaining points agree with it within a tolerance. The hypothesis that collects the most support — the largest consensus set — is returned as the final model. Because the minimal sample is drawn randomly, even a dataset with a majority of outliers has a non-negligible probability of yielding an all-inlier sample in sufficiently many iterations.
 
-Several variants of RANSAC have been proposed to reduce its computational cost. When the number of measurements is large, scoring every point against every hypothesis is expensive. Preemptive RANSAC addresses this by scoring only a subset of measurements in an initial round, selecting the most plausible hypotheses for further evaluation rather than running each to completion [8]. PROSAC (Progressive Sample Consensus) takes a
-different approach — rather than drawing samples uniformly at random, it
-preferentially samples from the most confident matches first, increasing
-the probability of finding a good inlier set early and reducing the number
-of iterations needed [9].
+Several variants of RANSAC have been proposed to reduce its computational cost. 
 
-<!--
-When the number of measurements is quite large, it may be preferable to only score a subset
-of the measurements in an initial round that selects the most plausible hypotheses for additional
-scoring and selection. This modification of RANSAC, which can significantly speed up its per-
-formance, is called Preemptive RANSAC (Nist´
-er 2003). In another variant on RANSAC called
-PROSAC (PROgressive SAmple Consensus), random samples are initially added from the most
-“confident” matches, thereby speeding up the process of finding a (statistically) likely good set of
-inliers (Chum and Matas 2005). Raguram, Chum et al. (2012) provide a unified framework from
-which most of these techniques can be derived as well as a nice experimental comparison.
--->
+A known limitation of standard RANSAC is that even when a correct consensus set is found, the returned model is fit only to the minimal sample — typically just $n$ points — rather than to all inliers. LO-RANSAC (Locally Optimised RANSAC), introduced by Chum et al. (2003) [9], addresses this by adding a local optimisation step whenever a new best consensus set is found: the model is refit to the full inlier set, and the consensus is re-evaluated. This produces a significantly more accurate model at modest additional cost, since the local optimisation is triggered only a small number of times during the full run. LO-RANSAC has become the standard in practice for tasks such as homography and fundamental matrix estimation where accuracy matters as much as speed. I have utilized this idea in my implementation.
+
+When the number of measurements is large, scoring every point against every hypothesis is expensive. Preemptive RANSAC addresses this by scoring only a subset of measurements in an initial round, selecting the most plausible hypotheses for further evaluation rather than running each to completion [10]. 
+
+PROSAC (Progressive Sample Consensus) takes a different approach — rather than drawing samples uniformly at random, it preferentially samples from the most confident matches first, increasing the probability of finding a good inlier set early and reducing the number of iterations needed [11].
+
 
 
 ## Implementation
@@ -593,7 +586,13 @@ While I am working on RANSAC that is a key algorithm used in computer vision, a 
 
 ### Module Structure
 
-The implementation is organized across four modules, shown in the flowchart below.
+The implementation is organized across three modules, shown in the flowchart below.
+
+1. `generator.c` produces synthetic data; 
+2. `model.c` provides fitting, inlier collection, and error measurement; and 
+3. `ransac.c` implements the algorithm and its parameter helpers. 
+
+The caller interacts only with `ransac.c` and `model.c` through their public headers.
 
 ```mermaid
 flowchart TD
@@ -628,7 +627,8 @@ flowchart TD
     F --> A
 ```
 
-`generator.c` produces synthetic data; `model.c` provides fitting, inlier collection, and error measurement; and `ransac.c` implements the algorithm and its parameter helpers. The caller interacts only with `ransac.c` and `model.c` through their public headers.
+### File Structure
+
 
 ### Data Representation
 
@@ -801,11 +801,11 @@ I did not any LLM to write codes. I implemented my codes based on my reading of 
 <!-- Preemptive RANSAC -->
 [9] D. Nister, “Preemptive RANSAC for live structure and motion estimation,” Machine vision and applications, vol. 16, no. 5, pp. 321–329, Dec. 2005, doi: 10.1007/s00138-005-0006-y
 
-<!-- PROSAC -->
-[10] Chum, O. and Matas, J. 2005. Matching with PROSAC — progressive sample consensus. In Proceedings of the 2005 IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR '05), Vol. 1, 220–226. IEEE. https://doi.org/10.1109/CVPR.2005.221.
-
 <!-- LO-RANSAC -->
-[11] Chum, O., Matas, J., and Kittler, J. 2003. Locally optimized RANSAC. In Proceedings of the 25th DAGM Symposium on Pattern Recognition, Lecture Notes in Computer Science, Vol. 2781, 236–243. Springer, Berlin, Heidelberg. https://doi.org/10.1007/978-3-540-45243-0_31
+[10] Chum, O., Matas, J., and Kittler, J. 2003. Locally optimized RANSAC. In Proceedings of the 25th DAGM Symposium on Pattern Recognition, Lecture Notes in Computer Science, Vol. 2781, 236–243. Springer, Berlin, Heidelberg. https://doi.org/10.1007/978-3-540-45243-0_31
+
+<!-- PROSAC -->
+[11] Chum, O. and Matas, J. 2005. Matching with PROSAC — progressive sample consensus. In Proceedings of the 2005 IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR '05), Vol. 1, 220–226. IEEE. https://doi.org/10.1109/CVPR.2005.221.
 
 <!-- QR decomposition -->
 [12] Reilly, J. (2025). The QR Decomposition. In: Fundamentals of Linear Algebra for Signal Processing. Springer, Cham. https://doi-org.ezproxy.neu.edu/10.1007/978-3-031-68915-4_6
