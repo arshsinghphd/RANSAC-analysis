@@ -21,7 +21,7 @@ goodness of fit.
 #define X_MAX2 0.99f
 // fraction of outliers
 #define EPS 0.2
-
+#define EXAMPLE_CSV "results/exmaple.csv"
 #include "experiments.h"
 
 int main() {
@@ -91,6 +91,42 @@ int main() {
                   x2, y2, N2, ransac_params2,
                   stitched_params, N_PARAMS, threshold);
 
-    
+
+    // --- print results ---
+    printf("True params: a0=%.4f a1=%.4f\n",
+           true_params[0], true_params[1]);
+    printf("\nOLS graph 1: 0=%.4f a1=%.4f error=%.4f\n",
+           ols_params1[0], ols_params1[1],
+           model_error(ols_params1, true_params, N_PARAMS));
+    printf("OLS graph 2: a0=%.4f a1=%.4f error=%.4f\n",
+           ols_params2[0], ols_params2[1],
+           model_error(ols_params2, true_params, N_PARAMS));
+    printf("OLS combined: a0=%.4f a1=%.4f error=%.4f\n",
+           ols_combined[0], ols_combined[1],
+           model_error(ols_combined, true_params, N_PARAMS));
+    printf("\nRANSAC graph 1: a0=%.4f a1=%.4f error=%.4f\n",
+           ransac_params1[0], ransac_params1[1],
+           model_error(ransac_params1, true_params, N_PARAMS));
+    printf("RANSAC graph 2: a0=%.4f a1=%.4f error=%.4f\n",
+           ransac_params2[0], ransac_params2[1],
+           model_error(ransac_params2, true_params, N_PARAMS));
+    printf("RANSAC stitched: a0=%.4f a1=%.4f error=%.4f\n",
+           stitched_params[0], stitched_params[1],
+           model_error(stitched_params, true_params, N_PARAMS));
+
+    // write CSV 
+    FILE* fp = fopen(EXAMPLE_CSV, "w");
+    if (!fp) {
+        fprintf(stderr, "Error: could not open %s\n", EXAMPLE_CSV);
+        return 1;
+    }
+    fprintf(fp, "x,y,graph\n");
+    for (int i = 0; i < N1; i++)
+        fprintf(fp, "%.4f,%.4f,1\n", x1[i], y1[i]);
+    for (int i = 0; i < N2; i++)
+        fprintf(fp, "%.4f,%.4f,2\n", x2[i], y2[i]);
+    fclose(fp);
+
+    printf("\nData written to %s\n", EXAMPLE_CSV);
 	return 0
 }
