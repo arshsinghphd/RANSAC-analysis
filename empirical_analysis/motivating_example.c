@@ -1,14 +1,14 @@
 /* =============================================================================
-Motivating Example
-I create two overlapping graphs with the same true linear model.
-I recover the underlying models in two ways:
+ * Motivating Example
+ * I create two overlapping graphs with the same true linear model.
+ * I recover the underlying models in two ways:
     1. using fit_model over the appended dataset which is like solving
        naive OLS, and
     2. using stitch_models which is the RANSAC approach
-Later I will plot this data and the models recovered using naive OLS and
-the RANSAC parameters to visually compare the two approaches and
-demonstrate the goodness of fit.
-* ========================================================================== */
+ * Later I will plot this data and the models recovered using naive OLS and
+ * the RANSAC parameters to visually compare the two approaches and
+ * demonstrate the goodness of fit.
+ * ========================================================================== */
 
 #include "experiments.h"
 
@@ -21,7 +21,7 @@ demonstrate the goodness of fit.
 #define X_MIN2 0.39f
 #define X_MAX2 0.99f
 // fraction of outliers
-#define EPS 0.2f
+#define EPS 0.1f
 #define EXAMPLE_CSV "results/example.csv"
 
 
