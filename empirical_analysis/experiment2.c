@@ -1,65 +1,51 @@
 /* =============================================================================
- * experiments2.c
+ * experiment2.c
  *
- * Experiment 2: At what structural bias probability does RANSAC fail?
+ * Experiment 2: Does wall-clock time grow with epsilon for fixed k?
  *
- *      Fixes epsilon = 0.3 and varies pr from 0.0 to 1.0 in steps of 0.05.
- *      Runs for three bias types: constant, linear, periodic.
- *      Runs for linear (m = 2) and quadratic (m = 3) models.
- *      N_TOTAL = 1000 is fixed throughout.
- *      Repeats N_REPEATS times per condition.
+ *     Fixes k at the value computed for epsilon = 0.5. Varies epsilon
+ *     from 0.05 to 0.95 in steps of 0.05. Runs for linear (m = 2) and
+ *     quadratic (m = 3) models. N_TOTAL = 1000 is fixed throughout.
+ *     Repeats N_REPEATS times per condition.
  *
  * Output:
- *      results/exp2.csv
- *      columns: index, n, epsilon, d, m, k, t, pr, bias_type,
- *          repeat, time_mu_s, model_error
+ *     results/exp2.csv
+ *     columns: index, n, epsilon, d, m, k, t, repeat, time_mu_s, model_error
  *
  * Usage:
- *      make exp2
+ *     make exp2
  * ========================================================================== */
 
 #include "experiments.h"
 
-#define EXP2_CSV  "results/exp2.csv"
-#define PR_STEPS  21
-#define N_MODELS  2
-#define N_BIAS_TYPES 3
-#define EPS_FIXED  0.1f 
+#define EXP2_CSV "results/exp2.csv"
+// number of epsilon values
+#define EPSILON_STEPS 19
+// two models: linear (m=2) and quadratic (m=3)
+#define N_MODELS 2
+#define EPS_FOR_K 0.5f
 
-static const float PR_VALUES[PR_STEPS] = {
-    0.00f, 0.05f, 0.10f, 0.15f, 0.20f, 0.25f, 0.30f, 0.35f, 0.40f,
-    0.45f, 0.50f, 0.55f, 0.60f, 0.65f, 0.70f, 0.75f, 0.80f, 0.85f,
-    0.90f, 0.95f, 1.00f
-};
-
-/* bias function table */
-typedef struct {
-    const char* name;
-    float  (*fn)(float);
-} BiasEntry;
-
-static const BiasEntry BIAS_TYPES[N_BIAS_TYPES] = {
-    {"constant", bias_constant },
-    {"linear", bias_linear_bias},
-    {"periodic", bias_periodic },
+// epsilon from 0.05 to 0.95 in steps of 0.05
+static const float EPSILONS[EPSILON_STEPS] = {
+    0.05f, 0.1f, 0.15f, 0.2f, 0.25f, 0.3f, 0.35f, 0.4f, 0.45f, 0.5f,
+    0.55f, 0.6f, 0.65f, 0.7f, 0.75f, 0.8f, 0.85f, 0.9f, 0.95f
 };
 
 
 int main(void) {
     srand((unsigned int) time(NULL));
 
-    /* open output file */
+    // open csv for writing — created fresh each run
     FILE* fp = fopen(EXP2_CSV, "w");
     if (!fp) {
         fprintf(stderr, "Error: could not open %s\n", EXP2_CSV);
         return 1;
     }
 
-    /* CSV header */
-    fprintf(fp, "index,n,epsilon,d,m,k,t,pr,bias_type,"
-    "repeat,time_mu_s,model_error\n");
+    // write header
+    fprintf(fp, "index,n,epsilon,d,m,k,t,repeat,time_mu_s,model_error\n");
 
-    /* model configurations */
+    // model configurations: linear (2 params) and quadratic (3 params)
     int n_params_list[N_MODELS] = {2, 3};
     float true_params_linear[] = _TRUE_PARAMS_LINEAR;
     float true_params_quadratic[] = _TRUE_PARAMS_QUADRATIC;
@@ -68,57 +54,55 @@ int main(void) {
         true_params_quadratic
     };
 
-    /* fixed epsilon and derived parameters */
-    int n_inliers = (int)((1.0f - EPS_FIXED) * N_TOTAL);
-    int n_outliers = N_TOTAL - n_inliers;
-    int d = compute_d(EPS_FIXED, N_TOTAL);
-
     int index = 0;
 
     for (int m = 0; m < N_MODELS; m++) {
-    int n_params = n_params_list[m];
-    const float* true_params = true_params_list[m]; 
-    /* fix k at epsilon = 0.5, matching exp1 */
-    int k = compute_k(0.5f, n_params, FAIL_PROB);
+        int n_params = n_params_list[m];
+        const float* true_params = true_params_list[m];
 
-    printf("model m=%d k=%d\n", n_params, k);
+        // fix k once per model using EPS_FOR_K=0.5 — k does not change as epsilon varies
+        int k = compute_k(EPS_FOR_K, n_params, FAIL_PROB);
+        printf("\n--- m=%d  k=%d ---\n", n_params, k);
 
-    for (int b = 0; b < N_BIAS_TYPES; b++) {
-        const char* bias_name = BIAS_TYPES[b].name;
-        float (*bias_fn)(float) = BIAS_TYPES[b].fn;
+        // very epsilon — this changes n_inliers, n_outliers, and d each step
+        for (int e = 0; e < EPSILON_STEPS; e++) {
+            float epsilon = EPSILONS[e];
+            // more outliers as epsilon grows
+            int n_inliers = (int)((1.0f - epsilon) * N_TOTAL);
+            int n_outliers = N_TOTAL - n_inliers;
+            // d shrinks as epsilon grows — fewer expected inliers
+            int d = compute_d(epsilon, N_TOTAL);
 
-        for (int p = 0; p < PR_STEPS; p++) {
-            float pr = PR_VALUES[p];
-
+            // repeat each (m, epsilon) condition for stable time estimates
             for (int r = 0; r < N_REPEATS; r++) {
                 float points_x[N_TOTAL], points_y[N_TOTAL];
-        
+                // t computed from data by make_data — varies with epsilon
                 float t;
 
-                /* generate noisy data with outliers and structural bias */
-                make_data(points_x, points_y, n_inliers, n_outliers,
-                        true_params, n_params,
-                        NOISE_STD, &t, 1, bias_fn, pr);
+                // generate fresh noisy data with outliers for each repeat
+                make_data(points_x, points_y,
+                          n_inliers, n_outliers,
+                          true_params, n_params,
+                          NOISE_STD, &t,
+                          0, NULL, 0.0f);
 
-                /* run ransac and collect result */
+                // run ransac and record wall-clock time inside run_ransac
                 RansacResult res = run_ransac(points_x, points_y,
-                     N_TOTAL, n_params,
-                     true_params,
-                     EPS_FIXED, t, d, k,
-                     r, index++);
+                                             N_TOTAL, n_params,
+                                             true_params,
+                                             epsilon, t, d, k,
+                                             r, index++);
 
-                /* write one CSV row */
-                fprintf(fp, "%d,%d,%.2f,%d,%d,%d,%.4f,%.2f,%s,"
-                "%d,%.2f,%.6f\n",
-                res.index, res.n, res.epsilon,
-                res.d, res.m, res.k, res.t, pr, bias_name,
-                res.repeat, res.time_mu_s, res.model_error);
+                // write one row per repeat
+                fprintf(fp, "%d,%d,%.2f,%d,%d,%d,%.4f,%d,%.2f,%.6f\n",
+                        res.index, res.n, res.epsilon,
+                        res.d, res.m, k, res.t,
+                        res.repeat, res.time_mu_s, res.model_error);
             }
         }
     }
- }
 
- fclose(fp);
- printf("Experiment 2 done. Results written to %s\n", EXP2_CSV);
- return 0;
+    fclose(fp);
+    printf("\nExperiment 02 done. Results written to %s\n", EXP2_CSV);
+    return 0;
 }
