@@ -79,7 +79,7 @@ int main(void) {
     int n_params = n_params_list[m];
     const float* true_params = true_params_list[m]; 
     /* fix k at epsilon = 0.5, matching exp1 */
-    int k = compute_k(0.5f, n_params, FAIL_PROB);
+    int k = 10 * compute_k(0.5f, n_params, FAIL_PROB);
 
     printf("model m=%d k=%d\n", n_params, k);
 
