@@ -116,7 +116,7 @@ In this way, RANSAC trades computational cost for robustness. RANSAC avoids givi
 ### History of RANSAC
 <!-- [Show example of location determination - the one in the paper.] -->
 
-The original paper demonstrated the application of RANSAC in *location determination problem* in computer vision. Today, RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and data fitting, particularly in 2-D image stitching and structure from motion. The method has now been applied to a wide array of other problems [2, 3, 4]. I will disuss these in the section [Applications](#application). 
+The original paper by Fischler and Bolles [1] demonstrated the application of RANSAC in *location determination problem* in computer vision. Today, RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and data fitting, particularly in 2-D image stitching and structure from motion. The method has now been applied to a wide array of other problems [2, 3, 4]. I will disuss these in the section [Applications](#application).
 
 
 The rest of the paper is organized as follows: 
@@ -430,7 +430,7 @@ This is a single scalar that captures error across all model parameters simultan
 
 The three experiments share a common parameter baseline.
 
-For all experiments, $N = 1000$ points are used, split between inliers and outliers according to the outlier fraction $\varepsilon$. This choice is larger than the $N = 100$ commonly used in illustrative examples, and is motivated by two practical considerations. First, timing resolution: the C implementation runs fast enough that at $N = 100$ individual function calls complete in nanoseconds, making wall-clock timing unreliable. At $N = 1000$ the dominant operations — normal equation accumulation in `fit_model` and residual computation in `find_model_inliers` — run long enough to be measured reliably in microseconds using `clock()`. Second, statistical stability: at $\varepsilon = 0.1$ and $N = 100$ only 10 outlier points are added, which is too few to represent a stable outlier distribution. At $N = 1000$ the same fraction produces 100 outliers, giving a more representative and repeatable experiment across the `N_REPEATS = 100` independent runs.
+For all experiments, $N = 1000$ points are used, split between inliers and outliers according to the outlier fraction $\varepsilon$. This choice is larger than the $N = 100$ commonly used in illustrative examples, and is motivated by two practical considerations. First, timing resolution: the C implementation runs fast enough that at $N = 100$ individual function calls complete in nanoseconds, making wall-clock timing unreliable. At $N = 1000$ the dominant operations — normal equation accumulation in `fit_model` and residual computation in `find_model_inliers` — run long enough to be measured reliably in microseconds using `clock()`. Second, statistical stability: at $\varepsilon = 0.1$ and $N = 100$ only 10 outlier points are added, which is too few to represent a stable outlier distribution. At $N = 1000$ the same fraction produces 100 outliers, giving a more representative and repeatable experiment across the $N\_REPEATS = 100$ independent runs.
 
 The inlier threshold $t$ is estimated from the noisy inlier data before outliers are added, using $t = \bar{e} + 2\sigma$ applied to the vertical residuals of a preliminary least squares fit. The expected inlier count $d$ is computed from the true $\varepsilon$ as $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. The iteration count $k$ is computed from the true $\varepsilon$ and the model degree using the analytical formula with failure probability $p_{\text{fail}} = 0.01$.
 
@@ -446,19 +446,25 @@ Experiment 01, 02, and 03, confirm the theoretical relationship of parameters wi
 
 ### Experiment 1: Time Vs RANSAC Resampling Iterations $k$
 ![Exp01](figures/exp1.png)
+Experiment 1 measures how wall-clock time scales with the number of RANSAC iterations $k$. The outlier fraction is fixed at $\varepsilon = 0.5$ and $k$ is varied from 10 to 500 in steps of 10, giving 50 conditions. Both the linear ($m=2$) and quadratic ($m=3$) models are tested, each repeated 100 times per condition with $N = 1000$ points throughout. Model error is also recorded at each condition to confirm whether additional iterations improve
+accuracy beyond the theoretically required budget.
 
 The graph plots the data from Experiment 1: wall-clock time (μs) against the number of RANSAC iterations $k$, varied from 10 to 500 in steps of 10, with $\varepsilon = 0.5$ fixed throughout. Two models are shown — linear ($m=2$) in blue and quadratic ($m=3$) in red — each as a solid line with markers showing the median time across repeats and a shaded band covering the 10th to 90th percentile. A secondary y-axis on the right shows mean model error for each model as a dashed line, using the same colors. $N = 1000$ points are used throughout and the experiment repeats 100 times per condition.
 
 The graph confirms that for higher degree model (higher $m$) the time taken is higher for all $k$.
 
-The graph also confirms that wall-clock time grows linearly with the number of iterations `k`, as expected from the algorithm's structure — each iteration fits a model to a minimal random sample and counts inliers, both O(N) operations, so total cost is O(k·N). The two models track closely, with the quadratic (`m=3`) slightly slower than the linear (`m=2`) at every `k` value, reflecting the additional cost of fitting one extra parameter in the normal
-equations. Model error remains flat across all `k` values for both models, confirming that beyond the theoretically required number of iterations, additional iterations do not improve accuracy — they only increase runtime. This linear relationship between `k` and time is the key computational cost of RANSAC and motivates the importance of choosing `k` carefully rather than running an arbitrarily large budget.
+The graph also confirms that wall-clock time grows linearly with the number of iterations $k$, as expected from the algorithm's structure — each iteration fits a model to a minimal random sample and counts inliers, both O(N) operations, so total cost is O(k·N). The two models track closely, with the quadratic ($m=3$) slightly slower than the linear ($m=2$) at every $k$ value, reflecting the additional cost of fitting one extra parameter in the normal
+equations. Model error remains flat across all $k$ values for both models, confirming that beyond the theoretically required number of iterations, additional iterations do not improve accuracy — they only increase runtime. This linear relationship between $k$ and time is the key computational cost of RANSAC and motivates the importance of choosing $k$ carefully rather than running an arbitrarily large budget.
 
 ### Experiment 2: Time Vs Fraction of Outliers ($\varepsilon$)
 
 ![Exp02](figures/exp2.png)
 
-The graph plots the data from Experiment 2. The graph of data from Experiment 2 confirms that as $m$ increases the time for all $\varepsilon$ increases.
+Experiment 2 measures how wall-clock time varies with the outlier fraction $\varepsilon$, swept from 0.05 to 0.95 in steps of 0.05. The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$ for each model, so $k$ does not change as $\varepsilon$ varies. Both the linear ($m=2$) and quadratic ($m=3$) models are tested, each repeated 100 times per condition with $N = 1000$ points throughout. Model error is recorded alongside time to show how accuracy degrades as the outlier fraction increases beyond the value $k$ was designed for.
+
+The graph plots wall-clock time (μs) against outlier fraction $\varepsilon$, varied from 0.05 to 0.95 in steps of 0.05, with $k$ fixed at 17 throughout. Two models are shown — linear ($m=2$) in blue and quadratic ($m=3$) in red — each as a solid line with markers showing the median time across repeats and a shaded band covering the 10th to 90th percentile. A secondary y-axis on the right shows mean model error for each model as a dashed line, using the same colors.
+
+The graph confirms that as $m$ increases the time for all $\varepsilon$ increases.
 
 This graph also confirms that time should reduce as $\varepsilon$ increases. A notable feature of the wall-clock time profile is that time peaks near ε = 0.5 and then decreases at higher outlier fractions. The flat part of the curve is due to the fact that at low $\varepsilon$ we expect large $d$ and the RANSAC usually does not terminate due to early stop, but due to exhaustion of $k$ which is set for $\varepsilon = 0.5$.
 
@@ -469,9 +475,11 @@ The decreases after $\varepsilon = 0.5$ is the expected behavior: it is due to R
 
 ![Exp03](figures/exp3.png)
 
-The graph plots the data from Experiment 3.
+Experiment 3 measures how wall-clock time varies with the inlier threshold $t$, expressed as a multiplier of $noise_std$ and varied from $0.5 \times$ to $5.0 \times$ in steps of 0.5. Both $k$ and $\varepsilon = 0.5$ are fixed throughout, with $k$ set at the value computed for $\varepsilon = 0.5$. Both the linear ($m=2$) and quadratic ($m=3$) models are tested, each repeated 100 times per condition with $N = 1000$ points. The threshold $t$ is set directly as a multiple of $noise_std$ rather than being estimated from the data, so its effect on runtime and accuracy can be isolated. 
 
-Experiment 03 confirms that as we increase threshold $t$: allow more observations to fall into inliers in every iteration of RANSAC, the time for the model to run decreases. But such models are also not accurate as is confirmed by the curve of error moving in the upward direction. 
+The plot shows median time with a 10th to 90th percentile band on the primary axis, and mean model error on the secondary axis.
+
+The plot confirms that as we increase threshold $t$: allow more observations to fall into inliers in every iteration of RANSAC, the time for the model to run decreases. But such models are also not accurate as is confirmed by the curve of error moving in the upward direction. 
 
 The graph also confirms that these results are more pronounced for higher degree models ($m = 3$) than lower ($m = 2$).
 
@@ -479,6 +487,8 @@ Note that the initial increase of the time (while error falls) is due to the fac
 
 
 ### Experiment 4: How Does RANSAC Break Down as Outlier Fraction Increases?
+
+Experiment 4 investigates at what outlier fraction $\varepsilon$ RANSAC begins to fail. The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$ for each model and does not change as $\varepsilon$ varies from 0.05 to 0.95 in steps of 0.05. Both the linear ($m=2$) and quadratic ($m=3$) models are evaluated across 100 repeats per condition with $N = 1000$ points throughout and no structural bias applied to outliers.
 
 The number of iterations required to draw at least one clean sample with probability $p = 0.99$ is given analytically by $k = \log(1 - p) / \log(1 - (1 - \varepsilon)^{n})$, where $\varepsilon$ is the outlier fraction and $n$ is the minimum sample size. As $\varepsilon$ gets close to 1, $k$ grows without bound. The first experiment asks at what outlier fraction RANSAC fails in practice when $k$ is held fixed at a reasonable value. The size of the sample `N` is 1000 each of the experiment is repeated 100 times, each run is recorded.
 
@@ -494,11 +504,9 @@ For $n = 3$:
 
 $$k = \frac{\log_2(0.01)}{\log_2(1 - (0.5)^3)} = \frac{-6.644}{\log_2(0.875)} = \frac{-6.644}{-0.193} \approx 35.$$
 
-Thus, this experiment is first run the linear model ($n = 2$) keeping $k$ constant at 17, and then for the quadratic model ($n = 3$) keping $k$ constant at 35. 
+Thus, this experiment is first run the linear model ($n = 2$) keeping $k$ constant at 17, and then for the quadratic model ($n = 3$) keping $k$ constant at 35. The recovered model error — the Euclidean distance between the estimated and true parameter vectors — is recorded at each value of $\varepsilon$. 
 
-The recovered model error — the Euclidean distance between the estimated and true parameter vectors — is recorded at each value of $\varepsilon$. 
-
-On the graph, the x-axis shows $\varepsilon$ and the y-axis shows Euclidean model error. The shaded band covers the 10th to 90th percentile of error across repeats. The red dashed line marks the breakdown threshold — defined as the mean error at the lowest $\varepsilon$ plus two standard deviations (2 * the noise standard deviation) — and the green vertical line marks the first $\varepsilon$ where the mean crosses it. Below the threshold RANSAC reliably recovers the true model; above it the returned parameters can no longer be trusted. 
+The plot shows median model error on the y-axis against $\varepsilon$ on the x-axis, with a shaded band covering the 10th to 90th percentile of error across repeats. The red dashed horizontal line marks the breakdown threshold of $2 \times \text{noise\_std} = 1.0$, defined as the point beyond which model error can no longer be attributed to noise alone. The green vertical line marks the first $\varepsilon$ at which the median error crosses this threshold. Below the threshold RANSAC reliably recovers the true model; above it the returned parameters can no longer be trusted. The two subplots share the same x-axis but have different y-limits, reflecting that $m=3$ accumulates larger errors before breakdown due to it higher minimum sample size requirement per iteration.
 
 The two subplots share the same x-axis but have different y-limits, reflecting that $m=3$ accumulates larger errors before breakdown due to the higher minimum sample size required per iteration.
 
@@ -510,7 +518,7 @@ The expected result is a sharp increase in model error above a critical $\vareps
 ### Experiment 5: Structural Bias and RANSAC Failure
 Experiment 5 investigates at what structural bias probability RANSAC begins to fail. Unlike Experiment 4 which varied the outlier fraction, here the outlier fraction is fixed at $\varepsilon = 0.3$ and the probability $pr$ that any outlier carries a structural bias is varied from 0.05 to 1.0 in steps of 0.05.
 
-Three bias types are tested — constant, linear, and periodic — each representing a different way that outliers might be systematically distributed rather than randomly scattered. Both the linear (`m=2`) and quadratic (`m=3`) models are evaluated. The iteration budget `k` is fixed at the value computed for $\varepsilon = 0.5$, matching the convention established in Experiment 4, so that results are directly comparable across experiments. The breakdown threshold is defined as the mean model error at $pr = 0$ plus two standard deviations — any error above this level is attributed to the structural bias rather than noise alone. The size of the sample `N` is 1000 each of the experiment is repeated 100 times, each run is recorded.
+Three bias types are tested — constant, linear, and periodic — each representing a different way that outliers might be systematically distributed rather than randomly scattered. Both the linear ($m=2$) and quadratic ($m=3$) models are evaluated. The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$, matching the convention established in Experiment 4, so that results are directly comparable across experiments. The breakdown threshold is defined as the mean model error at $pr = 0$ plus two standard deviations — any error above this level is attributed to the structural bias rather than noise alone. The size of the sample $N$ is 1000 each of the experiment is repeated 100 times, each run is recorded.
 
 I plot model error against bias probability $pr$ for each combination of model degree and bias type, arranged as a 2×3 grid of subplots — rows correspond to $m=2$ (linear) and $m=3$ (quadratic), columns to the three bias types: constant, linear, and periodic. 
 
