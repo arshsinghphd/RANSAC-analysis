@@ -568,6 +568,8 @@ Experiment 5 investigates at what structural bias probability RANSAC begins to f
 
 Three bias types are tested — constant, linear, and periodic — each representing a different way that outliers might be systematically distributed rather than randomly scattered. Both the linear ($m=2$) and quadratic ($m=3$) models are evaluated. The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$, matching the convention established in Experiment 4, so that results are directly comparable across experiments. The breakdown threshold is defined as the mean model error at $pr = 0$ plus two standard deviations — any error above this level is attributed to the structural bias rather than noise alone. The size of the sample $N$ is 1000 each of the experiment is repeated 100 times, each run is recorded.
 
+![Exp5](figures/exp5.png)
+
 I plot model error against bias probability $pr$ for each combination of model degree and bias type, arranged as a 2×3 grid of subplots — rows correspond to $m=2$ (linear) and $m=3$ (quadratic), columns to the three bias types: constant, linear, and periodic. 
 
 The x-axis runs from $pr=0$ (no bias) to $pr=1.0$ (all outliers are biased), and the y-axis
@@ -575,7 +577,7 @@ shows the Euclidean model error averaged across repeats. The shaded band shows t
 
 The red dashed horizontal line marks the breakdown threshold, defined as the mean error at $pr=0$ plus two standard deviations (only due to noise) — the point at which error can no longer be attributed to noise alone. A subplot where the mean error crosses this threshold indicates that the corresponding bias type has overwhelmed RANSAC's ability to distinguish inliers from biased outliers, and the returned model is no longer reliable.
 
-![Exp5](figures/exp5.png)
+The graph shows that constant,and linear bias are tolerated for almost all probabilities by both linear and quadratic model, but periodic bias breaks down RANSAC at probabiity of about 0.5 in both models.
 
 ## Application
 <!-- 
@@ -791,11 +793,12 @@ The theoretical guarantee is that with $k$ iterations computed from the $k$ form
 
 ### Summary of Findings
 
-RANSAC provides robust model recovery in the presence of substantial contamination — up to 65% outliers for linear models and 35% for quadratic models — while running in $O(Nk)$ time. Even at low resolutions such as 144p, a single frame contains far more pixels than the $N = 1000$ points used here, yet RANSAC remains fast because $k$ is small when $\varepsilon$ is moderate. In the context of image stitching, where the homography requires four point correspondences ($n = 4$), the computational cost is comparable to the quadratic case studied here, confirming that RANSAC is practical for real feature matching pipelines.
+RANSAC provides robust model recovery in the presence of substantial contamination — up to 65% outliers for linear models and 35% for quadratic models — while running in $O(Nk)$ time. Even at low resolutions such as 144p, a single frame contains far more pixels than the $N = 1000$ points used here, yet RANSAC remains fast because $k$ is small when $\varepsilon$ is moderate. In the context of image stitching, where the homography requires four point correspondences ($n = 3$), the computational cost is comparable to the quadratic case studied here, confirming that RANSAC is practical for real feature matching pipelines.
 
 The experiments demonstrate that runtime is directly proportional to $k$ and inversely related to both $\varepsilon$ and the inlier threshold $t$ — a consequence of RANSAC's early stopping condition, which terminates as soon as a consensus set of size $d$ is found. Tuning these parameters is a trade-off: a tighter threshold improves model accuracy but increases runtime, while a looser threshold accelerates termination at the cost of admitting outliers into the consensus set.
 
-Accuracy experiments confirm that breakdown is well-predicted by the theoretical framework. Because the true model parameters and noise level are known, breakdown can be identified precisely as the point where recovered parameters diverge from ground truth. Higher-degree models are more sensitive to outlier fraction, and structured bias accelerates breakdown further, particularly for periodic and linear bias types. These findings are consistent with the original analysis of Fischler and Bolles (1981) and reinforce the importance of choosing model complexity appropriate to the expected noise and outlier conditions.
+
+Accuracy experiments confirm that breakdown is well-predicted by the theoretical framework. Because the true model parameters and noise level are known, breakdown can be identified precisely as the point where recovered parameters diverge from ground truth. Higher-degree models are more sensitive to outlier fraction, and structured bias accelerates breakdown further, particularly for periodic types. Constant bias and linear bias are tolerated for almost all probabilities by both linear and quadratic model, but periodic bias breaks down RANSAC at probability if it occurs with probability of about 0.5 in both models. These findings reinforce the importance of choosing model complexity appropriate to the expected noise and outlier conditions.
 
 
 ### Higher-Level Learning
@@ -809,11 +812,11 @@ The project also reinforced the importance of numerical foundations in algorithm
 #### Replace Gaussian Elimination of Normal Equation with QR Decomposition
 A key limitation of this implementation is how the polynomial fitting step solves for model parameters. The code builds a matrix from powers of x and solves the resulting system using Gaussian elimination on the normal equations. For low-degree polynomials this works well, but as the degree increases the matrix becomes increasingly difficult to solve accurately — a property called ill-conditioning. Switching the internal arithmetic from float to double improved results at degree 3, but degree 4 and above still produced unreliable fits. A more robust approach would use QR decomposition or Support Vector Decomposition (SVD) [10]. These approaches do not form the problematic normal matrix.
 
-I report codes for an experiment asking at what degree RANSAC fails when $k$ is at a fixed budget of $k = 100$ and $k = 1000$ and the outlier fraction is held at moderate $\varepsilon = 0.5$.  Based on the theoretical $k$ required, I expected to see that for $k = 100$ models up to degree 4 are well estimated in tight bounds of error, but later the error band is too wide (catastrophic failure). And so show this is due to $k$, a higher $k = 1000$ as well, showing failer at degree 8. 
+I report codes for an experiment asking at what degree RANSAC fails when $k$ is at a fixed budget of $k = 100$ and $k = 1000$ and the outlier fraction is held at moderate $\varepsilon = 0.5$.  Based on the theoretical $k$ required, I expected to see that for $k = 100$ models up to degree 4 are well estimated in tight bounds of error the error band is too wide (catastrophic failure). And so show this is due to $k$, a higher $k = 1000$ as well, showing failer at degree 8.
 
-In reality, my models started failiting at m = 4 for all $k$ - due to the numerical solving on normal equation. For this reason, experiments involving model complexity are restricted to degrees 2 and 3. I also do not report experiment 3 in the report, although it is still kept in the empirical_analysis folder [experiment3.c](empirical_analysis/experiment3.c).
+In reality, my models started failiting at m = 4 for all $k$, even 10 times the $k\_theoretical$ - due to the numerical solving on normal equation. For this reason, experiments involving model complexity are restricted to degrees 2 and 3. I also do not report experiment 3 in the report, although it is still kept in the empirical_analysis folder [experiment3.c](empirical_analysis/experiment3.c).
 
-![exp3](figures/exp6_model_degree.png)
+![exp3](figures/exp6.png)
 
 
 | Model degree | $m$ | Theoretical $k$ |
