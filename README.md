@@ -413,7 +413,7 @@ The parameters $k$ and $d$ have opposing roles: $k$ is a safety net that pushes 
 
 Because both $d$ and $\varepsilon$ depend on the same assumption about the data, they should be set consistently using the same outlier fraction $\epsilon$:
 
-$$d = \lfloor (1 - epsilon) \times N \rfloor$$
+$$d = \lfloor (1 - \varepsilon) \times N \rfloor$$
 
 Choosing a good value for $\varepsilon$ is more subtle than it appears because the problem is circular: $\varepsilon$ is needed to set $k$ and $d$, but the true outlier fraction is only known after the inliers have been identified. Three data-driven approaches can be used in practice [3]. 
 
@@ -430,7 +430,7 @@ The threshold $t$ defines the boundary between inliers and outliers. A point is 
 
 In practice, $t$ is derived from the data itself rather than set in advance. Fischler and Bolles suggest setting $t$ at one or two standard deviations beyond the measured average residual error, that is 
 
-$$threshold = \bar{e} + 2\sigma.$$
+$$t = \bar{e} + 2\sigma.$$
 
 Where,
 * $\bar{e}$ is the mean residual error and 
