@@ -701,10 +701,11 @@ In the experiments, this arrays is received in a struct which allows named acces
 
 ### Inlier Generation 
 
-Inlier generation is as it sounds, based on a given model ($m$, and an array of parameters), the arrays $points\_x$ and $points\_y$ are filled in place.
-Array of $x$, $points\_x$ are evaluated as evenly space $n_points$ between $x_min$ and $x_max$. $points\_y$ are filled by evaluating the value based on value of $points\_x[i]$ and parameters.
+Inlier generation is as it sounds, based on a given model ($m$, and an array of parameters), the arrays `points_x` and `points_y` are filled in place.
+Array of $x$, `points_x` are evaluated as evenly space `n_points` between `x_min` and `x_max`. `points_y` are filled by evaluating the value based on value of `points_x[i]` and parameters.
 
-There are guards agains $x\_min = x\_max$, which allows only one point, and least no. of points and $n\_params$ needed to estimate non-trivial functions. 
+There are guards agains `x_min = x_max`, which allows only one point, and least no. of points and `n_params` or $m$ needed to estimate non-trivial functions. 
+
 ```
 int make_inliers(float* points_x, float* points_y, int n_inliers, 
                 float* params, int n_params,
