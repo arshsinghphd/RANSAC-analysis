@@ -478,7 +478,7 @@ The noise standard deviation $\sigma$ is set to $0.5$ in all experiments unless 
 
 In this analysis model recovery quality is measured as the Euclidean distance between the estimated parameter vector $\hat{\mathbf{a}}$ and the true parameter vector $\mathbf{a}^*$:
 
-$$\text{model\_error} = \|\hat{\mathbf{a}} - \mathbf{a}^*\|_2 = \sqrt{\sum_{j=0}^{m-1} (\hat{a}_j - a_j^*)^2}$$
+$$model\_error = \|\hat{\mathbf{a}} - \mathbf{a}^*\|_2 = \sqrt{\sum_{j=0}^{m-1} (\hat{a}_j - a_j^*)^2}$$
 
 This is a single parameter that captures error across all model parameters simultaneously, regardless of polynomial degree. Because RANSAC is stochastic, each experiment is repeated $R = 100$ times with different random seeds and the mean error and standard deviation are reported.
 
