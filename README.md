@@ -55,6 +55,7 @@
     - [Summary of Findings](#summary-of-findings)
     - [Higher-Level Learning](#higher-level-learning)
     - [Future Work](#future-work)
+      - [RANSAC Failure Versus N - The Size of Data](#ransac-failure-versus-n---the-size-of-data)
       - [Replace Gaussian Elimination of Normal Equation with QR Decomposition](#replace-gaussian-elimination-of-normal-equation-with-qr-decomposition)
       - [Test Theoretetical $p$ Versus Reality](#test-theoretetical-p-versus-reality)
   - [Disclosures](#disclosures)
@@ -167,7 +168,7 @@ In this way, RANSAC trades computational cost for robustness. RANSAC avoids givi
 
 In the image above, for the RANSAC model we can hardly we differentiated the model line from the original model. OLS is unduly effected by the positive outliers. Although since RANSAC is a randomized model we may end up with models that are far worse that OLS with probability 1%. 
 
-Another point to notice is that while combined OLS models is worse than the individual models, the stitched RANSAC model is more accurate than either one, this is by design of RANSAC.
+Also notice is that while combined OLS models is worse than the individual models, the stitched RANSAC model is more accurate than either one, this is by design of RANSAC - as the number of inliers increase the function gets better at extracting the true model despite noise and outliers.
 
 ### History of RANSAC
 <!-- [discuss example of location determination - the one in the paper.] -->
@@ -346,13 +347,13 @@ $k$ itself depends only on $\varepsilon$ and $m$ (minimum parameters to be estim
 #### Best, Worst, and Average Cases: Time Complexity
 The best case occurs when the early stopping condition is triggered on the first iteration — a clean sample is drawn immediately and the consensus set meets $d$. In this case only one pass over the data is needed, giving $O(N)$. 
 
-The worst case occurs when no early stop is triggered and all $k$ iterations run to exhaustion, giving $O(k\cdot N)$. 
+The worst case occurs when no early stop is triggered and all $k$ iterations run to exhaustion, giving $O(k\cdot N).$
 
 The average case lies between these extremes and is governed directly by the $k$ formula — at low outlier fractions a clean sample is found quickly and the average cost approaches $O(N)$, while at high outlier fractions many iterations are needed and the average cost approaches the worst case.
 
 ### Space Complexity
 
-I only implement arrays. The rate limiting size is `N`. So the space complexity of RANSAC is $O(N)$.
+In this implementation the only data structure I employ are arrays. The rate limiting size is `N`. So the space complexity of RANSAC is $O(N)$.
 
 | Data Structure | Space Complexity |
 |:-|:-|
@@ -365,7 +366,7 @@ I only implement arrays. The rate limiting size is `N`. So the space complexity 
 
 
 #### Best, Worst, and Average Cases: Space Complexity
-Space complexity is $O(N)$ in all cases. The algorithm allocates a distances array of size $N$ per iteration, and a separate inlier array of at most $N$ elements for the final refit. No additional memory scales with $k$ — running more iterations does not increase memory usage, only runtime.
+Space complexity is $O(N)$ in all cases. The algorithm allocates a distances array of size $N$ per iteration, and a separate inlier array of at most $N$ elements for the final refit. No additional memory for running $k$ times — running more iterations does not increase memory usage, only runtime.
 
 
 ## RANSAC Parameters: Forming Hypothesis for Empirical Analysis 
@@ -625,9 +626,9 @@ HIGHLIGHTS:
 
 ### Language, Libraries, and Design Philosophy
 
-The implementation was developed in two stages. I am more familiar with Python and my code writing speed in Python is much father than in C. So first I developed a  Python prototype to validate correctness of my thoughts and ideas taken from the original paper and other texts which do not procide any pseudocodes. I explored design decisions and testing in Python as well with one big limitation. In this phase I limiting myself to the simple linear model case. This approach allowed me to very quickly get familiar with RANSAC and the challenges in its implementation, and when writing in C I was able to do it much faster based on the previous python codes that I had very carefully kept C-adjacent as I explain further below. 
+The implementation was developed in two stages. I am more familiar with Python and my code writing speed in Python is much father than in C. So first I developed a Python prototype to validate correctness of my thoughts and ideas taken from the original paper and other texts which do not provide any pseudocodes just algorithms. I explored design decisions and testing in Python as well, with one big limitation: in this phase I limited myself to the simple linear model case. This approach allowed me to very quickly get familiar with RANSAC and the challenges in its implementation. When writing in C I was able to do it much faster based on the previous python codes that I had very carefully kept C-adjacent as I explain further below. 
 
-In the second phase I translated the tests and functions to C test-by-test and function-by-function under a test-driven discipline, but improving the design to accommodate flexible models at the same time. 
+In the second phase I translated the tests and functions to C test-by-test and function-by-function under a test-driven discipline, but improving the design to accommodate flexible models at the same time. This meant that I could not use the hardcoded solving of linear model but needed to implement solution of normal equation using gaussian elimination. Now I regret choosing the easiest algorithm - I should have invested more time and implmented QR decomposition. I will discuss this [later on](#replace-gaussian-elimination-of-normal-equation-with-qr-decomposition) in the paper.
 
 I do not present code snippets to the Python prototype, but the entire set of codes is in the folder [other/python_linear](other/python_linear). These are not true Python codes since I used only the standard library — `math`, `random`, and `unittest` — with no NumPy, SciPy, or other numerical libraries. This constraint was deliberate: every operation that could not be expressed in standard C was avoided from the start, making the translation straightforward and mechanical. The C implementation likewise uses only `math.h`, `stdlib.h`, `stdio.h`, and `time.h`.
 
@@ -812,6 +813,9 @@ The project also reinforced the importance of numerical foundations in algorithm
 
 ### Future Work
 
+#### RANSAC Failure Versus N - The Size of Data
+This is a relatively simple experiment that I could have easily implemented but have not performed. The theory is simple, with increased $d$, we expect RANSAC to do better, even if the outliers increase proportionately. 
+
 #### Replace Gaussian Elimination of Normal Equation with QR Decomposition
 A key limitation of this implementation is how the polynomial fitting step solves for model parameters. The code builds a matrix from powers of x and solves the resulting system using Gaussian elimination on the normal equations. For low-degree polynomials this works well, but as the degree increases the matrix becomes increasingly difficult to solve accurately — a property called ill-conditioning. Switching the internal arithmetic from float to double improved results at degree 3, but degree 4 and above still produced unreliable fits. A more robust approach would use QR decomposition or Support Vector Decomposition (SVD) [10]. These approaches do not form the problematic normal matrix.
 
@@ -876,4 +880,3 @@ I did not any LLM to write codes. I implemented my codes based on my reading of 
 
 <!-- QR decomposition -->
 [12] Reilly, J. (2025). The QR Decomposition. In: Fundamentals of Linear Algebra for Signal Processing. Springer, Cham. https://doi-org.ezproxy.neu.edu/10.1007/978-3-031-68915-4_6
-
