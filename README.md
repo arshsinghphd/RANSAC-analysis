@@ -43,10 +43,13 @@
   - [Implementation](#implementation)
     - [Language, Libraries, and Design Philosophy](#language-libraries-and-design-philosophy)
     - [Module Structure](#module-structure)
-    - [File Structure](#file-structure)
     - [Data Representation](#data-representation)
+    - [Inlier Generation](#inlier-generation)
     - [Noise and Outlier Generation](#noise-and-outlier-generation)
     - [Parameter Estimation Helper Functions](#parameter-estimation-helper-functions)
+    - [One RANSAC Run](#one-ransac-run)
+    - [Full RANSAC Run](#full-ransac-run)
+    - [Random Selection of $m$ Points](#random-selection-of-m-points)
     - [Polynomial Least Squares via the Normal Equations](#polynomial-least-squares-via-the-normal-equations)
     - [Vertical Residual as the Distance From Model](#vertical-residual-as-the-distance-from-model)
     - [The RANSAC Loop and the Final Refit](#the-ransac-loop-and-the-final-refit)
@@ -642,7 +645,7 @@ The implementation is organized across three modules, shown in the flowchart bel
 2. `model.c` provides fitting, inlier collection, and error measurement; and 
 3. `ransac.c` implements the algorithm and its parameter helpers. 
 
-The caller interacts only with `ransac.c` and `model.c` through their public headers.
+The caller interacts only with `generator.c`, `ransac.c`, and `model.c` through their public headers.
 
 ```mermaid
 flowchart TD
@@ -677,9 +680,6 @@ flowchart TD
     F --> A
 ```
 
-### File Structure
-
-
 ### Data Representation
 
 Points are stored as separate flat arrays `points_x` and `points_y` rather than as an array of `(x, y)` tuples. This was a deliberate choice for two reasons. First, separate arrays are mutable in place in C without pointer arithmetic on struct members, making in-place noise injection and outlier appending straightforward. Second, this layout maps directly to the Vandermonde accumulation in `fit_model`, where `points_x[i]` and `points_y[i]` are accessed independently in tight loops.
@@ -692,29 +692,145 @@ return_array[1]               number of iterations actually run
 return_array[2..2+m-1]        best model params (a0, a1, ...)
 ```
 
-In the experiments, this arrays is received in a struct which allows named access to struct members rather than indexed access from the array. 
+In the experiments, this arrays is received in a struct which allows named access to struct members rather than indexed access from the array.
 
+### Inlier Generation 
+
+Inlier generation is as it sounds, based on a given model ($m$, and an array of parameters), the arrays $points\_x$ and $points\_y$ are filled in place.
+Array of $x$, $points\_x$ are evaluated as evenly space $n_points$ between $x_min$ and $x_max$. $points\_y$ are filled by evaluating the value based on value of $points\_x[i]$ and parameters.
+
+There are guards agains $x\_min = x\_max$, which allows only one point, and least no. of points and $n\_params$ needed to estimate non-trivial functions. 
+```
+int make_inliers(float* points_x, float* points_y, int n_inliers, 
+                float* params, int n_params,
+                float x_min, float x_max) {
+    if(n_inliers < 2 || x_min == x_max || n_params < 2){
+            return -1;
+        }
+    float step = (float) (x_max - x_min) / (n_inliers - 1);
+    float x;
+    float y;
+    for(int i = 0; i < n_inliers; i++) {
+        x = x_min + i * step;
+        y = 0.0;
+        for(int j = 0; j < n_params; j++){
+            y += params[j] * pow(x, j);
+        }
+        points_x[i] = x;
+        points_y[i] = y;
+    }
+    return 0;
+}
+```
 
 ### Noise and Outlier Generation
 
 Noise is injected as separate functions — `add_gaussian_noise`, `add_outlier`, and `add_structural_bias` — rather than as a single combined generator. This separation serves the empirical analysis directly: by swapping noise functions, the effect of each noise type on RANSAC recovery can be measured in isolation.
 
- Gaussian noise models sensor measurement error. 
+ Gaussian noise models sensor measurement error. I generate gaussian noise deterministically using Box Muller method [5, 13]. This method takes two random numbers from uniform distribution ($u1, u2$) and relies on $\log$ and $cos$ functions to convert these to a distribution that has the same features as the gaussian noise.
+
+ Guards against meaningless negative $std$ and least no. of points needed to fit a non-trivial model.
  
  ```c
+static float _box_muller(float std) {
+    float u1 = (float) rand() / RAND_MAX;
+    float u2 = (float) rand() / RAND_MAX;
+    float z = sqrt(-2 * log(u1)) * cos(2 * M_PI * u2);
+    return z * std;
+}
 
+int add_gaussian_noise(float* points_y, int n_inliers, float std) {
+    if (n_inliers < 2 || std <= 0)
+        return -1;
+    for(int i = 0; i < n_inliers; i++)
+        points_y[i] += _box_muller(std);
+    return 0;
+}
  ```
  
  Outliers are what Fischler and Bolles call classification errors, these are strictly outside the 2 * $\sigma$ band around the model. 
  
+ Guards against negative inputs of `int`, 0 value of $noise\_std$, and less than least no. of params and points needed for non-trivial model estimation. 
+ 
  ```c
-
+int add_outliers(float* points_x, float* points_y, 
+    int n_inliers, int n_outliers, float* params, int n_params, 
+    float noise_std) 
+{
+    if (n_inliers < 0 || n_outliers < 0 ||
+        n_inliers + n_outliers < 2 ||
+        noise_std <= 0.0f || n_params < 2)
+        return -1;
+    // find x_min, x_max, y_min, y_max
+    float x_min = points_x[0];
+    float x_max = points_x[0];
+    float y_min = points_y[0];
+    float y_max = points_y[0];
+    for (int i = 0; i < n_inliers; i++) {
+        if(points_x[i] < x_min)
+            x_min = points_x[i];
+        if(points_x[i] > x_max) 
+            x_max = points_x[i];
+        if(points_y[i] < y_min)
+            y_min = points_y[i];
+        if(points_y[i] > y_max) 
+            y_max = points_y[i];
+    }
+    // estimate x_range
+    float x_range;
+    if (x_max - x_min > 1e-6)
+        x_range = x_max - x_min;    
+    else 
+        return -1;  // if x_min == x_max, no outliers can be added
+    // variables to estimate outlier y
+    float inlier_band = 2 * noise_std;
+    float y_range;
+    // estimate y_range
+    if (y_max - y_min > 1)
+        y_range = y_max - y_min;  
+    else 
+        y_range = 1;  // means no noise in data, must add outliers though
+    // add outliers to points_x, points_y
+    float x, y, y_on_model;
+    int idx = n_inliers;
+    for (int i = 0; i < n_outliers; i++) {
+        // pick random x on x_range
+        x = x_min + ((float) rand() / RAND_MAX) * x_range;
+        // estimate corresponding y on model
+        y_on_model = 0.0;
+        for (int j = 0; j < n_params; j++) {
+            y_on_model += params[j] * pow(x, j);
+        }
+        // 50% change above model. 50% chance below model
+        // outliers are some random fraction of the range of y outside the band
+        if (rand()/RAND_MAX < 0.5)
+            y = y_on_model + inlier_band + ((float) rand()/RAND_MAX) * y_range;
+        else
+            y = y_on_model - inlier_band - ((float) rand()/RAND_MAX) * y_range;
+        points_x[idx] = x;
+        points_y[idx] = y;
+        idx++;
+    }
+    return 0;
+}
  ```
 
- Structural bias models systematic error such as lens distortion that affects a fraction $p_r$ of points coherently rather than randomly. The `add_structural_bias` function accepts a function pointer `float (*bias_fn)(float)`, allowing any bias shape — constant, linear, or periodic — to be injected without modifying the generator.
+ Structural bias models systematic error such as lens distortion that affects a fraction $p_r$ of points coherently rather than randomly. The `add_structural_bias` function accepts a function pointer `float (*bias_fn)(float)`, allowing any bias shape — constant, linear, or periodic — to be injected without modifying the generator. I sm not showing the bias functions, these are one line functions that return the estimation of bias function at the $x$ passed.
 
+Guards against, $pr$ with which random bias occurs to be at least 0 and at most 1. Also guads against `NULL` passed for function and less than the least no, of points neede to fit a non-trivial function. 
 ```c
-
+int add_structural_bias(float* points_y, float* points_x, int n_inliers, 
+    float pr, float (*bias_fn)(float)) {
+    if (n_inliers < 2 || bias_fn == NULL || pr < 0 || pr > 1) {
+        return -1;
+    }
+    for (int i = 0; i < n_inliers; i++) {
+        if (pr > (float) rand() / RAND_MAX) {
+            points_y[i] += bias_fn(points_x[i]);
+        }
+    }
+    return 0;
+ }
 ```
 
 ### Parameter Estimation Helper Functions
@@ -738,9 +854,139 @@ Both `estimate_epsilon` and `compute_t` are unreliable at high outlier fractions
 In this project $\varepsilon$ is known exactly from the synthetic data generation process, so the helpers serve as a demonstration of the estimation procedure for real-world settings where the true $\varepsilon$ is unknown. This design also makes the relationship between $\varepsilon$, $k$, $d$, and $t$ explicit and independently testable.
 
 
+### One RANSAC Run
+
+The following is accomplished in one RANSAC run:
+  1. Select $m$ random points from the array of $n$
+  2. Try to fit the model expected, filling the $params$ in place. 
+  3. Count the number of inliers based on the fitted model
+  4. If this count is greater than the expected $d$ - early return
+```
+static int _ransac_iteration(float* points_x, float* points_y,
+                              int n_points, int n_params, float threshold,
+                              float* best_params, int* best_inliers) {
+    int idx[n_points];
+    fisher_yates(idx, n_points, n_params);
+
+    /* collect sampled points */
+    float sample_x[n_params], sample_y[n_params];
+    for (int j = 0; j < n_params; j++) {
+        sample_x[j] = points_x[idx[j]];
+        sample_y[j] = points_y[idx[j]];
+    }
+
+    /* fit model to sample — return -1 if degenerate */
+    float params[n_params];
+    int ret = fit_model(sample_x, sample_y, n_params, params, n_params);
+    if (ret == -1)
+        return -1;
+
+    /* count inliers using vertical residual */
+    float inliers_x[n_points], inliers_y[n_points];
+    int   n_inliers = 0;
+    find_model_inliers(points_x, points_y, n_points,
+                       params, n_params, threshold,
+                       inliers_x, inliers_y, &n_inliers);
+
+    /* update best model if improved */
+    if (n_inliers > *best_inliers) {
+        *best_inliers = n_inliers;
+        for (int j = 0; j < n_params; j++)
+            best_params[j] = params[j];
+        return 1; /* best updated */
+    }
+    return 0; /* no improvement */
+}
+```
+### Full RANSAC Run
+
+Repeats one RANSAC run $k$ times unless there is early return. Also does a finak step a-la LO-RANSAC of fitting the final model on the best model inliers. 
+
+This function fills an array in place that has a specific format: 
+
+
+Guards against less than minimim $m$ and $n$C needed for a non-trivial model, threshold of 0.0f which assumes no noise, many of the helper functions misbehave at this value and a minimum $t$ is always passed. Also guards against the lack of early stop condition where $d > n$.
+
+Return_array layout (modified in place):
+```
+* return_array[0]               number of inliers in best model
+* return_array[1]               number of iterations actually run
+* return_array[2..2+n_params-1] best model params (a0, a1, ...)
+```
+
+```
+int ransac(float* points_x, float* points_y, int n_points, int n_params,
+           int k_resample, float threshold, int expected_inliers,
+           float* return_array) {
+    /* guard conditions */
+    if (n_points < 2 || n_params < 2 || n_points < n_params ||
+            k_resample < 1 || threshold <= 0.0f ||
+            expected_inliers > n_points){
+        return -1;
+	  }
+    int   best_inliers  = 0;
+    int   iterations_run = 0;
+    float best_params[n_params];
+    for (int j = 0; j < n_params; j++)
+        best_params[j] = 0.0f;
+
+    for (int i = 0; i < k_resample; i++) {
+        _ransac_iteration(points_x, points_y, n_points, n_params,
+                          threshold, best_params, &best_inliers);
+        iterations_run++;
+        // early stop
+        if (best_inliers >= expected_inliers)
+            break;
+    }
+
+    if (best_inliers == 0)
+        return -1;
+
+    /* final refit on best consensus set */
+    float params[n_params];
+    int ret = _final_refit(points_x, points_y, n_points,
+                           best_params, n_params, threshold, params);
+    //printf("params[0]=%f, params[1]=%f\n", params[0], params[1]);
+
+    if (ret == -1)
+        return -1;
+
+    /* fill return_array */
+    return_array[0] = (float) best_inliers;
+    return_array[1] = (float) iterations_run;
+    for (int j = 0; j < n_params; j++)
+        return_array[2 + j] = params[j];
+
+    return 0;
+}
+```
+
+### Random Selection of $m$ Points
+
+I randomly select $m$ points from the array of $n$ points using Fisher - Yates partial in place shuffle. The run time of this shuffle is $O(m)$.
+
+```
+void fisher_yates(int* idx, int n, int m) {
+    /* initialise index array 0..n-1 */
+    for (int j = 0; j < n; j++)
+        idx[j] = j;
+    /* partial shuffle — only first m positions needed */
+    for (int j = 0; j < m; j++) {
+    	// random in [j, n)
+        int k   = j + rand() % (n - j);
+        // swap idx[j] and idx[k]
+        int tmp = idx[j];                       
+        idx[j]  = idx[k];
+        idx[k]  = tmp;
+    }
+}
+```
+
 ### Polynomial Least Squares via the Normal Equations
 
-I solve normal equations via Gaussian elimination with partial pivoting and back substitution [7, 8].
+After selecting $m$Crandom points I solve normal equations via Gaussian elimination with partial pivoting and back substitution [7, 8].
+
+This function lives in `model.c`.
 
 Given $N$ points $(x_i, y_i)$, a polynomial model of degree $m - 1$ requiring $m$ coefficients is fit by minimizing the sum of squared vertical residuals:
 
@@ -754,8 +1000,116 @@ I precomputed powers of $x_i$ are precomputed up to degree $2(m-1)$ and reused t
 
 A zero pivot indicates a singular matrix and the function returns an error. The coefficient vector is recovered by back substitution. For $m = 2$ this reduces to ordinary least squares line fitting, but the implementation handles all degrees without making any special case for the linear model.
 
-```C
+Apart from the sme guards of requiring least number of $m$ and $n$ for a non-trivial model, also guards in the program with the difference between $x_min$ and $x_max$ is beyond detection.
 
+```C
+int fit_model(float* points_x, float* points_y, int n_points,
+              float* params, int n_params) {
+    if (n_points < n_params || n_params < 2) {
+        return -1;
+    }
+
+    // check all x values are not identical — singular matrix otherwise
+    float x_min = points_x[0];
+    float x_max = points_x[0];
+    for (int i = 0; i < n_points; i++) {
+        if (points_x[i] < x_min) x_min = points_x[i];
+        if (points_x[i] > x_max) x_max = points_x[i];
+    }
+    // 1e-4 tolerance accounts for float rounding near equal values
+    if (fabsf(x_min - x_max) < 1e-4)
+        return -1;
+
+    // d is the number of polynomial coefficients — also the matrix dimension
+    int d = n_params;
+
+    // XtX is the d x d Gram matrix: XtX[r][c] = sum of x^(r+c) over all points
+    // Xty is the d-vector: Xty[r] = sum of x^r * y over all points
+    // use double throughout to reduce numerical error on ill-conditioned Vandermonde
+    double XtX[d][d];
+    double Xty[d];
+    for (int i = 0; i < d; i++) {
+        Xty[i] = 0.0;
+        for (int j = 0; j < d; j++)
+            XtX[i][j] = 0.0;
+    }
+
+    for (int i = 0; i < n_points; i++) {
+        double xi = (double) points_x[i];
+        double yi = (double) points_y[i];
+
+        // precompute powers of xi up to x^(2d-1) — needed for both rows and cols of XtX
+        double xpow[2 * d];
+        xpow[0] = 1.0;
+        for (int k = 1; k < 2 * d; k++)
+            xpow[k] = xpow[k - 1] * xi;
+
+        // accumulate XtX[r][c] += xi^(r+c) and Xty[r] += xi^r * yi
+        for (int r = 0; r < d; r++) {
+            for (int c = 0; c < d; c++)
+                XtX[r][c] += xpow[r + c];
+            Xty[r] += xpow[r] * yi;
+        }
+    }
+
+    // build augmented matrix [XtX | Xty] for Gaussian elimination
+    // aug[r][d] holds the right-hand side Xty[r]
+    double aug[d][d + 1];
+    for (int r = 0; r < d; r++) {
+        for (int c = 0; c < d; c++)
+            aug[r][c] = XtX[r][c];
+        aug[r][d] = Xty[r];
+    }
+
+    // forward elimination with partial pivoting
+    // partial pivoting swaps the row with the largest pivot to the top
+    // to reduce numerical error from dividing by small values
+    for (int col = 0; col < d; col++) {
+        int max_row = col;
+        double max_val = fabs(aug[col][col]);
+        for (int row = col + 1; row < d; row++) {
+            if (fabs(aug[row][col]) > max_val) {
+                max_val = fabs(aug[row][col]);
+                max_row = row;
+            }
+        }
+        // singular matrix — no unique solution
+        if (max_val == 0.0)
+            return -1;
+
+        // swap current row with the pivot row
+        for (int k = 0; k <= d; k++) {
+            double tmp = aug[col][k];
+            aug[col][k] = aug[max_row][k];
+            aug[max_row][k] = tmp;
+        }
+
+        // eliminate all entries below the pivot in this column
+        // factor is the multiplier that zeros out aug[row][col]
+        for (int row = col + 1; row < d; row++) {
+            double factor = aug[row][col] / aug[col][col];
+            for (int k = col; k <= d; k++)
+                aug[row][k] -= factor * aug[col][k];
+        }
+    }
+
+    // back substitution — solve upper triangular system from bottom to top
+    // each coefficient is solved using the already-known coefficients below it
+    double coeffs[d];
+    for (int row = d - 1; row >= 0; row--) {
+        coeffs[row] = aug[row][d];
+        for (int k = row + 1; k < d; k++)
+            coeffs[row] -= aug[row][k] * coeffs[k];
+        // divide by the diagonal element to isolate coeffs[row]
+        coeffs[row] /= aug[row][row];
+    }
+
+    // cast back to float — precision was only needed internally
+    for (int i = 0; i < d; i++)
+        params[i] = (float) coeffs[i];
+
+    return 0;
+}
 ```
 ### Vertical Residual as the Distance From Model
 
@@ -765,17 +1119,49 @@ $$\text{distance}_i = \left| \sum_{j=0}^{m-1} a_j x_i^j - y_i \right|$$
 
 This is the absolute difference between the predicted and observed $y$ value. In the linear model with Python I had used perpendicular distance, but the vertical residual is preferred here because it extends naturally to polynomial models of any degree, for which perpendicular distance has no simple closed form. The absolute value ensures the distance is non-negative regardless of which side of the model the point lies on. A separate function `points_to_line_distances` computes the true perpendicular distance for linear models only, and is retained for completeness and comparison.
 
+```
+int find_model_inliers(float* points_x, float* points_y, int n_points,
+    float* params, int n_params, float threshold, float* inliers_x, 
+    float* inliers_y, int* n_inliers)
+{
+    if (n_points < 1 || threshold <= 0 || n_params < 2) {
+        return -1;
+    }
+
+    *n_inliers = 0; // initiate n_inliers
+    for (int i = 0; i < n_points; i++) {
+        float y_model = eval_model(points_x[i], params, n_params);
+        // vertical residual < threshold
+        if (fabs(points_y[i] - y_model) < threshold) {
+            inliers_x[*n_inliers] = points_x[i];
+            inliers_y[*n_inliers] = points_y[i];
+            (*n_inliers)++;
+        }
+    }
+    return 0;
+}
+```
 ### The RANSAC Loop and the Final Refit
 
 The core loop samples $m$ random indices using a partial Fisher-Yates shuffle — only the first $m$ positions are shuffled at $O(m)$ cost rather than $O(N)$ — fits a candidate model to the sample, counts inliers based on vertical distance from the model, and tracks the best model as the one with the highest number of inliers. An early stop exits the loop as soon as `expected_inliers` are reached. A better one may be found later on, but RANSAC's philosphy is after all to find a good-enough model and save time and computation cost.
 
-A critical implementation detail follows Fischler and Bolles directly [1]: the final refit on all inliers of the best consensus set is a post-processing step, not part of the RANSAC iteration. Inside the loop, the model is fit only to the $m$-point sample. After the loop, all inliers of the best model are collected and the model is refit on the full consensus set. This two-stage design is what gives RANSAC its accuracy: the loop finds the consensus, and the refit uses that consensus to produce a statistically efficient estimate.
+A critical implementation detail follows a-la LO-RANSAC directly [9]: the final refit on all inliers of the best consensus set is a post-processing step, not part of the RANSAC iteration. Inside the loop, the model is fit only to the $m$-point sample. After the loop, all inliers of the best model are collected and the model is refit on the full consensus set. This two-stage design is what gives RANSAC its accuracy: the loop finds the consensus, and the refit uses that consensus to produce a statistically efficient estimate.
 
 ```c
-/* ransac main loop */
-
 /* _final_refit call (akin to LO-RANSAC) */
+static int _final_refit(float* points_x, float* points_y, int n_points,
+                         float* best_params, int n_params, float threshold,
+                         float* params) {
+    /* collect all inliers of best model */
+    float inlier_x[n_points], inlier_y[n_points];
+    int   n_inliers = 0;
+    find_model_inliers(points_x, points_y, n_points,
+                       best_params, n_params, threshold,
+                       inlier_x, inlier_y, &n_inliers);
 
+    /* refit on all inliers */
+    return fit_model(inlier_x, inlier_y, n_inliers, params, n_params);
+}
 ```
 
 ### Stochastic Behavior and Test Design
@@ -880,3 +1266,5 @@ I did not any LLM to write codes. I implemented my codes based on my reading of 
 
 <!-- QR decomposition -->
 [12] Reilly, J. (2025). The QR Decomposition. In: Fundamentals of Linear Algebra for Signal Processing. Springer, Cham. https://doi-org.ezproxy.neu.edu/10.1007/978-3-031-68915-4_6
+
+[13] Scott, D.W. (2011), Box–Muller transformation. WIREs Comp Stat, 3: 177-179. https://doi-org.ezproxy.neu.edu/10.1002/wics.148
