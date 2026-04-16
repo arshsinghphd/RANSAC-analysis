@@ -212,7 +212,7 @@ Given a model that requires a minimum of $m$ data points to instantiate its free
 
 1. Randomly select a subset $S\_1$ of $m$ data points from `points_x` and `points_y` and instantiate the model. Use the instantiated model $M_1$ to determine the subset $S_1$* of points in `points_x` and `points_y` whose perpendicular distance from $M_1$ is within the threshold $t$. The array $S_1$* is called the consensus array of $S_1$.
 
-2. If $|S_1^*| \ge expected\_inliers$, where $d$ is a threshold derived from the estimated outlier fraction $\varepsilon$, use $S_1^*$ to compute a refined model $M_1^*$ using least squares over all consensus points. Return $M_1^*$ as the best model.
+2. If $$|S_1^*| \ge expected\_inliers$$, where $d$ is a threshold derived from the estimated outlier fraction $\varepsilon$, use $$S_1^*$$ to compute a refined model $$M_1^*$$ using least squares over all consensus points. Return $$M_1^*$$ as the best model.
 
 3. If $|S_1^*| < expected\_inliers$, randomly select a new subset $S_2$ and repeat the above process, tracking the consensus array with the largest size seen so far.
 
