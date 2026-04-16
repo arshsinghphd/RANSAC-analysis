@@ -991,13 +991,13 @@ void fisher_yates(int* idx, int n, int m) {
 
 ### Polynomial Least Squares via the Normal Equations
 
-After selecting $m$Crandom points I solve normal equations via Gaussian elimination with partial pivoting and back substitution [7, 8].
+After selecting $m$ random points I solve normal equations via Gaussian elimination with partial pivoting and back substitution [7, 8].
 
 This function lives in `model.c` and was the most difficult algorithm I had to implement in this assignment. it is also the longest - with most line of codes. I can see how each step can can be made into smaller functions and DRY, but after I implemented it I did not want to mess with it. It is rogorously tested with $m = {2, 3}$. 
 
 If I had tested larger $m$ I would have figured out its limitations earlier, because as it turned out this approach is insufficiently accurate for larger $m$ with even `double` precision and in the next iteration I will replace this with QR decomposition. More discussion [later](#replace-gaussian-elimination-of-normal-equation-with-qr-decomposition) in report. 
 
-Given $N$ points $(x_i, y_i)$, a polynomial model of degree $m - 1$ requiring $m$ coefficients is fit by minimizing the sum of squared vertical residuals:
+Given $N$ points `(x_i, y_i)`, a polynomial model of degree $m - 1$ requiring $m$ coefficients is fit by minimizing the sum of squared vertical residuals:
 
 $$\min_{\mathbf{a}} \sum_{i=1}^{N} \left( y_i - \sum_{j=0}^{m-1} a_j x_i^j \right)^2$$
 
@@ -1009,7 +1009,7 @@ I precomputed powers of $x_i$ are precomputed up to degree $2(m-1)$ and reused t
 
 A zero pivot indicates a singular matrix and the function returns an error. The coefficient vector is recovered by back substitution. For $m = 2$ this reduces to ordinary least squares line fitting, but the implementation handles all degrees without making any special case for the linear model.
 
-Apart from the sme guards of requiring least number of $m$ and $n$ for a non-trivial model, also guards in the program with the difference between $x_min$ and $x_max$ is beyond detection.
+Apart from the sme guards of requiring least number of $m$ and $n$ for a non-trivial model, also guards in the program with the difference between `x_min` and `x_max` is beyond detection.
 
 ```C
 
