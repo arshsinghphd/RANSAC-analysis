@@ -210,7 +210,7 @@ The RANSAC paradigm is more formally stated as follows [1].
 
 Given a model that requires a minimum of $m$ data points to instantiate its free parameters, and two arrays $points\_x$ and $points\_y$ of $N$ data points such that $N \ge m$, RANSAC proceeds as follows.
 
-1. Randomly select a subset $S_1$ of $m$ data points from $points\_x$ and $points\_y$ and instantiate the model. Use the instantiated model $M_1$ to determine the subset $S_1^*$ of points in $points\_x$ and $points\_y$ whose perpendicular distance from $M_1$ is within the threshold $t$. The array $S_1^*$ is called the consensus array of $S_1$.
+1. Randomly select a subset $S\_1$ of $m$ data points from $points\_x$ and $points\_y$ and instantiate the model. Use the instantiated model $M_1$ to determine the subset $S_1^*$ of points in $points\_x$ and $points\_y$ whose perpendicular distance from $M_1$ is within the threshold $t$. The array $S_1^*$ is called the consensus array of $S_1$.
 
 2. If $|S_1^*| \ge expected\_inliers$, where $d$ is a threshold derived from the estimated outlier fraction $\varepsilon$, use $S_1^*$ to compute a refined model $M_1^*$ using least squares over all consensus points. Return $M_1^*$ as the best model.
 
@@ -619,12 +619,6 @@ PROSAC (Progressive Sample Consensus) takes a different approach — rather than
 - What were the challenges you faced?
 - Provide key points of the algorithm/datastructure implementation, discuss the code.
 - If you found code in another language, and then implemented in your own language that is fine - but make sure to document that.
-
-HIGHLIGHTS:
-
-1. Abstracting away from image complexities by using 2-D points instead of pixels. 
-2. Keeping cartesian points also allows me to represent my analysis using simple and easy to interpret graphs.
-3.  
 -->
 
 ### Language, Libraries, and Design Philosophy
@@ -1213,6 +1207,9 @@ Accuracy experiments confirm that breakdown is well-predicted by the theoretical
 At a broader level, this study highlights the value of synthetic data for exploring RANSAC's behaviour. Working with known ground truth parameters and controlled noise allowed precise identification of the causes behind observed patterns in the empirical results — something that would be difficult or impossible to determine from real images alone.
 
 The project also reinforced the importance of numerical foundations in algorithm implementation. For polynomial models of degree 3 ($m = 4$) and higher, the rate-limiting step is not the RANSAC loop itself but the internal least squares solve. Gaussian elimination on the normal equations is a natural first choice — straightforward to understand and implement — but it squares the condition number of the design matrix, causing numerical instability at higher degrees even with double-precision arithmetic. This is discussed further in the limitations section below. As a consequence, experiments involving model complexity are restricted to degrees 2 and 3, and one experiment exploring higher degrees is omitted from the main report.
+
+In a rather jarring way I also learnt the value of testing seemingly unimportant edge cases. For exaple while testing `fit_model` I only tested with $m \in {2, 3}$, had I tested for higher $m$ I would have captured the issue of precision with this approach, which I describe in the next section. 
+
 
 ### Future Work
 
