@@ -64,17 +64,17 @@ int fit_model(float* points_x, float* points_y, int n_points,
     if (fabsf(x_min - x_max) < 1e-4)
         return -1;
 
-    // d is the number of polynomial coefficients — also the matrix dimension
-    int d = n_params;
+    // m is the number of polynomial coefficients — also the matrix dimension
+    int m = n_params;
 
-    // XtX is the d x d Gram matrix: XtX[r][c] = sum of x^(r+c) over all points
-    // Xty is the d-vector: Xty[r] = sum of x^r * y over all points
+    // XtX is the m x m Gram matrix: XtX[r][c] = sum of x^(r+c) over all points
+    // Xty is the m-vector: Xty[r] = sum of x^r * y over all points
     // use double throughout to reduce numerical error on ill-conditioned Vandermonde
-    double XtX[d][d];
-    double Xty[d];
-    for (int i = 0; i < d; i++) {
+    double XtX[m][m];
+    double Xty[m];
+    for (int i = 0; i < m; i++) {
         Xty[i] = 0.0;
-        for (int j = 0; j < d; j++)
+        for (int j = 0; j < m; j++)
             XtX[i][j] = 0.0;
     }
 
@@ -82,36 +82,36 @@ int fit_model(float* points_x, float* points_y, int n_points,
         double xi = (double) points_x[i];
         double yi = (double) points_y[i];
 
-        // precompute powers of xi up to x^(2d-1) — needed for both rows and cols of XtX
-        double xpow[2 * d];
+        // precompute powers of xi up to x^(2m-1) — needed for both rows and cols of XtX
+        double xpow[2 * m];
         xpow[0] = 1.0;
-        for (int k = 1; k < 2 * d; k++)
+        for (int k = 1; k < 2 * m; k++)
             xpow[k] = xpow[k - 1] * xi;
 
         // accumulate XtX[r][c] += xi^(r+c) and Xty[r] += xi^r * yi
-        for (int r = 0; r < d; r++) {
-            for (int c = 0; c < d; c++)
+        for (int r = 0; r < m; r++) {
+            for (int c = 0; c < m; c++)
                 XtX[r][c] += xpow[r + c];
             Xty[r] += xpow[r] * yi;
         }
     }
 
     // build augmented matrix [XtX | Xty] for Gaussian elimination
-    // aug[r][d] holds the right-hand side Xty[r]
-    double aug[d][d + 1];
-    for (int r = 0; r < d; r++) {
-        for (int c = 0; c < d; c++)
+    // aug[r][m] holds the right-hand side Xty[r]
+    double aug[m][m + 1];
+    for (int r = 0; r < m; r++) {
+        for (int c = 0; c < m; c++)
             aug[r][c] = XtX[r][c];
-        aug[r][d] = Xty[r];
+        aug[r][m] = Xty[r];
     }
 
     // forward elimination with partial pivoting
     // partial pivoting swaps the row with the largest pivot to the top
     // to reduce numerical error from dividing by small values
-    for (int col = 0; col < d; col++) {
+    for (int col = 0; col < m; col++) {
         int max_row = col;
         double max_val = fabs(aug[col][col]);
-        for (int row = col + 1; row < d; row++) {
+        for (int row = col + 1; row < m; row++) {
             if (fabs(aug[row][col]) > max_val) {
                 max_val = fabs(aug[row][col]);
                 max_row = row;
@@ -122,7 +122,7 @@ int fit_model(float* points_x, float* points_y, int n_points,
             return -1;
 
         // swap current row with the pivot row
-        for (int k = 0; k <= d; k++) {
+        for (int k = 0; k <= m; k++) {
             double tmp = aug[col][k];
             aug[col][k] = aug[max_row][k];
             aug[max_row][k] = tmp;
@@ -130,30 +130,32 @@ int fit_model(float* points_x, float* points_y, int n_points,
 
         // eliminate all entries below the pivot in this column
         // factor is the multiplier that zeros out aug[row][col]
-        for (int row = col + 1; row < d; row++) {
+        for (int row = col + 1; row < m; row++) {
             double factor = aug[row][col] / aug[col][col];
-            for (int k = col; k <= d; k++)
+            for (int k = col; k <= m; k++)
                 aug[row][k] -= factor * aug[col][k];
         }
     }
 
     // back substitution — solve upper triangular system from bottom to top
     // each coefficient is solved using the already-known coefficients below it
-    double coeffs[d];
-    for (int row = d - 1; row >= 0; row--) {
-        coeffs[row] = aug[row][d];
-        for (int k = row + 1; k < d; k++)
+    double coeffs[m];
+    for (int row = m - 1; row >= 0; row--) {
+        coeffs[row] = aug[row][m];
+        for (int k = row + 1; k < m; k++)
             coeffs[row] -= aug[row][k] * coeffs[k];
         // divide by the diagonal element to isolate coeffs[row]
         coeffs[row] /= aug[row][row];
     }
 
     // cast back to float — precision was only needed internally
-    for (int i = 0; i < d; i++)
+    for (int i = 0; i < m; i++)
         params[i] = (float) coeffs[i];
 
     return 0;
 }
+
+
 /**
  * Collects inliers from points_x and points_y by computing the vertical
  * residual of each point from the polynomial model defined by params.

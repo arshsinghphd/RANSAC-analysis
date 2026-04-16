@@ -52,7 +52,7 @@
     - [Random Selection of $m$ Points](#random-selection-of-m-points)
     - [Polynomial Least Squares via the Normal Equations](#polynomial-least-squares-via-the-normal-equations)
     - [Vertical Residual as the Distance From Model](#vertical-residual-as-the-distance-from-model)
-    - [The RANSAC Loop and the Final Refit](#the-ransac-loop-and-the-final-refit)
+    - [The Final Refit](#the-final-refit)
     - [Stochastic Behavior and Test Design](#stochastic-behavior-and-test-design)
   - [Summary](#summary)
     - [Summary of Findings](#summary-of-findings)
@@ -647,37 +647,48 @@ The implementation is organized across three modules, shown in the flowchart bel
 
 The caller interacts only with `generator.c`, `ransac.c`, and `model.c` through their public headers.
 
+A Fow chart may facilitate udnerstanding the flow of the program.
+
 ```mermaid
 flowchart TD
-    A([caller]) --> B
-    B["ransac.c
-    estimate_epsilon()
-    compute_t()
-    compute_k()
-    compute_d()"]
-    B --> C
-    B --> D
-    B --> E
-    C["model.c
-    fit_model()
-    called on m sample
-    and on final inlier set"]
-    D["model.c
-    find_model_inliers()
-    called once per iteration
-    and once after loop"]
-    E["model.c
-    model_error()
-    called by caller to assess
-    quality of recovered model"]
-    C --> F
-    D --> F
-    F["ransac.c
-    ransac()
-    returns best params,
-    inlier count,
-    iterations run"]
-    F --> A
+    A([caller])
+
+    A -->|"passes points_x, points_y"| B
+
+    subgraph ransac_c ["ransac.c — parameter estimation"]
+        B["estimate_epsilon(points_x, points_y, n_points)"]
+        C["compute_t(points_x, points_y, n_points, n_params)"]
+        D["compute_k(epsilon, n_params, fail_prob)"]
+        E["compute_d(epsilon, n_points)"]
+        B --> C --> D --> E
+    end
+
+    E -->|"epsilon, t, k, d"| F
+
+    subgraph ransac_loop ["ransac.c — ransac()"]
+        F["main loop: k iterations"]
+        F -->|"random minimal sample"| G
+        G -->|"candidate params"| H
+        H -->|"inlier count"| F
+        F -->|"best inlier set"| I
+        I["final refit on best inlier set"]
+    end
+
+    subgraph model_c ["model.c"]
+        G["fit_model(points_x, points_y, n_points, params, n_params)"]
+        H["find_model_inliers(points_x, points_y, n_points, params, n_params, threshold)"]
+        I
+        J["stitch_models(x1, y1, n1, params1, x2, y2, n2, params2, params, n_params, threshold)"]
+        K["model_error(params, true_params, n_params)"]
+    end
+
+    I -->|"best params, actual resamples, inlier count"| A
+    A -->|"optional: two graph inlier sets"| J
+    J -->|"calls internally"| G
+    J -->|"calls internally"| H
+    J -->|"stitched params"| A
+    A -->|"estimated vs true params"| K
+    K -->|"euclidean error"| A
 ```
 
 ### Data Representation
@@ -713,6 +724,7 @@ int make_inliers(float* points_x, float* points_y, int n_inliers,
     for(int i = 0; i < n_inliers; i++) {
         x = x_min + i * step;
         y = 0.0;
+        // this is the main step. Could have used _eval_model
         for(int j = 0; j < n_params; j++){
             y += params[j] * pow(x, j);
         }
@@ -986,7 +998,7 @@ void fisher_yates(int* idx, int n, int m) {
 
 After selecting $m$Crandom points I solve normal equations via Gaussian elimination with partial pivoting and back substitution [7, 8].
 
-This function lives in `model.c`.
+This function lives in `model.c` and was the most difficult algorithm I had to implement in this assignment. It turned out to be insufficiently accurate for larger $m$ with even `double` precision and in the next iteration I will replace this with QR decomposition. More discussion [later](#replace-gaussian-elimination-of-normal-equation-with-qr-decomposition) in report.
 
 Given $N$ points $(x_i, y_i)$, a polynomial model of degree $m - 1$ requiring $m$ coefficients is fit by minimizing the sum of squared vertical residuals:
 
@@ -1003,6 +1015,7 @@ A zero pivot indicates a singular matrix and the function returns an error. The 
 Apart from the sme guards of requiring least number of $m$ and $n$ for a non-trivial model, also guards in the program with the difference between $x_min$ and $x_max$ is beyond detection.
 
 ```C
+
 int fit_model(float* points_x, float* points_y, int n_points,
               float* params, int n_params) {
     if (n_points < n_params || n_params < 2) {
@@ -1020,17 +1033,17 @@ int fit_model(float* points_x, float* points_y, int n_points,
     if (fabsf(x_min - x_max) < 1e-4)
         return -1;
 
-    // d is the number of polynomial coefficients — also the matrix dimension
-    int d = n_params;
+    // m is the number of polynomial coefficients — also the matrix dimension
+    int m = n_params;
 
-    // XtX is the d x d Gram matrix: XtX[r][c] = sum of x^(r+c) over all points
-    // Xty is the d-vector: Xty[r] = sum of x^r * y over all points
+    // XtX is the m x m Gram matrix: XtX[r][c] = sum of x^(r+c) over all points
+    // Xty is the m-vector: Xty[r] = sum of x^r * y over all points
     // use double throughout to reduce numerical error on ill-conditioned Vandermonde
-    double XtX[d][d];
-    double Xty[d];
-    for (int i = 0; i < d; i++) {
+    double XtX[m][m];
+    double Xty[m];
+    for (int i = 0; i < m; i++) {
         Xty[i] = 0.0;
-        for (int j = 0; j < d; j++)
+        for (int j = 0; j < m; j++)
             XtX[i][j] = 0.0;
     }
 
@@ -1038,36 +1051,36 @@ int fit_model(float* points_x, float* points_y, int n_points,
         double xi = (double) points_x[i];
         double yi = (double) points_y[i];
 
-        // precompute powers of xi up to x^(2d-1) — needed for both rows and cols of XtX
-        double xpow[2 * d];
+        // precompute powers of xi up to x^(2m-1) — needed for both rows and cols of XtX
+        double xpow[2 * m];
         xpow[0] = 1.0;
-        for (int k = 1; k < 2 * d; k++)
+        for (int k = 1; k < 2 * m; k++)
             xpow[k] = xpow[k - 1] * xi;
 
         // accumulate XtX[r][c] += xi^(r+c) and Xty[r] += xi^r * yi
-        for (int r = 0; r < d; r++) {
-            for (int c = 0; c < d; c++)
+        for (int r = 0; r < m; r++) {
+            for (int c = 0; c < m; c++)
                 XtX[r][c] += xpow[r + c];
             Xty[r] += xpow[r] * yi;
         }
     }
 
     // build augmented matrix [XtX | Xty] for Gaussian elimination
-    // aug[r][d] holds the right-hand side Xty[r]
-    double aug[d][d + 1];
-    for (int r = 0; r < d; r++) {
-        for (int c = 0; c < d; c++)
+    // aug[r][m] holds the right-hand side Xty[r]
+    double aug[m][m + 1];
+    for (int r = 0; r < m; r++) {
+        for (int c = 0; c < m; c++)
             aug[r][c] = XtX[r][c];
-        aug[r][d] = Xty[r];
+        aug[r][m] = Xty[r];
     }
 
     // forward elimination with partial pivoting
     // partial pivoting swaps the row with the largest pivot to the top
     // to reduce numerical error from dividing by small values
-    for (int col = 0; col < d; col++) {
+    for (int col = 0; col < m; col++) {
         int max_row = col;
         double max_val = fabs(aug[col][col]);
-        for (int row = col + 1; row < d; row++) {
+        for (int row = col + 1; row < m; row++) {
             if (fabs(aug[row][col]) > max_val) {
                 max_val = fabs(aug[row][col]);
                 max_row = row;
@@ -1078,7 +1091,7 @@ int fit_model(float* points_x, float* points_y, int n_points,
             return -1;
 
         // swap current row with the pivot row
-        for (int k = 0; k <= d; k++) {
+        for (int k = 0; k <= m; k++) {
             double tmp = aug[col][k];
             aug[col][k] = aug[max_row][k];
             aug[max_row][k] = tmp;
@@ -1086,26 +1099,26 @@ int fit_model(float* points_x, float* points_y, int n_points,
 
         // eliminate all entries below the pivot in this column
         // factor is the multiplier that zeros out aug[row][col]
-        for (int row = col + 1; row < d; row++) {
+        for (int row = col + 1; row < m; row++) {
             double factor = aug[row][col] / aug[col][col];
-            for (int k = col; k <= d; k++)
+            for (int k = col; k <= m; k++)
                 aug[row][k] -= factor * aug[col][k];
         }
     }
 
     // back substitution — solve upper triangular system from bottom to top
     // each coefficient is solved using the already-known coefficients below it
-    double coeffs[d];
-    for (int row = d - 1; row >= 0; row--) {
-        coeffs[row] = aug[row][d];
-        for (int k = row + 1; k < d; k++)
+    double coeffs[m];
+    for (int row = m - 1; row >= 0; row--) {
+        coeffs[row] = aug[row][m];
+        for (int k = row + 1; k < m; k++)
             coeffs[row] -= aug[row][k] * coeffs[k];
         // divide by the diagonal element to isolate coeffs[row]
         coeffs[row] /= aug[row][row];
     }
 
     // cast back to float — precision was only needed internally
-    for (int i = 0; i < d; i++)
+    for (int i = 0; i < m; i++)
         params[i] = (float) coeffs[i];
 
     return 0;
@@ -1117,7 +1130,9 @@ The distance from a point $(x_i, y_i)$ to the polynomial model is measured as th
 
 $$\text{distance}_i = \left| \sum_{j=0}^{m-1} a_j x_i^j - y_i \right|$$
 
-This is the absolute difference between the predicted and observed $y$ value. In the linear model with Python I had used perpendicular distance, but the vertical residual is preferred here because it extends naturally to polynomial models of any degree, for which perpendicular distance has no simple closed form. The absolute value ensures the distance is non-negative regardless of which side of the model the point lies on. A separate function `points_to_line_distances` computes the true perpendicular distance for linear models only, and is retained for completeness and comparison.
+This is the absolute difference between the predicted and observed $y$ value. In the linear model with Python I had used perpendicular distance, but the vertical residual is preferred here because it extends naturally to polynomial models of any degree, for which perpendicular distance has no simple closed form. The absolute value ensures the distance is non-negative regardless of which side of the model the point lies on. 
+
+A separate vertigial function `points_to_line_distances` computes the true perpendicular distance for linear models only, that C module inherited from the Python prototype and is retained for completeness and comparison.
 
 ```
 int find_model_inliers(float* points_x, float* points_y, int n_points,
@@ -1141,9 +1156,9 @@ int find_model_inliers(float* points_x, float* points_y, int n_points,
     return 0;
 }
 ```
-### The RANSAC Loop and the Final Refit
 
-The core loop samples $m$ random indices using a partial Fisher-Yates shuffle — only the first $m$ positions are shuffled at $O(m)$ cost rather than $O(N)$ — fits a candidate model to the sample, counts inliers based on vertical distance from the model, and tracks the best model as the one with the highest number of inliers. An early stop exits the loop as soon as `expected_inliers` are reached. A better one may be found later on, but RANSAC's philosphy is after all to find a good-enough model and save time and computation cost.
+
+### The Final Refit
 
 A critical implementation detail follows a-la LO-RANSAC directly [9]: the final refit on all inliers of the best consensus set is a post-processing step, not part of the RANSAC iteration. Inside the loop, the model is fit only to the $m$-point sample. After the loop, all inliers of the best model are collected and the model is refit on the full consensus set. This two-stage design is what gives RANSAC its accuracy: the loop finds the consensus, and the refit uses that consensus to produce a statistically efficient estimate.
 
@@ -1228,7 +1243,7 @@ If I were to do this again using QR decomposition and be sure that the failures 
 
 ## Disclosures
 
-Claude: I used Calude for planning a 4-week time-line for studying this topic. I also used Claude to add doc strings for my functions and check edge-cases in the tests. I also used Claude for trouble shooting when I was unable to figure a bug in functions which caused persistent test failures - I found out that I was returning `int` instead of `float` for `compute_t`.
+Claude: I used Calude for planning a 4-week time-line for studying this topic. I also used Claude to add doc strings for my functions and check edge-cases in the tests. I also used Claude for trouble shooting when I was unable to figure a bug in functions which caused persistent test failures - I found out that I was returning `int` instead of `float` for `compute_t`. I used it to make final flow chart.
 
 Google Gemini: I used Google Gemini to look up many unknown terms and to search for better ways of solving models. 
 
