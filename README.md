@@ -214,7 +214,7 @@ Given a model that requires a minimum of $m$ data points to instantiate its free
 
 2. If $len(S_1)$* $\ge d$, where $d$ is a number of inliers derived from the estimated outlier fraction $\varepsilon,$ use $S_1$* to compute a refined model $M_1$* using least squares over all consensus points. Return $M_1$* as the best model.
 
-3. If $len(S_1)<$ `expected_inliers`, randomly select a new subset $S_2$ and repeat the above process, tracking the consensus array with the largest size seen so far.
+3. If $len(S_1)< d$, randomly select a new subset $S_2$ and repeat the above process, tracking the consensus array with the largest size seen so far.
 
 4. If, after $k$ trials, no consensus array of size $d$ or greater has been found, refit the model using the largest consensus array found across all trials. If no consensus array was found at all, terminate in failure.
 
