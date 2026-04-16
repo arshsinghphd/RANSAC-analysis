@@ -1243,7 +1243,7 @@ If I were to do this again using QR decomposition and be sure that the failures 
 
 ## Disclosures
 
-Claude: I used Calude for planning a 4-week time-line for studying this topic. I also used Claude to add doc strings for my functions and check edge-cases in the tests. I also used Claude for trouble shooting when I was unable to figure a bug in functions which caused persistent test failures - I found out that I was returning `int` instead of `float` for `compute_t`. I used it to make final flow chart.
+Claude: I used Calude for planning a 4-week time-line for studying this topic. I also used Claude to add doc strings for my functions and check edge-cases in the tests. I also used Claude for trouble shooting when I was unable to figure a bug in functions which caused persistent test failures - I found out that I was returning `int` instead of `float` for `compute_t`. I also used clude to make final flow chart.
 
 Google Gemini: I used Google Gemini to look up many unknown terms and to search for better ways of solving models. 
 
