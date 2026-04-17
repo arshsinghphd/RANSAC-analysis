@@ -135,7 +135,7 @@ It is known that the two graphs are built from the same linear model, but over d
 
 It is also known that each of the data is noisy with three possible kinds of errors as follow. 
    * Random gaussian noise (mean zero) with standard deviation of 0.5.
-   * About 20 classification errors or outliers that are not mean zero that lie outside the band of noise.
+   * About 6 classification errors or outliers that are not mean zero that lie outside the band of noise.
 
 It is also known that there is no appreciable continuous range of $x$ with systematic bias. Systematic bias is when the error is not random, but is correlated with $x$.
 
@@ -639,7 +639,7 @@ The implementation is organized across three modules, shown in the flowchart bel
 
 The caller interacts only with `generator.c`, `ransac.c`, and `model.c` through their public headers.
 
-A Fow chart may facilitate udnerstanding the flow of the program.
+A flow chart may facilitate udnerstanding the flow of the program.
 
 ```mermaid
 flowchart TD
