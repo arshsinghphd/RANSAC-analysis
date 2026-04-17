@@ -47,7 +47,7 @@ int main(void) {
 
     /* CSV header */
     fprintf(fp, "index,n,epsilon,d,m,k_budget,k_theory,t," 
-        "repeat,time_mu_s,model_error\n");
+            "repeat,time_mu_s,model_error\n");
 
     int n_inliers = (int)((1.0f - EPS_FIXED) * N_TOTAL);
     int n_outliers = N_TOTAL - n_inliers;
@@ -76,23 +76,23 @@ int main(void) {
 
                 /* generate noisy data with outliers, no structural bias */
                 make_data(points_x, points_y,
-                   n_inliers, n_outliers,
-                   true_params, n_params,
-                   NOISE_STD, &t,
-                   0, NULL, 0.0f);
+                            n_inliers, n_outliers,
+                            true_params, n_params,
+                            NOISE_STD, &t,
+                            0, NULL, 0.0f);
 
                 /* run ransac with fixed k budget */
                 RansacResult res = run_ransac(points_x, points_y,
-                        N_TOTAL, n_params,
-                        true_params,
-                        EPS_FIXED, t, d, k_budget,
-                        r, index++);
+                                                N_TOTAL, n_params,
+                                                true_params,
+                                                EPS_FIXED, t, d, k_budget,
+                                                r, index++);
 
                 /* write one CSV row */
                 fprintf(fp, "%d,%d,%.2f,%d,%d,%d,%d,%.4f,%d,%.2f,%.6f\n",
-                    res.index, res.n, res.epsilon,
-                    res.d, res.m, k_budget, k_theory, res.t,
-                    res.repeat, res.time_mu_s, res.model_error);
+                        res.index, res.n, res.epsilon,
+                        res.d, res.m, k_budget, k_theory, res.t,
+                        res.repeat, res.time_mu_s, res.model_error);
             }
         }
     }
