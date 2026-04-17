@@ -71,16 +71,16 @@ int main(void) {
                 float t_unused;
 
                 make_data(points_x, points_y,
-                          n_inliers, n_outliers,
-                          true_params, n_params,
-                          NOISE_STD, &t_unused,
-                          0, NULL, 0.0f);
+                        n_inliers, n_outliers,
+                        true_params, n_params,
+                        NOISE_STD, &t_unused,
+                        0, NULL, 0.0f);
 
                 RansacResult res = run_ransac(points_x, points_y,
-                                             N_TOTAL, n_params,
-                                             true_params,
-                                             EPS_FIXED, t, d, k,
-                                             r, index++);
+                                            N_TOTAL, n_params,
+                                            true_params,
+                                            EPS_FIXED, t, d, k,
+                                            r, index++);
 
                 fprintf(fp, "%d,%d,%.2f,%d,%d,%d,%.4f,%.1f,%d,%.2f,%.6f\n",
                         res.index, res.n, res.epsilon,
@@ -89,7 +89,6 @@ int main(void) {
             }
         }
     }
-
     fclose(fp);
     printf("\nExperiment 3 done. Results written to %s\n", EXP3_CSV);
     return 0;

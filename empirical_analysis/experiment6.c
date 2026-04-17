@@ -57,23 +57,20 @@ int main(void) {
     for (int b = 0; b < N_BUDGETS; b++) {
         int k_budget = K_BUDGETS[b];
 
-    printf("\n--- k_budget = %d ---\n", k_budget);
+        printf("\n--- k_budget = %d ---\n", k_budget);
 
         for (int deg = DEGREE_MIN; deg <= DEGREE_MAX; deg++) {
             int n_params = deg + 1;
 
-           /* true params [1, 1, ..., 1] for this degree */
-           float true_params[n_params];
-           for (int j = 0; j < n_params; j++)
+            /* true params [1, 1, ..., 1] for this degree */
+            float true_params[n_params];
+            for (int j = 0; j < n_params; j++)
             true_params[j] = 1.0f;
 
-           /* theoretical k for this degree at epsilon = 0.5 */
-           int k_theory = compute_k(EPS_FIXED, n_params, FAIL_PROB);
+            /* theoretical k for this degree at epsilon = 0.5 */
+            int k_theory = compute_k(EPS_FIXED, n_params, FAIL_PROB);
 
-           printf("degree=%d n_params=%d k_theory=%d\n",
-             deg, n_params, k_theory);
-
-           for (int r = 0; r < N_REPEATS; r++) {
+            for (int r = 0; r < N_REPEATS; r++) {
                 float points_x[N_TOTAL], points_y[N_TOTAL];
                 float t;
 
@@ -93,13 +90,12 @@ int main(void) {
 
                 /* write one CSV row */
                 fprintf(fp, "%d,%d,%.2f,%d,%d,%d,%d,%.4f,%d,%.2f,%.6f\n",
-                  res.index, res.n, res.epsilon,
-                  res.d, res.m, k_budget, k_theory, res.t,
-                  res.repeat, res.time_mu_s, res.model_error);
+                    res.index, res.n, res.epsilon,
+                    res.d, res.m, k_budget, k_theory, res.t,
+                    res.repeat, res.time_mu_s, res.model_error);
             }
         }
     }
-
     fclose(fp);
     printf("\nExperiment 6 done. Results written to %s\n", EXP6_CSV);
     return 0;

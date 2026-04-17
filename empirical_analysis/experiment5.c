@@ -76,49 +76,48 @@ int main(void) {
     int index = 0;
 
     for (int m = 0; m < N_MODELS; m++) {
-    int n_params = n_params_list[m];
-    const float* true_params = true_params_list[m]; 
-    /* fix k at epsilon = 0.5, matching exp1 */
-    int k = 10 * compute_k(0.5f, n_params, FAIL_PROB);
+        int n_params = n_params_list[m];
+        const float* true_params = true_params_list[m]; 
+        /* fix k at epsilon = 0.5, matching exp1 */
+        int k = 10 * compute_k(0.5f, n_params, FAIL_PROB);
 
-    printf("model m=%d k=%d\n", n_params, k);
+        printf("model m=%d k=%d\n", n_params, k);
 
-    for (int b = 0; b < N_BIAS_TYPES; b++) {
-        const char* bias_name = BIAS_TYPES[b].name;
-        float (*bias_fn)(float) = BIAS_TYPES[b].fn;
+        for (int b = 0; b < N_BIAS_TYPES; b++) {
+            const char* bias_name = BIAS_TYPES[b].name;
+            float (*bias_fn)(float) = BIAS_TYPES[b].fn;
 
-        for (int p = 0; p < PR_STEPS; p++) {
-            float pr = PR_VALUES[p];
+            for (int p = 0; p < PR_STEPS; p++) {
+                float pr = PR_VALUES[p];
 
-            for (int r = 0; r < N_REPEATS; r++) {
-                float points_x[N_TOTAL], points_y[N_TOTAL];
-        
-                float t;
+                for (int r = 0; r < N_REPEATS; r++) {
+                    float points_x[N_TOTAL], points_y[N_TOTAL];
+            
+                    float t;
 
-                /* generate noisy data with outliers and structural bias */
-                make_data(points_x, points_y, n_inliers, n_outliers,
-                        true_params, n_params,
-                        NOISE_STD, &t, 1, bias_fn, pr);
+                    /* generate noisy data with outliers and structural bias */
+                    make_data(points_x, points_y, n_inliers, n_outliers,
+                            true_params, n_params,
+                            NOISE_STD, &t, 1, bias_fn, pr);
 
-                /* run ransac and collect result */
-                RansacResult res = run_ransac(points_x, points_y,
-                     N_TOTAL, n_params,
-                     true_params,
-                     EPS_FIXED, t, d, k,
-                     r, index++);
+                    /* run ransac and collect result */
+                    RansacResult res = run_ransac(points_x, points_y,
+                         N_TOTAL, n_params,
+                         true_params,
+                         EPS_FIXED, t, d, k,
+                         r, index++);
 
-                /* write one CSV row */
-                fprintf(fp, "%d,%d,%.2f,%d,%d,%d,%.4f,%.2f,%s,"
-                "%d,%.2f,%.6f\n",
-                res.index, res.n, res.epsilon,
-                res.d, res.m, res.k, res.t, pr, bias_name,
-                res.repeat, res.time_mu_s, res.model_error);
+                    /* write one CSV row */
+                    fprintf(fp, "%d,%d,%.2f,%d,%d,%d,%.4f,%.2f,%s,"
+                    "%d,%.2f,%.6f\n",
+                    res.index, res.n, res.epsilon,
+                    res.d, res.m, res.k, res.t, pr, bias_name,
+                    res.repeat, res.time_mu_s, res.model_error);
+                }
             }
         }
     }
- }
-
- fclose(fp);
- printf("Experiment 5 done. Results written to %s\n", EXP5_CSV);
- return 0;
+    fclose(fp);
+    printf("Experiment 5 done. Results written to %s\n", EXP5_CSV);
+    return 0;
 }

@@ -93,7 +93,6 @@ int main(void) {
             }
         }
     }
-
     fclose(fp);
     printf("Experiment 4 done. Results written to %s\n", EXP4_CSV);
     return 0;

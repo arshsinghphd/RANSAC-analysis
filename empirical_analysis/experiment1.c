@@ -98,7 +98,6 @@ int main(void) {
             }
         }
     }
-
     fclose(fp);
     printf("\nExperiment 1 done. Results written to %s\n", EXP1_CSV);
     return 0;
