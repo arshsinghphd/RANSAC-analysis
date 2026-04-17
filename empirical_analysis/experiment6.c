@@ -33,7 +33,7 @@
 #define EPS_FIXED  0.5f
 #define N_BUDGETS  2
 
-static const int K_BUDGETS[N_BUDGETS] = {1000, 20000};
+static const int K_BUDGETS[N_BUDGETS] = {1500, 15000};
 
 int main(void) {
     srand((unsigned int) time(NULL));
