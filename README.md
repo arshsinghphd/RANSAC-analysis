@@ -1195,7 +1195,7 @@ The theoretical guarantee is that with $k$ iterations computed from the $k$ form
 
 ### Summary of Findings
 
-RANSAC provides robust model recovery in the presence of substantial contamination — up to 65% outliers for linear models and 35% for quadratic models — while running in $O(Nk)$ time. Even at low resolutions such as 144p, a single frame contains far more pixels than the $N = 1000$ points used here, yet RANSAC remains fast because $k$ is small when $\varepsilon$ is moderate. In the context of image stitching, where the homography requires four point correspondences ($n = 3$), the computational cost is comparable to the quadratic case studied here, confirming that RANSAC is practical for real feature matching pipelines.
+RANSAC provides robust model recovery in the presence of substantial contamination — up to 65% outliers for linear models and 35% for quadratic models — while running in $O(kN)$ time. Even at low resolutions such as 144p, a single frame contains far more pixels than the $N = 1000$ points used here, yet RANSAC remains fast because $k$ is small when $\varepsilon$ is moderate. In the context of image stitching, where the homography requires four point correspondences ($n = 3$), the computational cost is comparable to the quadratic case studied here, confirming that RANSAC is practical for real feature matching pipelines.
 
 The experiments demonstrate that runtime is directly proportional to $k$ and inversely related to both $\varepsilon$ and the inlier threshold $t$ — a consequence of RANSAC's early stopping condition, which terminates as soon as a consensus set of size $d$ is found. Tuning these parameters is a trade-off: a tighter threshold improves model accuracy but increases runtime, while a looser threshold accelerates termination at the cost of admitting outliers into the consensus set.
 
@@ -1222,7 +1222,7 @@ A key limitation of this implementation is how the polynomial fitting step solve
 
 I report codes for an experiment asking at what degree RANSAC fails when $k$ is at a fixed budget of $k = 100$ and $k = 1000$ and the outlier fraction is held at moderate $\varepsilon = 0.5$.  Based on the theoretical $k$ required, I expected to see that for $k = 100$ models up to degree 4 are well estimated in tight bounds of error the error band is too wide (catastrophic failure). And so show this is due to $k$, a higher $k = 1000$ as well, showing failer at degree 8.
 
-In reality, my models started failiting at m = 4 for all $k$, even 10 times the $k\_theoretical$ - likely due to the numerical solving on normal equation. For this reason, experiments involving model complexity are restricted to degrees 2 and 3. I also do not report experiment 6 in the report, although it is still kept in the empirical_analysis folder [experiment6.c](empirical_analysis/experiment6.c).
+In reality, my models started failiting at m = 4 for all $k$ - even 10 and 100 times the `k_theoretical` - likely due to the numerical solving on normal equation. For this reason, experiments involving model complexity are restricted to degrees 2 and 3. I also do not report experiment 6 in the report, although it is still kept in the empirical_analysis folder [experiment6.c](empirical_analysis/experiment6.c).
 
 ![exp6](figures/exp6.png)
 
