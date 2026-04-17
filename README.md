@@ -166,13 +166,13 @@ I will show how the problem solving will look like for linear regression and the
 <!-- graph: stitching using OLS -->
 ![data](figures/example_ols.png)
 
-Least squares produces a solution in a single pass using all points and always terminates in one pass regardless of outlier fraction - but is effected disproportionately by outliers. It gives outliers disproportionate influence through the squaring of large residuals. Thus least squares may return completely inaccurate models.
+Linear Regression also known as Ordinary Least Squares (OLS) is a very common technique to estimate the underlying model from a given data set and that is why Fishler and Bolles compare their proposed method to it. OLS estimates the parameters that minimize the mean squared error or mean squared residuals. As Fishler and Bolles explain, this not only treats the outliers as valid points, but actually outliers have much larger impact per point than the inliers, since they are further away from the true model [1]. Thus least squares may return completely inaccurate models. But OLS produces a solution in a single pass using all points and always terminates in one pass regardless of outlier fraction.
 
 ### RANSAC Approach
 
 RANSAC is robust, that is it can deal with large proportions of outliers, random large errors that are not mean zero, that Fisher and Bolles call classification errors [1]. It is also known that it *cannot* deal with pervasive systematic bias. [Later](#experiment-5-structural-bias-and-ransac-failure) in this report I share my findings about the robustness of RANSAC against different systematic bias. 
 
-Fisher and Bolles state that RANSAC inverts the logic of least squares: instead of fitting all the data first and cleaning up afterward, it starts with the smallest possible sample, finds a model, then recruits only the points that agree with it - these are called the model support. It does this repeatedly - many candidate models are estimated. The model with the largest support is deemed the best fit. 
+Fisher and Bolles state that RANSAC inverts the logic of least squares: instead of fitting all the data first and cleaning up afterward, it starts with the smallest possible sample, finds a model, then recruits only the points that agree with it - these are called the model support. It does this repeatedly - many candidate models are estimated. The model with the largest support is deemed the best fit [1]. 
 
 In this way, RANSAC trades computational cost for robustness. RANSAC avoids giving overt weightage to large outliers by working with small random samples and only committing to points that agree with the candidate model. The cost is that many candidate models are tested before finding one with sufficient consensus or support, but this makes RANSAC robust to large proportions of outliers.
 
