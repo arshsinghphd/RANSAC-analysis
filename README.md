@@ -7,6 +7,7 @@
 
 - [Research Paper](#research-paper)
   - [Table of Content](#table-of-content)
+  - [Executive Summary](#executive-summary)
   - [Repository Structure](#repository-structure)
   - [Introduction](#introduction)
     - [Motivating Problem: Stitching Two Overlapping Graphs](#motivating-problem-stitching-two-overlapping-graphs)
@@ -35,7 +36,7 @@
       - [Experiment Parameters](#experiment-parameters)
       - [A Note on Numerical Precision](#a-note-on-numerical-precision)
     - [Experiment 1: Time Vs RANSAC Resampling Iterations $k$](#experiment-1-time-vs-ransac-resampling-iterations-k)
-    - [Experiment 2: Time Vs Fraction of Outliers ($\\varepsilon$)](#experiment-2-time-vs-fraction-of-outliers-varepsilon)
+    - [Experiment 2: Time Vs Fraction of Outliers](#experiment-2-time-vs-fraction-of-outliers)
     - [Experiment 3: Time Vs Threshold ($t$)](#experiment-3-time-vs-threshold-t)
     - [Experiment 4: How Does RANSAC Break Down as Outlier Fraction Increases?](#experiment-4-how-does-ransac-break-down-as-outlier-fraction-increases)
     - [Experiment 5: Structural Bias and RANSAC Failure](#experiment-5-structural-bias-and-ransac-failure)
@@ -58,12 +59,25 @@
     - [Summary of Findings](#summary-of-findings)
     - [Higher-Level Learning](#higher-level-learning)
     - [Future Work](#future-work)
+      - [Testing RANSAC Failure With Increasing Model Complexity or $m$](#testing-ransac-failure-with-increasing-model-complexity-or-m)
       - [RANSAC Failure Versus $N$ - The Size of Data](#ransac-failure-versus-n---the-size-of-data)
       - [Replace Gaussian Elimination of Normal Equation with QR Decomposition](#replace-gaussian-elimination-of-normal-equation-with-qr-decomposition)
       - [Test Theoretetical $p$ Versus Reality](#test-theoretetical-p-versus-reality)
   - [Disclosures](#disclosures)
   - [References](#references)
 
+
+## Executive Summary
+
+This paper presents an empirical analysis of the RANSAC algorithm for robust polynomial model fitting, implemented in C and evaluated through five experiments. The implementation supports polynomial models of any arbitrary degree and is tested on synthetic data with provided parameters, allowing measurement of model recovery accuracy. All experiments use $N = 1000$ points and 100 repeats per condition. 
+
+A motivating example with $N = 60$, demonstrates the stitching application directly. I created two verlapping graphs of noisy data with $6$ outliers each generated from the same true linear model. Then I fit these separately using RANSAC and then combined via `stitch_models`. I do the same using naive OLS. I compare the goodness of fit of RANSAC stitching with naive OLS on the combined dataset. I show that stitched RANSAC is much more accurate than naise OLS on combined data. I also show that the stitched RANSAC model is more accurate that each model alone. Compare this to naive OLS the comnbined model is much worse than the individual models.
+
+Experiments 1 through 3 characterise the computational properties of RANSAC. Experiment 1 measures wall-clock time as a function of the iteration count $k$ when other parameters are fixed. Experiment 2 measures wall-clock time as a function of the outlier fraction $\varepsilon$, with other parameters fixed. Experiment 3 measures wall-clock time as a function of the inlier threshold $t$, expressed as a multiplier of the noise standard deviation, with both $k$ and $\varepsilon$ fixed. I find that the wall-clock time shows behaviour as expected by theory. 
+
+Experiments 4 and 5 characterise the accuracy limits of RANSAC. Experiment 4 varies the outlier fraction $\varepsilon$ from 0.05 to 0.95 with $k$ fixed, measuring model error for both the linear ($m=2$) and quadratic ($m=3$) models. I find that for $m = 2$ RANSAC is very robust up to $\varepsilon$ close to 0.6. For $m = 3$ RANSAC is robust for moderate for $\varepsilon$ close to 0.3.
+
+Experiment 5 fixes $\varepsilon = 0.1$ and varies the structural bias probability $pr$ from 0.0 to 1.0 across thrre bias types — constant, linear, and periodic — again for both models. I find that some kind of biases are easy to recover from such as constant (like outliers) and linear, while periodic bias make it more difficult to recover true model from.
 
 ## Repository Structure
 
@@ -171,7 +185,7 @@ In this way, RANSAC trades computational cost for robustness. RANSAC avoids givi
 
 In the image above, for the RANSAC model we can hardly we differentiated the model line from the original model. OLS is unduly effected by the positive outliers. Although since RANSAC is a randomized model we may end up with models that are far worse that OLS with probability 1%. 
 
-Also notice is that while combined OLS models is worse than the individual models, the stitched RANSAC model is more accurate than either one, this is by design of RANSAC - as the number of inliers increase the function gets better at extracting the true model despite noise and outliers.
+Also notice is that while combined OLS models is worse than the individual models, the stitched RANSAC model is more accurate than either one, this is by design of RANSAC - as the number of inliers increase the function gets better at extracting the true model despite noise and outliers. This is a claim that can be tested, but I have not done so in this report. I have listed this as a possible future work at the [concluding section](#summary). 
 
 ### History of RANSAC
 <!-- [discuss example of location determination - the one in the paper.] -->
@@ -513,7 +527,7 @@ The graph confirms that for higher degree model (higher $m$) the time taken is h
 
 The graph also confirms that wall-clock time grows linearly with the number of iterations $k$, as expected from the algorithm's structure — each iteration fits a model to a minimal random sample and counts inliers, both $O(N)$ operations, so total cost is $O(k\cdot N)$. The two models track closely, with the quadratic ($m=3$) slightly slower than the linear ($m=2$) at every $k$ value, reflecting the additional cost of fitting one extra parameter in the normal equations. Model error remains flat across all $k$ values for both models, confirming that beyond the theoretically required number of iterations, additional iterations do not improve accuracy — they only increase runtime. This linear relationship between $k$ and time is the key computational cost of RANSAC and motivates the importance of choosing $k$ carefully rather than running an arbitrarily large budget.
 
-### Experiment 2: Time Vs Fraction of Outliers ($\varepsilon$)
+### Experiment 2: Time Vs Fraction of Outliers
 
 ![Exp02](figures/exp2.png)
 
@@ -1209,35 +1223,39 @@ At a broader level, this study highlights the value of synthetic data for explor
 
 The project also reinforced the importance of numerical foundations in algorithm implementation. For polynomial models of degree 3 ($m = 4$) and higher, the rate-limiting step is not the RANSAC loop itself, but the internal least squares solve. Gaussian elimination on the normal equations is a natural first choice — straightforward to understand and implement — but it squares the condition number of the design matrix, causing numerical instability at higher degrees even with double-precision arithmetic. This is discussed further in the limitations section below. Therefore, experiments involving model complexity are restricted to degrees 2 and 3, and one experiment exploring higher degrees is omitted from the main report.
 
-In a rather jarring way, I also learnt the value of testing seemingly unimportant edge cases. For example while testing `fit_model` I only tested with $m \in \{2, 3\}$, had I tested for higher $m$ I would have captured the issue of precision with this approach, which I describe in the next section. 
+In a rather jarring way, I also learnt the value of testing seemingly unimportant edge cases. For example while testing `fit_model` I only tested with $m \in \{2, 3\}$, had I tested for higher $m$ I would have encountered the issue of interaction between higher $m$, required $k$, and imprecision of solving Normal Equations using gaussian elimination, earlier. I describe this in the next section. 
 
 
 ### Future Work
 
+#### Testing RANSAC Failure With Increasing Model Complexity or $m$
+
+I report codes for an experiment asking at what degree RANSAC fails when $k$ is at a fixed budget of $k = 100$ and $k = 1000$ and the outlier fraction is held at moderate $\varepsilon = 0.15$ and threshold $t$ at 1, twice `NOISE_STD`, a conservative value that should not interfere with recovery of true model.  Based on the theoretical $k$ required, I expected to see that for $k = 7$ models up to degree 4 are well estimated in tight bounds of error the error band is too wide (catastrophic failure). And so show this is due to $k,$ a higher $k = 8$ as well, showing failure at degree 4.
+
+My models started failing at $m = 4$ for all $k$ - even 10 and 100 times the `k_theoretical`. 
+
+There could be many reasons for this. As one can observe in experiment 4, as $m$ increases, RANSAC breaksdown at lower $\varepsilon$. Likely at $m = 4$, even low levels of $\varepsilon$ such as 0.15 is too high. The other reason can be the inaccuracy associated with higher degree models and solving Normal Equation with gaussian elimination.
+
+In this report, all experiments involving model complexity are restricted to degrees 2 and 3. I also do not report experiment 6 in the report, although it is kept in the empirical_analysis folder [experiment6.c](empirical_analysis/experiment6.c).
+
+![exp6](figures/exp6.png)
+
+| Model degree | $m$ | Theoretical $k$ for $\varepsilon = 0.15$ |
+|---|---|---|
+| Linear | 2 | 5 |
+| Quadratic | 3 | 7 |
+| Cubic | 4 | 8 |
+| Degree 5 | 5 | 10 |
+
+
 #### RANSAC Failure Versus $N$ - The Size of Data
 
-This is a relatively simple experiment that I could have easily implemented but have not performed. The theory is simple, with increased $d$, we expect RANSAC to do better, even if the outliers increase proportionately. 
+As I claim in the motivating experiment, it is a feature of RANSAC that with increasing $d$, RANSAC becomes more efficient and less error prone. Testing this would have been a relatively simple experiment that I could have easily implemented, but it did not occur to me earlier. The theory is simple, with increased $d$, we expect RANSAC to do better, even if the outliers increase proportionately. 
 
 
 #### Replace Gaussian Elimination of Normal Equation with QR Decomposition
 
 A key limitation of this implementation is how the polynomial fitting step solves for model parameters. The code builds a matrix from powers of x and solves the resulting system using Gaussian elimination on the normal equations. For low-degree polynomials this works well, but as the degree increases the matrix becomes increasingly difficult to solve accurately — a property called ill-conditioning. Switching the internal arithmetic from float to double improved results at degree 3, but degree 4 and above still produced unreliable fits. A more robust approach would use QR decomposition or Support Vector Decomposition (SVD) [12]. These approaches do not form the problematic normal matrix.
-
-I report codes for an experiment asking at what degree RANSAC fails when $k$ is at a fixed budget of $k = 100$ and $k = 1000$ and the outlier fraction is held at moderate $\varepsilon = 0.5$.  Based on the theoretical $k$ required, I expected to see that for $k = 100$ models up to degree 4 are well estimated in tight bounds of error the error band is too wide (catastrophic failure). And so show this is due to $k,$ a higher $k = 1000$ as well, showing failure at degree 8.
-
-My models started failing at $m = 4$ for all $k$ - even 10 and 100 times the `k_theoretical` - likely due to the numerical solving on normal equation. For this reason, experiments involving model complexity are restricted to degrees 2 and 3. I also do not report experiment 6 in the report, although it is kept in the empirical_analysis folder [experiment6.c](empirical_analysis/experiment6.c).
-
-![exp6](figures/exp6.png)
-
-| Model degree | $m$ | Theoretical $k$ |
-|---|---|---|
-| Linear | 2 | 17 |
-| Quadratic | 3 | 35 |
-| Cubic | 4 | 72 |
-| Degree 5 | 5 | 146 |
-| Degree 6 | 6 | 293 |
-| Degree 7 | 7 | 588 |
-| Degree 8 | 8 | 1177 |
 
 
 #### Test Theoretetical $p$ Versus Reality
