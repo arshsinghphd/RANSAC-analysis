@@ -117,12 +117,12 @@ final-paper-arshsinghphd/
 - Provide an introduction to the rest of the paper. 
 -->
 
-The Algorithm that I want to focus on is called Random Sample Consesus (RANSAC). The method was introduced by Martin Fischler and Robert Bolles in 1981 [1]. It is a method for fitting a predetermined model to experimental data with sizeable number of outliers or noise.
+The Algorithm that I want to focus on is called Random Sample Consensus (RANSAC). The method was introduced by Martin Fischler and Robert Bolles in 1981 [1]. It is a method for fitting a predetermined model to experimental data with sizeable number of outliers or noise.
 
-<!-- Motivate the discussion with an example create a noisy line genarator over three different graphs with different but over lapping ranges of x -->
+<!-- Motivate the discussion with an example create a noisy line generator over three different graphs with different but over lapping ranges of x -->
 To motivate a good idea of the problem this algorithm solves, its usefulness and effectiveness, I will use a toy example to show how one of most popular fitting models - the least squares model is not robust to outliers. I do not want to make the task unapproachable by starting off with homography on two images with overlap. But I do not want to do what standard texts to either: I am not estimating best fit functions for a given two-dimensional dataset.
 
-I am doing something novel in this report, something inbetween: I abstract away from image pixels by using cartesian data, but the motivating problem is to stich together two overlapping noisy graphs made with same underlying generator model that can be easily estimated. 
+I am doing something novel in this report, something in-between: I abstract away from image pixels by using cartesian data, but the motivating problem is to stich together two overlapping noisy graphs made with same underlying generator model that can be easily estimated. 
 
 
 ### Motivating Problem: Stitching Two Overlapping Graphs
@@ -151,7 +151,7 @@ I will show how the problem solving will look like for linear regression and the
 <!-- graph: stitching using OLS -->
 ![data](figures/example_ols.png)
 
-Least squares produces a solution in a single pass using all points and always terminates in one pass regardless of outlier fraction - but is effected disproportionately by outliers. It gives outliers disproportionate influence through the squaring of large residuals. Thus least sqaures may return completely inaccurate models.
+Least squares produces a solution in a single pass using all points and always terminates in one pass regardless of outlier fraction - but is effected disproportionately by outliers. It gives outliers disproportionate influence through the squaring of large residuals. Thus least squares may return completely inaccurate models.
 
 ### RANSAC Approach
 
@@ -176,7 +176,7 @@ Also notice is that while combined OLS models is worse than the individual model
 ### History of RANSAC
 <!-- [discuss example of location determination - the one in the paper.] -->
 
-The original paper by Fischler and Bolles [1] demonstrated the application of RANSAC in *location determination problem* in computer vision. Today, RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and data fitting, particularly in 2-D image stitching and structure from motion. The method has now been applied to a wide array of other problems [2, 3, 4]. I will disuss these in the section [Applications](#application).
+The original paper by Fischler and Bolles [1] demonstrated the application of RANSAC in *location determination problem* in computer vision. Today, RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and data fitting, particularly in 2-D image stitching and structure from motion. The method has now been applied to a wide array of other problems [2, 3, 4]. I will discuss these in the section [Applications](#application).
 
 The rest of the paper is organized as follows: 
 
@@ -188,7 +188,7 @@ In the section [Application](#application) I will take a deeper dive into the va
 
 In the section [Implementation](#implementation) I will present code snippets of my final implementation [maybe C, else Python]. I willdo a walk through and present a commentary on my design choices.
 
-In conlusion, I will present a [Summary](#summary) of my findings and lessons I learnt.
+In conclusion, I will present a [Summary](#summary) of my findings and lessons I learnt.
 
 
 ## Analysis of Algorithm
@@ -300,7 +300,7 @@ flowchart TD
 
 ### Proof of Correctness
 
-RANSAC does not guarantee that the correct model is always found — it is a randomized algorithm and makes no deterministic guarantees. Instead it provides a probabilistic guarantee: given enough iterations, the correct model is found with high probability. The proof is embedded in the derivation of the iteration count $k$.
+RANSAC does not guarantee that the correct model is always found — it is a randomized algorithm and makes no deterministic guarantees. Instead, it provides a probabilistic guarantee: given enough iterations, the correct model is found with high probability. The proof is embedded in the derivation of the iteration count $k$.
 
 **Claim:** After $k$ iterations, RANSAC finds at least one clean sample — a sample drawn entirely from inliers — with probability at least $1 - p$, where $p$ is an acceptable failure probability.
 
@@ -320,7 +320,7 @@ Setting this equal to the acceptable failure probability $p$ and solving for $k$
 
 $$\left[1 - (1 - \epsilon)^{m}\right]^{k} = p$$
 
-Taking log transformation on both sides and rearranging to isloate $k$.
+Taking log transformation on both sides and rearranging to isolate $k$.
 
 $$k = \frac{\log(p)}{\log\left(1 - (1 - \epsilon)^{m}\right)}$$
 
@@ -328,7 +328,7 @@ This is the formula implemented in `compute_k`. It gives the minimum number of i
 
 Fischler and Bolles recommend $p = 0.01$, giving 99 percent confidence. 
 
-The formula makes three assumptions. First, the underlying model matches the model we are assuming. i.e the true model shouldn't be cubic $m$ needed = 4, while we are trying to fit a linear model with $m = 2$. In this case we may never reach a model with good enough accuracy. Second, the outliers are distributed randomly rather than clustered, and Third, that the inlier fraction $(1 - \epsilon)$ is known or can be estimated with fair accuracy. If either second or third assumption is violated, the actual number of iterations needed to rech the true model may exceed $k$.
+The formula makes three assumptions. First, the underlying model matches the model we are assuming. I. e. the true model shouldn't be cubic $m$ needed = 4, while we are trying to fit a linear model with $m = 2$. In this case we may never reach a model with good enough accuracy. Second, the outliers are distributed randomly rather than clustered, and third, that the inlier fraction $(1 - \epsilon)$ is known or can be estimated with fair accuracy. If either second or third assumption is violated, the actual number of iterations needed to reach the true model may exceed $k$.
 
 ### Time Complexity Analysis
 
@@ -345,7 +345,7 @@ The steps 3 and 4 are have dominant time complexity of $O(N)$.
 
 So the overall time complexity = $O(k \cdot N)$
 
-$k$ itself depends only on $\varepsilon$ and $m$ (minimum parameters to be estimated), not on $N$. So the time complexity of the analysis is linear in $N$. 
+$k$ itself depends only on $\varepsilon$ and $m$ (minimum parameters to be estimated), not on $N$. So, the time complexity of the analysis is linear in $N$. 
 
 #### Best, Worst, and Average Cases: Time Complexity
 The best case occurs when the early stopping condition is triggered on the first iteration — a clean sample is drawn immediately and the consensus set meets $d$. In this case only one pass over the data is needed, giving $O(N)$. 
@@ -356,16 +356,16 @@ The average case lies between these extremes and is governed directly by the $k$
 
 ### Space Complexity
 
-In this implementation the only data structure I employ are arrays. The rate limiting size is `N`. So the space complexity of RANSAC is $O(N)$.
+In this implementation the only data structure I employ are arrays. The rate limiting size is `N`. So, the space complexity of RANSAC is $O(N)$.
 
 | Data Structure | Space Complexity |
 |:-|:-|
 |`distances` | $O(N)$ |
-|`points_x` | $O(N)$  worst case all points are inliers |
+|`points_x` | $O(N)$ worst case all points are inliers |
 |`points_y` | $O(N)$ worst case all points are inliers |
 |`idx` | $O(N)$ Fisher-Yates index array |
-|`sample_x` | $O(m)$  constant |
-|`sample_y` | $O(m)$  constant |
+|`sample_x` | $O(m)$ constant |
+|`sample_y` | $O(m)$ constant |
 
 
 #### Best, Worst, and Average Cases: Space Complexity
@@ -403,7 +403,7 @@ As the outlier fraction ($\varepsilon$) grows $k$ grows rapidly to maintain the 
 
 This exponential growth motivates the early stop parameter $d$ — at high outlier fractions, running all $k$ iterations is computationally expensive, and terminating early when a sufficiently good model is found provides significant practical savings.
 
-It is clear that increasing $k$ will lead to more iterations and thus more time, but also more likely that we will reach the true underlying model. I test this hypothesis in Experiment 1, by fixing other parameters.
+Increasing $k$ will lead to more iterations and thus more time, but also more likely that we will reach the true underlying model. I test this hypothesis in Experiment 1, by fixing other parameters.
 
 ### Expected Inlier count $d$ or Outlier Fraction $\varepsilon$
 
@@ -421,7 +421,7 @@ The first approach uses the residual distribution: fit a rough model to all the 
 
 I implement the first approach as `estimate_epsilon` in `ransac.c` and its limitations are documented. 
 
-It is clear that as $\varepsilon$ increses we expect expect $d$ to be lower, which means RANSAC's early stopping will be triggered if randomly we reach a model that has $d$ or less inliers. This means that with increasing $d$ we expect the RANSAC to return model that are further away from the true model, but we also expect the RANSAC to run much faster. I test this hypothesis in Experiment 2 by fixing other parameters and varying values of $\varepsilon$. Since true $\varepsilon$ is known from synthetic generation it is used directly for inference in experiments.
+It is clear that as $\varepsilon$ increases we expect $d$ to be lower, which means RANSAC's early stopping will be triggered if randomly we reach a model that has $d$ or less inliers. This means that with increasing $d$ we expect the RANSAC to return model that are further away from the true model, but we also expect the RANSAC to run much faster. I test this hypothesis in Experiment 2 by fixing other parameters and varying values of $\varepsilon$. Since true $\varepsilon$ is known from synthetic generation it is used directly for inference in experiments.
 
 
 ### Threshold distance $t$
@@ -436,7 +436,7 @@ Where,
 * $\bar{e}$ is the mean residual error and 
 * $\sigma$ is its standard deviation computed over the full point set.
 
-In theory, when we make threshold for error ($t$)  smaller we should get more accurate models that take longer to run. As we relax this, make $t$ larger, we the models should be estimated quicker, but these models should be more and more imperfect. This hypothesis is tested in Experiment 3.
+In theory, when we make threshold for error ($t$) smaller we should get more accurate models that take longer to run. As we relax this, make $t$ larger, we the models should be estimated quicker, but these models should be increasingly imperfect. This hypothesis is tested in Experiment 3.
 
 
 ## Empirical Analysis
@@ -454,13 +454,13 @@ Quadratic:  same, compare against linear
 Complexity: at what m does RANSAC fail for reasonable but fixed k, threshold, N?
 -->
 
-I have organize the empirical analysis around five questions, each probing a different aspect of RANSAC algorithm. First three are direct tests of the the theoretical parameter analysis of Section 2 to observed behavior using synthetic data. Together fourth and fifth test the boundaries of what RANSAC can and cannot recover by fixing the model degree and varing the data conditions.
+I have organized the empirical analysis around five questions, each probing a different aspect of RANSAC algorithm. First three are direct tests of the the theoretical parameter analysis of Section 2 to observed behavior using synthetic data. Together fourth and fifth test the boundaries of what RANSAC can and cannot recover by fixing the model degree and varing the data conditions.
 
 ### Experimental Setup
 
 #### Synthetic Data Generation
 
-In these experiments I abstract away from images and use catesian graph points instead. All experiments use points generated from known polynomial models which I call generators or generator models. This allows the true parameters to be compared directly against RANSAC's recovered parameters. This gives an exact measure of model error that would be impossible with real image data. Each dataset is constructed in four stages: inlier generation, noise injection, outlier placement, and optional structural bias. Each stage is implemented as a separate function, allowing any combination to be composed independently and tested in isolation.
+In these experiments I abstract away from images and use Cartesian graph points instead. All experiments use points generated from known polynomial models which I call generators or generator models. This allows the true parameters to be compared directly against RANSAC's recovered parameters. This gives an exact measure of model error that would be impossible with real image data. Each dataset is constructed in four stages: inlier generation, noise injection, outlier placement, and optional structural bias. Each stage is implemented as a separate function, allowing any combination to be composed independently and tested in isolation.
 
 **Inlier generation.** A set of $N_{\text{inlier}}$ points is placed exactly on the true polynomial model $y = a_0 + a_1 x + \cdots + a_{m-1} x^{m-1}$, with $x$ values spaced evenly across a fixed range $[x_{\min}, x_{\max}]$. The true parameters are fixed at $a_0 = 5$, $a_1 = 2$ for linear experiments, and $a_0 = 1$, $a_1 = 1$, $a_2 = 1$ for quadratic experiments.
 
@@ -486,7 +486,7 @@ This is a single parameter that captures error across all model parameters simul
 
 The three experiments share a common parameter baseline.
 
-For all experiments, $N = 1000$ points are used, split between inliers and outliers according to the outlier fraction $\varepsilon$. This choice is larger than the $N = 100$ commonly used in illustrative examples, and is motivated by two practical considerations. First, timing resolution: the C implementation runs fast enough that at $N = 100$ individual function calls complete in nanoseconds, making wall-clock timing unreliable. At $N = 1000$ the dominant operations — normal equation accumulation in `fit_model` and residual computation in `find_model_inliers` — run long enough to be measured reliably in microseconds using `clock()`. Second, statistical stability: at $\varepsilon = 0.1$ and $N = 100$ only 10 outlier points are added, which is too few to represent a stable outlier distribution. At $N = 1000$ the same fraction produces 100 outliers, giving a more representative and repeatable experiment across the `N_REPEATS` $= 100$ independent runs.
+For all experiments, $N = 1000$ points are used, split between inliers and outliers according to the outlier fraction $\varepsilon$. This choice is larger than the $N = 100$ commonly used in illustrative examples and is motivated by two practical considerations. First, timing resolution: the C implementation runs fast enough that at $N = 100$ individual function calls complete in nanoseconds, making wall-clock timing unreliable. At $N = 1000$ the dominant operations — normal equation accumulation in `fit_model` and residual computation in `find_model_inliers` — run long enough to be measured reliably in microseconds using `clock()`. Second, statistical stability: at $\varepsilon = 0.1$ and $N = 100$ only 10 outlier points are added, which is too few to represent a stable outlier distribution. At $N = 1000$ the same fraction produces 100 outliers, giving a more representative and repeatable experiment across the `N_REPEATS` $= 100$ independent runs.
 
 The inlier threshold $t$ is estimated from the noisy inlier data before outliers are added, using $t = \bar{e} + 2\sigma$ applied to the vertical residuals of a preliminary least squares fit. The expected inlier count $d$ is computed from the true $\varepsilon$ as $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. The iteration count $k$ is computed from the true $\varepsilon$ and the model degree using the analytical formula with failure probability $p_{\text{fail}} = 0.01$.
 
@@ -496,7 +496,7 @@ All computations use single-precision floating point (`float`), which stores num
 
 The limitation of single precision becomes visible when fitting high-degree polynomials. The least squares solver builds a matrix $X^\top X$ whose entries are sums of powers of $x_i$. As the polynomial degree grows, those powers grow rapidly — for degree 6 over $x \in [0, 9]$, the largest entry reaches roughly $10^{15}$, far beyond what seven digits of precision can represent accurately. When Gaussian elimination then tries to solve a system built from such large numbers, small rounding errors get amplified into large errors in the recovered coefficients. The result is a model that looks numerically valid but is wildly wrong — not because RANSAC failed, but because the underlying solver lost precision.
 
-Ideally, after discovering this, I should've  avoided gaussian elimination approach altogether, but for this class project, I did not have enough time to undestand the QR decomposition, implement, and test it. So I have tried by best to work within its confines: $x$ is scaled to $[0, 1]$ and I use `double` precision for gaussian elimination in the function `fit_model` in `model.c`. Yes, I am not able to use $m$ > 4. Even in $m = 3$, a small number of runs across all experiments produce unrealistically large model errors due to this and are precision concerns rather than RANSAC failures. I ignore these by plotting mean and the confidence interval is 10th percentile to 90th percentile of the value.
+Ideally, after discovering this, I should’ve avoided gaussian elimination approach altogether, but for this class project, I did not have enough time to understand the QR decomposition, implement, and test it. So, I have tried by best to work within its confines: $x$ is scaled to $[0, 1]$ and I use `double` precision for gaussian elimination in the function `fit_model` in `model.c`. Yes, I cannot use $m$ > 4. Even in $m = 3$, a small number of runs across all experiments produce unrealistically large model errors due to this and are precision concerns rather than RANSAC failures. I ignore these by plotting mean and the confidence interval is 10th percentile to 90th percentile of the value.
 
 In the next 5 sections I discuss the empirical results of my experiments using graphs. Experiment 1, 2, and 3, test the theoretical relationship of parameters with time complexity using run times and efficacy using model error. Experiments 4 and 5 test the limits of RANSAC against $\varepsilon$ and amount of bias in the data, respectively, with a focus on breakdown of the model as measured by the model error against the known true model.
 
@@ -507,7 +507,7 @@ In the next 5 sections I discuss the empirical results of my experiments using g
 
 Experiment 1 measures how wall-clock time scales with the number of RANSAC iterations $k$. The outlier fraction is fixed at $\varepsilon = 0.5$ and $k$ is varied from 10 to 500 in steps of 10, giving 50 conditions. Both the linear ($m=2$) and quadratic ($m=3$) models are tested, each repeated 100 times per condition with $N = 1000$ points throughout. Model error is also recorded at each condition to confirm whether additional iterations improve accuracy beyond the theoretically required budget.
 
-The graph plots the data from Experiment 1: wall-clock time (μs) against the number of RANSAC iterations $k$, varied from 10 to 500 in steps of 10, with $\varepsilon = 0.5$ fixed throughout. Two models are shown — linear ($m=2$) in blue and quadratic ($m=3$) in red — each as a solid line with markers showing the median time across repeats and a shaded band covering the 10th to 90th percentile. A secondary y-axis on the right shows mean model error for each model as a dashed line, using the same colors. $N = 1000$ points are used throughout and the experiment repeats 100 times per condition.
+The graph plots the data from Experiment 1: wall-clock time (μs) against the number of RANSAC iterations $k$, varied from 10 to 500 in steps of 10, with $\varepsilon = 0.5$ fixed throughout. Two models are shown — linear ($m=2$) in blue and quadratic ($m=3$) in red — each as a solid line with markers showing the median time across repeats and a shaded band covering the 10th to 90th percentile. A secondary y-axis on the right shows median model error for each model as a dashed line, using the same colors. $N = 1000$ points are used throughout and the experiment repeats 100 times per condition.
 
 The graph confirms that for higher degree model (higher $m$) the time taken is higher for all $k$.
 
@@ -519,7 +519,7 @@ The graph also confirms that wall-clock time grows linearly with the number of i
 
 Experiment 2 measures how wall-clock time varies with the outlier fraction $\varepsilon$, swept from 0.05 to 0.95 in steps of 0.05. The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$ for each model, so $k$ does not change as $\varepsilon$ varies. Both the linear ($m=2$) and quadratic ($m=3$) models are tested, each repeated 100 times per condition with $N = 1000$ points throughout. Model error is recorded alongside time to show how accuracy degrades as the outlier fraction increases beyond the value $k$ was designed for.
 
-The graph plots wall-clock time (μs) against outlier fraction $\varepsilon$, varied from 0.05 to 0.95 in steps of 0.05, with $k$ fixed at 17 throughout. Two models are shown — linear ($m=2$) in blue and quadratic ($m=3$) in red — each as a solid line with markers showing the median time across repeats and a shaded band covering the 10th to 90th percentile. A secondary y-axis on the right shows mean model error for each model as a dashed line, using the same colors.
+The graph plots wall-clock time (μs) against outlier fraction $\varepsilon$, varied from 0.05 to 0.95 in steps of 0.05, with $k$ fixed at 17 throughout. Two models are shown — linear ($m=2$) in blue and quadratic ($m=3$) in red — each as a solid line with markers showing the median time across repeats and a shaded band covering the 10th to 90th percentile. A secondary y-axis on the right shows median model error for each model as a dashed line, using the same colors.
 
 The "avalanche" decreases after $\varepsilon = 0.5$ is the expected behavior: it is due to RANSAC's early stopping condition: the algorithm terminates as soon as it finds a consensus set of size d, the minimum expected inlier count derived from epsilon. As epsilon increases, d shrinks — fewer points need to agree for RANSAC to declare success. At high outlier fractions, even a poor model can accumulate d inliers quickly by chance, causing early termination. Paradoxically, this means RANSAC runs fastest precisely when the data is most contaminated, though the returned model is correspondingly less reliable, as confirmed by the rising model error on the secondary axis.
 
@@ -534,7 +534,7 @@ Experiment 3 measures how wall-clock time varies with the inlier threshold $t$, 
 
 The plot shows median time with a 10th to 90th percentile band on the primary axis, and mean model error on the secondary axis.
 
-The initial increase of the time (while error falls) is due to the fact that we have injected noise at 2 * $noise\_std$ and add outliers that outside this band. Thus for small $t$ up to 2, even true (but noisy) inliers may fall outside the threshold. RANSAC struggles to find $d$ inliers and runs many iterations before succeeding and exhausts $k$ in most runs. That's the slow region. Beyond the externally set multiplier 2, the threshold is so wide that outliers start falling into inliers too, inflating the consensus set size past $d$ quickly and triggers early stopping — hence the drop.
+The initial increase of the time (while error falls) is since we have injected noise at 2 * $noise\_std$ and add outliers that outside this band. Thus, for small $t$ up to 2, even true (but noisy) inliers may fall outside the threshold. RANSAC struggles to find $d$ inliers and runs many iterations before succeeding and exhausts $k$ in most runs. That's the slow region. Beyond the externally set multiplier 2, the threshold is so wide that outliers start falling into inliers too, inflating the consensus set size past $d$ quickly and triggers early stopping — hence the drop.
 
 Allowing for the above design limitation, the plot confirms that as we increase threshold $t$: allow more observations to fall into inliers in every iteration of RANSAC, the time for the model to run decreases. But such models are also not accurate as is confirmed by the curve of error moving in the upward direction. The graph also confirms that these results are more pronounced for higher degree models ($m = 3$) than lower ($m = 2$).
 
@@ -572,7 +572,7 @@ The expected result is a sharp increase in model error above a critical $\vareps
 ### Experiment 5: Structural Bias and RANSAC Failure
 Experiment 5 investigates at what structural bias probability RANSAC begins to fail. Unlike Experiment 4 which varied the outlier fraction, here the outlier fraction is fixed at $\varepsilon = 0.3$ and the probability $pr$ that any outlier carries a structural bias is varied from 0.05 to 1.0 in steps of 0.05.
 
-Three bias types are tested — constant (similar to outliers), linear, and periodic — each representing a different way that outliers might be systematically distributed rather than randomly scattered. Both the linear ($m=2$) and quadratic ($m=3$) models are evaluated. The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$, matching the convention established in Experiment 4, so that results are directly comparable across experiments. The breakdown threshold is defined as the mean model error at $pr = 0$ plus two standard deviations — any error above this level is attributed to the structural bias rather than noise alone. The size of the sample $N$ is 1000 each of the experiment is repeated 100 times, each run is recorded.
+Three bias types are tested — constant (like outliers), linear, and periodic — each representing a different way that outliers might be systematically distributed rather than randomly scattered. Both the linear ($m=2$) and quadratic ($m=3$) models are evaluated. The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$, matching the convention established in Experiment 4, so that results are directly comparable across experiments. The breakdown threshold is defined as the mean model error at $pr = 0$ plus two standard deviations — any error above this level is attributed to the structural bias rather than noise alone. The size of the sample $N$ is 1000 each of the experiment is repeated 100 times, each run is recorded.
 
 ![Exp5](figures/exp5.png)
 
@@ -582,7 +582,7 @@ The x-axis runs from $pr=0$ (no bias) to $pr=1.0$ (all outliers are biased), and
 
 The red dashed horizontal line marks the breakdown threshold, defined as the mean error at $pr=0$ plus two standard deviations (only due to noise) — the point at which error can no longer be attributed to noise alone. A subplot where the mean error crosses this threshold indicates that the corresponding bias type has overwhelmed RANSAC's ability to distinguish inliers from biased outliers, and the returned model is no longer reliable.
 
-The graph shows that constant,and linear bias are tolerated for almost all probabilities by both linear and quadratic model, but periodic bias breaks down RANSAC at probabiity of about 0.5 in both models.
+The graph shows that constant, and linear bias are tolerated for almost all probabilities by both linear and quadratic model, but periodic bias breaks down RANSAC at probability of about 0.5 in both models.
 
 ## Application
 <!-- 
@@ -594,15 +594,15 @@ The graph shows that constant,and linear bias are tolerated for almost all proba
 
 RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and robust model fitting, particularly in computer vision tasks such as image stitching and structure from motion. To motivate its need, consider the problem of image stitching. 
 
-Many real-world applications require a field of view far wider than a single camera can capture — from the panoramic and video stabilisation features familiar to smartphone users, to industrial applications such as satellite and aerial imaging, medical imaging, autonomous navigation, and augmented reality, anywhere a spatial context is needed that a single image cannot provide.
+Many real-world applications require a field of view far wider than a single camera can capture — from the panoramic and video stabilization features familiar to smartphone users, to industrial applications such as satellite and aerial imaging, medical imaging, autonomous navigation, and augmented reality, anywhere a spatial context is needed that a single image cannot provide.
 
-In image stitching, the goal is to align two or more overlapping images by estimating a geometric transformation — such as a homography — that maps points from one image to corresponding points in another. This requires finding reliable feature correspondences between images. However, automated feature matching is inherently noisy: many matched point pairs will be incorrect due to repetitive textures, illumination differences, and other artefacts. These incorrect matches are outliers, and handling them gracefully and efficiently is precisely the problem RANSAC was designed to solve.
+In image stitching, the goal is to align two or more overlapping images by estimating a geometric transformation — such as a homography — that maps points from one image to corresponding points in another. This requires finding reliable feature correspondences between images. However, automated feature matching is inherently noisy: many matched point pairs will be incorrect due to repetitive textures, illumination differences, and other artefacts. These incorrect matches are outliers and handling them gracefully and efficiently is precisely the problem RANSAC was designed to solve.
 
-Classical least squares fitting (OLS) is sensitive to outliers because squaring the residuals amplifies the influence of large errors, pulling the estimated model toward the contaminated data. RANSAC avoids this by inverting the fitting logic entirely: rather than fitting all the data and trying to clean up afterwards, it repeatedly draws the smallest possible random sample, fits a model to that sample, and counts how many remaining points agree with it within a tolerance. The hypothesis that collects the most support — the largest consensus set — is returned as the final model. Because the minimal sample is drawn randomly, even a dataset with a majority of outliers has a non-negligible probability of yielding an all-inlier sample in sufficiently many iterations.
+Classical least squares fitting (OLS) is sensitive to outliers because squaring the residuals amplifies the influence of large errors, pulling the estimated model toward the contaminated data. RANSAC avoids this by inverting the fitting logic entirely: rather than fitting all the data and trying to clean up afterwards, it repeatedly draws the smallest possible random sample, fits a model to that sample, and counts how many remaining points agree with it within a tolerance. The hypothesis that collects the most support — the largest consensus set — is returned as the final model. Because the minimal sample is drawn randomly, even a dataset with most outliers has a non-negligible probability of yielding an all-inlier sample in sufficiently many iterations.
 
 Over the last four decades, several variants of RANSAC have been proposed to reduce its computational cost. I will discuss three accessible ones here. 
 
-A known limitation of standard RANSAC is that even when a correct consensus set is found, the returned model is fit only to the minimal sample — typically just $n$ points — rather than to all inliers. LO-RANSAC (Locally Optimised RANSAC), introduced by Chum et al. (2003) [9], addresses this by adding a local optimisation step whenever a new best consensus set is found: the model is refit to the full inlier set, and the consensus is re-evaluated. This produces a significantly more accurate model at modest additional cost, since the local optimisation is triggered only a small number of times during the full run. LO-RANSAC has become the standard in practice for tasks such as homography and fundamental matrix estimation where accuracy matters as much as speed. I have utilized this idea in my implementation.
+A known limitation of standard RANSAC is that even when a correct consensus set is found, the returned model is fit only to the minimal sample — typically just $n$ points — rather than to all inliers. LO-RANSAC (Locally Optimized RANSAC), introduced by Chum et al. (2003) [9], addresses this by adding a local optimization step whenever a new best consensus set is found: the model is refit to the full inlier set, and the consensus is re-evaluated. This produces a significantly more accurate model at modest additional cost, since the local optimization is triggered only a small number of times during the full run. LO-RANSAC has become the standard in practice for tasks such as homography and fundamental matrix estimation where accuracy matters as much as speed. I have utilized this idea in my implementation.
 
 When the number of measurements is large, scoring every point against every hypothesis is expensive. Preemptive RANSAC addresses this by scoring only a subset of measurements in an initial round, selecting the most plausible hypotheses for further evaluation rather than running each to completion [10]. 
 
@@ -616,14 +616,14 @@ PROSAC (Progressive Sample Consensus) takes a different approach — rather than
 - What libraries did you use?
 - What were the challenges you faced?
 - Provide key points of the algorithm/datastructure implementation, discuss the code.
-- If you found code in another language, and then implemented in your own language that is fine - but make sure to document that.
+- If you found code in another language and then implemented in your own language that is fine - but make sure to document that.
 -->
 
 ### Language, Libraries, and Design Philosophy
 
-The implementation was developed in two stages. I am more familiar with Python and my code writing speed in Python is much father than in C. So first I developed a Python prototype to validate correctness of my thoughts and ideas taken from the original paper and other texts which do not provide any pseudocodes just algorithms. I explored design decisions and testing in Python as well, with one big limitation: in this phase I limited myself to the simple linear model case. This approach allowed me to very quickly get familiar with RANSAC and the challenges in its implementation. When writing in C I was able to do it much faster based on the previous python codes that I had very carefully kept C-adjacent as I explain further below. 
+The implementation was developed in two stages. I am more familiar with Python and my code writing speed in Python is much faster than in C. So first I developed a Python prototype to validate correctness of my thoughts and ideas taken from the original paper and other texts which do not provide any pseudocodes just algorithms. I explored design decisions and testing in Python as well, with one big limitation: in this phase I limited myself to the simple linear model case. This approach allowed me to very quickly get familiar with RANSAC and the challenges in its implementation. When writing in C I was able to do it much faster based on the previous python codes that I had very carefully kept C-adjacent as I explain further below. 
 
-In the second phase I translated the tests and functions to C test-by-test and function-by-function under a test-driven discipline, but improving the design to accommodate flexible models at the same time. This meant that I could not use the hardcoded solving of linear model but needed to implement solution of normal equation using gaussian elimination. Now I regret choosing the easiest algorithm - I should have invested more time and implmented QR decomposition. I will discuss this [later on](#replace-gaussian-elimination-of-normal-equation-with-qr-decomposition) in the paper.
+In the second phase I translated the tests and functions to C test-by-test and function-by-function under a test-driven discipline but improving the design to accommodate flexible models at the same time. This meant that I could not use the hardcoded solving of linear model but needed to implement solution of normal equation using gaussian elimination. Now I regret choosing the easiest algorithm - I should have invested more time and implemented QR decomposition. I will discuss this [later on](#replace-gaussian-elimination-of-normal-equation-with-qr-decomposition) in the paper.
 
 I do not present code snippets to the Python prototype, but the entire set of codes is in the folder [other/python_linear](other/python_linear). These are not true Python codes since I used only the standard library — `math`, `random`, and `unittest` — with no NumPy, SciPy, or other numerical libraries. This constraint was deliberate: every operation that could not be expressed in standard C was avoided from the start, making the translation straightforward and mechanical. The C implementation likewise uses only `math.h`, `stdlib.h`, `stdio.h`, and `time.h`.
 
@@ -639,7 +639,7 @@ The implementation is organized across three modules, shown in the flowchart bel
 
 The caller interacts only with `generator.c`, `ransac.c`, and `model.c` through their public headers.
 
-A flow chart may facilitate udnerstanding the flow of the program.
+A flow chart may facilitate understanding the flow of the program.
 
 ```mermaid
 flowchart TD
@@ -695,14 +695,14 @@ return_array[1]               number of iterations actually run
 return_array[2..2+m-1]        best model params (a0, a1, ...)
 ```
 
-In the experiments, this arrays is received in a struct which allows named access to struct members rather than indexed access from the array.
+In the experiments, this array is received in a struct which allows named access to struct members rather than indexed access from the array.
 
 ### Inlier Generation 
 
 Inlier generation is as it sounds, based on a given model ($m$, and an array of parameters), the arrays `points_x` and `points_y` are filled in place.
 Array of $x$, `points_x` are evaluated as evenly space `n_points` between `x_min` and `x_max`. `points_y` are filled by evaluating the value based on value of `points_x[i]` and parameters.
 
-There are guards agains `x_min = x_max`, which allows only one point, and least no. of points and `n_params` or $m$ needed to estimate non-trivial functions. 
+There are guards against `x_min = x_max`, which allows only one point, and least no. of points and `n_params` or $m$ needed to estimate non-trivial functions. 
 
 ```
 int make_inliers(float* points_x, float* points_y, int n_inliers, 
@@ -807,7 +807,7 @@ int add_outliers(float* points_x, float* points_y,
             y_on_model += params[j] * pow(x, j);
         }
         // 50% change above model. 50% chance below model
-        // outliers are some random fraction of the range of y outside the band
+        // outliers are some random fractions of the range of y outside the band
         if (rand()/RAND_MAX < 0.5)
             y = y_on_model + inlier_band + ((float) rand()/RAND_MAX) * y_range;
         else
@@ -820,9 +820,9 @@ int add_outliers(float* points_x, float* points_y,
 }
  ```
 
- Structural bias models systematic error such as lens distortion that affects a fraction $pr$ of points coherently rather than randomly. The `add_structural_bias` function accepts a function pointer `float (*bias_fn)(float)`, allowing any bias shape — constant, linear, or periodic — to be injected without modifying the generator. I sm not showing the bias functions, these are one line functions that return the estimation of bias function at the $x$ passed.
+ Structural bias models systematic error such as lens distortion that affects a fraction $pr$ of points coherently rather than randomly. The `add_structural_bias` function accepts a function pointer `float (*bias_fn)(float)`, allowing any bias shape — constant, linear, or periodic — to be injected without modifying the generator. I am not showing the bias functions, these are one line functions that return the estimation of bias function at the $x$ passed.
 
-Guards against, $pr$ with which random bias occurs to be at least 0 and at most 1. Also guads against `NULL` passed for function and less than the least no, of points neede to fit a non-trivial function. 
+Guards against, $pr$ with which random bias occurs to be at least 0 and at most 1. Also, guards against `NULL` passed for function and less than the least no, of points needed to fit a non-trivial function. 
 
 ```c
 int add_structural_bias(float* points_y, float* points_x, int n_inliers, 
@@ -843,7 +843,7 @@ int add_structural_bias(float* points_y, float* points_x, int n_inliers,
 
 Rather than requiring the caller to supply $\varepsilon, k, d,$ and $t$ directly, four helpers derive these values from the data.
 
-`estimate_epsilon` fits a least squares line to all points, computes vertical residuals, and returns the fraction exceeding $\bar{e} + 2\sigma$ as an estimate of $\varepsilon$. 
+`estimate_epsilon` fits at least squares line to all points, computes vertical residuals, and returns the fraction exceeding $\bar{e} + 2\sigma$ as an estimate of $\varepsilon$. 
  
 `compute_t` uses the same distribution to set $t = \bar{e} + 2\sigma$, consistent with Fischler and Bolles [1]. 
 
@@ -907,12 +907,12 @@ static int _ransac_iteration(float* points_x, float* points_y,
 ```
 ### Full RANSAC Run
 
-Repeats one RANSAC run $k$ times unless there is early return. Also does a finak step a-la LO-RANSAC of fitting the final model on the best model inliers. 
+Repeats one RANSAC run $k$ times unless there is early return. Also does a final step a-la LO-RANSAC of fitting the final model on the best model inliers. 
 
 This function fills an array in place that has a specific format: 
 
 
-Guards against less than minimim $m$ and $n$C needed for a non-trivial model, threshold of 0.0f which assumes no noise, many of the helper functions misbehave at this value and a minimum $t$ is always passed. Also guards against the lack of early stop condition where $d > n$.
+Guards against less than minimum $m$ and $n$C needed for a non-trivial model, threshold of 0.0f which assumes no noise, many of the helper functions misbehave at this value and a minimum $t$ is always passed. Also guards against the lack of early stop condition where $d > n$.
 
 Return_array layout (modified in place):
 ```
@@ -930,7 +930,7 @@ int ransac(float* points_x, float* points_y, int n_points, int n_params,
             k_resample < 1 || threshold <= 0.0f ||
             expected_inliers > n_points){
         return -1;
-	  }
+      }
     int   best_inliers  = 0;
     int   iterations_run = 0;
     float best_params[n_params];
@@ -980,7 +980,7 @@ void fisher_yates(int* idx, int n, int m) {
 
     /* partial shuffle — only first m positions needed */
     for (int j = 0; j < m; j++) {
-    	// random in [j, m)
+        // random in [j, m)
         int k   = j + rand() % (n - j);
         // swap idx[j] and idx[k]
         int tmp = idx[j];                       
@@ -994,7 +994,7 @@ void fisher_yates(int* idx, int n, int m) {
 
 After selecting $m$ random points I solve normal equations via Gaussian elimination with partial pivoting and back substitution [7, 8].
 
-This function lives in `model.c` and was the most difficult algorithm I had to simplement in this assignment. it is also the longest - with most line of codes. I can see how each step can can be made into smaller functions and DRY, but after I implemented it I did not want to mess with it. It is rogorously tested with $m = {2, 3}$. 
+This function lives in `model.c` and was the most difficult algorithm I had to implement in this assignment. it is also the longest - with most line of codes. I can see how each step can can be made into smaller functions and DRY, but after I implemented it I did not want to mess with it. It is rigorously tested with $m = {2, 3}$. 
 
 If I had tested larger $m$ I would have figured out its limitations earlier, because as it turned out this approach is insufficiently accurate for larger $m$ with even `double` precision and in the next iteration I will replace this with QR decomposition. More discussion [later](#replace-gaussian-elimination-of-normal-equation-with-qr-decomposition) in report. 
 
@@ -1008,7 +1008,7 @@ $$(X^\top X)_{rc} = \sum_{i=1}^{N} x_i^{r+c}, \qquad (X^\top \mathbf{y})_r = \su
 
 I precomputed powers of $x_i$ are precomputed up to degree $2(m-1)$ and reused these to avoid redundant `pow` calls. 
 
-A zero pivot indicates a singular matrix and the function returns an error. The coefficient vector is recovered by back substitution. For $m = 2$ this reduces to ordinary least squares line fitting, but the implementation handles all degrees without making any special case for the linear model.
+A zero pivot indicates a singular matrix, and the function returns an error. The coefficient vector is recovered by back substitution. For $m = 2$ this reduces to ordinary least squares line fitting, but the implementation handles all degrees without making any special case for the linear model.
 
 Apart from the sme guards of requiring least number of $m$ and $n$ for a non-trivial model, also guards in the program with the difference between `x_min` and `x_max` is beyond detection.
 
@@ -1128,9 +1128,9 @@ The distance from a point $(x_i, y_i)$ to the polynomial model is measured as th
 
 $$\text{distance}_i = \left| \sum_{j=0}^{m-1} a_j x_i^j - y_i \right|$$
 
-This is the absolute difference between the predicted and observed $y$ value. In the linear model with Python I had used perpendicular distance, but the vertical residual is preferred here because it extends naturally to polynomial models of any degree, for which perpendicular distance has no simple closed form. The absolute value ensures the distance is non-negative regardless of which side of the model the point lies on. 
+This is the absolute difference between the predicted and observed $y$ value. In the linear model with Python, I had used perpendicular distance, but the vertical residual is preferred here because it extends naturally to polynomial models of any degree, for which perpendicular distance has no simple closed form. The absolute value ensures the distance is non-negative regardless of which side of the model the point lies on. 
 
-A separate vertigial function `points_to_line_distances` computes the true perpendicular distance for linear models only, that C module inherited from the Python prototype and is retained for completeness and comparison.
+A separate vestigial function `points_to_line_distances` computes the true perpendicular distance for linear models only, that C module inherited from the Python prototype and is retained for completeness and comparison.
 
 ```
 int find_model_inliers(float* points_x, float* points_y, int n_points,
@@ -1158,7 +1158,7 @@ int find_model_inliers(float* points_x, float* points_y, int n_points,
 
 ### The Final Refit
 
-A critical implementation detail follows a-la LO-RANSAC directly [9]: the final refit on all inliers of the best consensus set is a post-processing step, not part of the RANSAC iteration. Inside the loop, the model is fit only to the $m$-point sample. After the loop, all inliers of the best model are collected and the model is refit on the full consensus set. This two-stage design is what gives RANSAC its accuracy: the loop finds the consensus, and the refit uses that consensus to produce a statistically efficient estimate.
+A critical implementation detail follows a-la LO-RANSAC directly [9]: the final refit on all inliers of the best consensus set is a post-processing step, not part of the RANSAC iteration. Inside the loop, the model is fit only to the $m$-point sample. After the loop, all inliers of the best model are collected, and the model is refit on the full consensus set. This two-stage design is what gives RANSAC its accuracy: the loop finds the consensus, and the refit uses that consensus to produce a statistically efficient estimate.
 
 ```c
 /* _final_refit call (akin to LO-RANSAC) */
@@ -1196,7 +1196,7 @@ The theoretical guarantee is that with $k$ iterations computed from the $k$ form
 
 ### Summary of Findings
 
-RANSAC provides robust model recovery in the presence of substantial contamination — up to ~65% outliers for linear models and ~35% for quadratic models — while running in $O(kN)$ time. Even at low resolutions such as 144p has 27,648 pixels in a single frame, far many more pixels than the $N = 1000$ points used here, yet RANSAC remains fast because $k$ is small when $\varepsilon$ is moderate. In the context of image stitching, where the homography requires four point correspondences $(n = 3)$, the computational cost is comparable to the quadratic case studied here, confirming that RANSAC is practical for real feature matching pipelines.
+RANSAC provides robust model recovery in the presence of substantial contamination — up to ~65% outliers for linear models and ~35% for quadratic models — while running in $O(kN)$ time. Even at low resolutions such as 144p has 27,648 pixels in a single frame, far many more pixels than the $N = 1000$ points used here, yet RANSAC remains fast because $k$ is small when $\varepsilon$ is moderate. In the context of image stitching, where the homography requires $(m = 3)$, the computational cost is comparable to the quadratic case studied here, confirming that RANSAC is practical for real feature matching pipelines.
 
 The experiments demonstrate that runtime is directly proportional to $k$ and inversely related to both $\varepsilon$ and the inlier threshold $t$ — a consequence of RANSAC's early stopping condition, which terminates as soon as a consensus set of size $d$ is found. Tuning these parameters is a trade-off: a tighter threshold improves model accuracy but increases runtime, while a looser threshold accelerates termination at the cost of admitting outliers into the consensus set.
 
@@ -1205,11 +1205,11 @@ Accuracy experiments confirm that breakdown is well-predicted by the theoretical
 
 ### Higher-Level Learning
 
-At a broader level, this study highlights the value of synthetic data for exploring RANSAC's behaviour. Working with known ground truth parameters and controlled noise allowed precise identification of the causes behind observed patterns in the empirical results — something that would be difficult or impossible to determine from real images alone.
+At a broader level, this study highlights the value of synthetic data for exploring RANSAC's behavior. Working with known ground truth parameters and controlled noise allowed precise identification of the causes behind observed patterns in the empirical results — something that would be difficult or impossible to determine from real images alone.
 
-The project also reinforced the importance of numerical foundations in algorithm implementation. For polynomial models of degree 3 ($m = 4$) and higher, the rate-limiting step is not the RANSAC loop itself but the internal least squares solve. Gaussian elimination on the normal equations is a natural first choice — straightforward to understand and implement — but it squares the condition number of the design matrix, causing numerical instability at higher degrees even with double-precision arithmetic. This is discussed further in the limitations section below. As a consequence, experiments involving model complexity are restricted to degrees 2 and 3, and one experiment exploring higher degrees is omitted from the main report.
+The project also reinforced the importance of numerical foundations in algorithm implementation. For polynomial models of degree 3 ($m = 4$) and higher, the rate-limiting step is not the RANSAC loop itself, but the internal least squares solve. Gaussian elimination on the normal equations is a natural first choice — straightforward to understand and implement — but it squares the condition number of the design matrix, causing numerical instability at higher degrees even with double-precision arithmetic. This is discussed further in the limitations section below. Therefore, experiments involving model complexity are restricted to degrees 2 and 3, and one experiment exploring higher degrees is omitted from the main report.
 
-In a rather jarring way I also learnt the value of testing seemingly unimportant edge cases. For exaple while testing `fit_model` I only tested with $m \in \{2, 3\}$, had I tested for higher $m$ I would have captured the issue of precision with this approach, which I describe in the next section. 
+In a rather jarring way, I also learnt the value of testing seemingly unimportant edge cases. For example while testing `fit_model` I only tested with $m \in \{2, 3\}$, had I tested for higher $m$ I would have captured the issue of precision with this approach, which I describe in the next section. 
 
 
 ### Future Work
@@ -1223,9 +1223,9 @@ This is a relatively simple experiment that I could have easily implemented but 
 
 A key limitation of this implementation is how the polynomial fitting step solves for model parameters. The code builds a matrix from powers of x and solves the resulting system using Gaussian elimination on the normal equations. For low-degree polynomials this works well, but as the degree increases the matrix becomes increasingly difficult to solve accurately — a property called ill-conditioning. Switching the internal arithmetic from float to double improved results at degree 3, but degree 4 and above still produced unreliable fits. A more robust approach would use QR decomposition or Support Vector Decomposition (SVD) [12]. These approaches do not form the problematic normal matrix.
 
-I report codes for an experiment asking at what degree RANSAC fails when $k$ is at a fixed budget of $k = 100$ and $k = 1000$ and the outlier fraction is held at moderate $\varepsilon = 0.5$.  Based on the theoretical $k$ required, I expected to see that for $k = 100$ models up to degree 4 are well estimated in tight bounds of error the error band is too wide (catastrophic failure). And so show this is due to $k,$ a higher $k = 1000$ as well, showing failer at degree 8.
+I report codes for an experiment asking at what degree RANSAC fails when $k$ is at a fixed budget of $k = 100$ and $k = 1000$ and the outlier fraction is held at moderate $\varepsilon = 0.5$.  Based on the theoretical $k$ required, I expected to see that for $k = 100$ models up to degree 4 are well estimated in tight bounds of error the error band is too wide (catastrophic failure). And so show this is due to $k,$ a higher $k = 1000$ as well, showing failure at degree 8.
 
-In reality, my models started failiting at $m = 4$ for all $k$ - even 10 and 100 times the `k_theoretical` - likely due to the numerical solving on normal equation. For this reason, experiments involving model complexity are restricted to degrees 2 and 3. I also do not report experiment 6 in the report, although it is still kept in the empirical_analysis folder [experiment6.c](empirical_analysis/experiment6.c).
+My models started failing at $m = 4$ for all $k$ - even 10 and 100 times the `k_theoretical` - likely due to the numerical solving on normal equation. For this reason, experiments involving model complexity are restricted to degrees 2 and 3. I also do not report experiment 6 in the report, although it is kept in the empirical_analysis folder [experiment6.c](empirical_analysis/experiment6.c).
 
 ![exp6](figures/exp6.png)
 
@@ -1247,13 +1247,13 @@ If I were to do this again using QR decomposition and be sure that the failures 
 
 ## Disclosures
 
-Claude: I used Calude for planning a 4-week time-line for studying this topic. I also used Claude to add doc strings for my functions and check edge-cases in the tests. I also used Claude for trouble shooting when I was unable to figure a bug in functions which caused persistent test failures - I found out that I was returning `int` instead of `float` for `compute_t`. I also used clude to make final flow chart.
+Claude: I used Claude for planning a 4-week timeline for studying this topic. I also used Claude to add doc strings for my functions and check edge-cases in the tests. I also used Claude for trouble shooting when I was unable to figure a bug in functions which caused persistent test failures - I found out that I was returning `int` instead of `float` for `compute_t`. I also used Claude to make final flow chart.
 
 Google Gemini: I used Google Gemini to look up many unknown terms and to search for better ways of solving models. 
 
 I used MS Word for checking the report for syntax and grammar.
 
-I did not any LLM to write codes. I implemented my codes based on my reading of the original Fishler and Bolles paper [1] and its representation in other text books [2, 3, 4]. Although I had done so by hand, I had not implemented solution of a system of equations (vandermont matrix) using gaussian elimination before. I learnt to do that from youtube video tutorials [7, 8].
+I did not any LLM to write codes. I implemented my codes based on my reading of the original Fishler and Bolles paper [1] and its representation in other textbooks [2, 3, 4]. Although I had done so by hand, I had not implemented solution of a system of equations (vandermont matrix) using gaussian elimination before. I learnt to do that from youtube video tutorials [7, 8].
 
 
 ## References
