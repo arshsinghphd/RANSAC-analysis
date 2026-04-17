@@ -58,7 +58,7 @@
     - [Summary of Findings](#summary-of-findings)
     - [Higher-Level Learning](#higher-level-learning)
     - [Future Work](#future-work)
-      - [RANSAC Failure Versus N - The Size of Data](#ransac-failure-versus-n---the-size-of-data)
+      - [RANSAC Failure Versus $N$ - The Size of Data](#ransac-failure-versus-n---the-size-of-data)
       - [Replace Gaussian Elimination of Normal Equation with QR Decomposition](#replace-gaussian-elimination-of-normal-equation-with-qr-decomposition)
       - [Test Theoretetical $p$ Versus Reality](#test-theoretetical-p-versus-reality)
   - [Disclosures](#disclosures)
@@ -755,7 +755,7 @@ int add_gaussian_noise(float* points_y, int n_inliers, float std) {
 }
  ```
  
- Outliers are what Fischler and Bolles call classification errors, these are strictly outside the 2 * $\sigma$ band around the model. 
+ Outliers are what Fischler and Bolles call classification errors, these are strictly outside the $2 \cdot\sigma$ band around the model. 
  
  Guards against negative inputs of `int`, 0 value of $noise\_std$, and less than least no. of params and points needed for non-trivial model estimation. 
  
@@ -822,9 +822,10 @@ int add_outliers(float* points_x, float* points_y,
 }
  ```
 
- Structural bias models systematic error such as lens distortion that affects a fraction $p_r$ of points coherently rather than randomly. The `add_structural_bias` function accepts a function pointer `float (*bias_fn)(float)`, allowing any bias shape — constant, linear, or periodic — to be injected without modifying the generator. I sm not showing the bias functions, these are one line functions that return the estimation of bias function at the $x$ passed.
+ Structural bias models systematic error such as lens distortion that affects a fraction $pr$ of points coherently rather than randomly. The `add_structural_bias` function accepts a function pointer `float (*bias_fn)(float)`, allowing any bias shape — constant, linear, or periodic — to be injected without modifying the generator. I sm not showing the bias functions, these are one line functions that return the estimation of bias function at the $x$ passed.
 
 Guards against, $pr$ with which random bias occurs to be at least 0 and at most 1. Also guads against `NULL` passed for function and less than the least no, of points neede to fit a non-trivial function. 
+
 ```c
 int add_structural_bias(float* points_y, float* points_x, int n_inliers, 
     float pr, float (*bias_fn)(float)) {
@@ -842,7 +843,7 @@ int add_structural_bias(float* points_y, float* points_x, int n_inliers,
 
 ### Parameter Estimation Helper Functions
 
-Rather than requiring the caller to supply $\varepsilon$, $k$, $d$, and $t$ directly, four helpers derive these values from the data.
+Rather than requiring the caller to supply $\varepsilon, k, d,$ and $t$ directly, four helpers derive these values from the data.
 
 `estimate_epsilon` fits a least squares line to all points, computes vertical residuals, and returns the fraction exceeding $\bar{e} + 2\sigma$ as an estimate of $\varepsilon$. 
  
@@ -858,7 +859,7 @@ Since these functions are simple implementation of the math, I am not showing th
 
 Both `estimate_epsilon` and `compute_t` are unreliable at high outlier fractions because the preliminary fit is corrupted by the outliers it is trying to characterize — the same problem RANSAC was designed to solve. 
 
-In this project $\varepsilon$ is known exactly from the synthetic data generation process, so the helpers serve as a demonstration of the estimation procedure for real-world settings where the true $\varepsilon$ is unknown. This design also makes the relationship between $\varepsilon$, $k$, $d$, and $t$ explicit and independently testable.
+In this project $\varepsilon$ is known exactly from the synthetic data generation process, so the helpers serve as a demonstration of the estimation procedure for real-world settings where the true $\varepsilon$ is unknown. This design also makes the relationship between $\varepsilon, k, d,$ and $t$ explicit and independently testable.
 
 
 ### One RANSAC Run
@@ -868,6 +869,7 @@ The following is accomplished in one RANSAC run:
   2. Try to fit the model expected, filling the $params$ in place. 
   3. Count the number of inliers based on the fitted model
   4. If this count is greater than the expected $d$ - early return
+
 ```
 static int _ransac_iteration(float* points_x, float* points_y,
                               int n_points, int n_params, float threshold,
@@ -970,16 +972,17 @@ int ransac(float* points_x, float* points_y, int n_points, int n_params,
 
 ### Random Selection of $m$ Points
 
-I randomly select $m$ points from the array of $n$ points using Fisher - Yates partial in place shuffle. The run time of this shuffle is $O(m)$.
+I randomly select $m$ points from the array of $n$ points using Fisher - Yates partial in place shuffle [6]. The run time of this shuffle is $O(m)$.
 
 ```
 void fisher_yates(int* idx, int n, int m) {
     /* initialise index array 0..n-1 */
     for (int j = 0; j < n; j++)
         idx[j] = j;
+
     /* partial shuffle — only first m positions needed */
     for (int j = 0; j < m; j++) {
-    	// random in [j, n)
+    	// random in [j, m)
         int k   = j + rand() % (n - j);
         // swap idx[j] and idx[k]
         int tmp = idx[j];                       
@@ -993,7 +996,7 @@ void fisher_yates(int* idx, int n, int m) {
 
 After selecting $m$ random points I solve normal equations via Gaussian elimination with partial pivoting and back substitution [7, 8].
 
-This function lives in `model.c` and was the most difficult algorithm I had to implement in this assignment. it is also the longest - with most line of codes. I can see how each step can can be made into smaller functions and DRY, but after I implemented it I did not want to mess with it. It is rogorously tested with $m = {2, 3}$. 
+This function lives in `model.c` and was the most difficult algorithm I had to simplement in this assignment. it is also the longest - with most line of codes. I can see how each step can can be made into smaller functions and DRY, but after I implemented it I did not want to mess with it. It is rogorously tested with $m = {2, 3}$. 
 
 If I had tested larger $m$ I would have figured out its limitations earlier, because as it turned out this approach is insufficiently accurate for larger $m$ with even `double` precision and in the next iteration I will replace this with QR decomposition. More discussion [later](#replace-gaussian-elimination-of-normal-equation-with-qr-decomposition) in report. 
 
@@ -1195,10 +1198,9 @@ The theoretical guarantee is that with $k$ iterations computed from the $k$ form
 
 ### Summary of Findings
 
-RANSAC provides robust model recovery in the presence of substantial contamination — up to 65% outliers for linear models and 35% for quadratic models — while running in $O(kN)$ time. Even at low resolutions such as 144p, a single frame contains far more pixels than the $N = 1000$ points used here, yet RANSAC remains fast because $k$ is small when $\varepsilon$ is moderate. In the context of image stitching, where the homography requires four point correspondences ($n = 3$), the computational cost is comparable to the quadratic case studied here, confirming that RANSAC is practical for real feature matching pipelines.
+RANSAC provides robust model recovery in the presence of substantial contamination — up to ~65% outliers for linear models and ~35% for quadratic models — while running in $O(kN)$ time. Even at low resolutions such as 144p has 27,648 pixels in a single frame, far many more pixels than the $N = 1000$ points used here, yet RANSAC remains fast because $k$ is small when $\varepsilon$ is moderate. In the context of image stitching, where the homography requires four point correspondences $(n = 3)$, the computational cost is comparable to the quadratic case studied here, confirming that RANSAC is practical for real feature matching pipelines.
 
 The experiments demonstrate that runtime is directly proportional to $k$ and inversely related to both $\varepsilon$ and the inlier threshold $t$ — a consequence of RANSAC's early stopping condition, which terminates as soon as a consensus set of size $d$ is found. Tuning these parameters is a trade-off: a tighter threshold improves model accuracy but increases runtime, while a looser threshold accelerates termination at the cost of admitting outliers into the consensus set.
-
 
 Accuracy experiments confirm that breakdown is well-predicted by the theoretical framework. Because the true model parameters and noise level are known, breakdown can be identified precisely as the point where recovered parameters diverge from ground truth. Higher-degree models are more sensitive to outlier fraction, and structured bias accelerates breakdown further, particularly for periodic types. Constant bias and linear bias are tolerated for almost all probabilities by both linear and quadratic model, but periodic bias breaks down RANSAC at probability if it occurs with probability of about 0.5 in both models. These findings reinforce the importance of choosing model complexity appropriate to the expected noise and outlier conditions.
 
@@ -1209,23 +1211,25 @@ At a broader level, this study highlights the value of synthetic data for explor
 
 The project also reinforced the importance of numerical foundations in algorithm implementation. For polynomial models of degree 3 ($m = 4$) and higher, the rate-limiting step is not the RANSAC loop itself but the internal least squares solve. Gaussian elimination on the normal equations is a natural first choice — straightforward to understand and implement — but it squares the condition number of the design matrix, causing numerical instability at higher degrees even with double-precision arithmetic. This is discussed further in the limitations section below. As a consequence, experiments involving model complexity are restricted to degrees 2 and 3, and one experiment exploring higher degrees is omitted from the main report.
 
-In a rather jarring way I also learnt the value of testing seemingly unimportant edge cases. For exaple while testing `fit_model` I only tested with $m \in {2, 3}$, had I tested for higher $m$ I would have captured the issue of precision with this approach, which I describe in the next section. 
+In a rather jarring way I also learnt the value of testing seemingly unimportant edge cases. For exaple while testing `fit_model` I only tested with $m \in \{2, 3\}$, had I tested for higher $m$ I would have captured the issue of precision with this approach, which I describe in the next section. 
 
 
 ### Future Work
 
-#### RANSAC Failure Versus N - The Size of Data
+#### RANSAC Failure Versus $N$ - The Size of Data
+
 This is a relatively simple experiment that I could have easily implemented but have not performed. The theory is simple, with increased $d$, we expect RANSAC to do better, even if the outliers increase proportionately. 
 
+
 #### Replace Gaussian Elimination of Normal Equation with QR Decomposition
-A key limitation of this implementation is how the polynomial fitting step solves for model parameters. The code builds a matrix from powers of x and solves the resulting system using Gaussian elimination on the normal equations. For low-degree polynomials this works well, but as the degree increases the matrix becomes increasingly difficult to solve accurately — a property called ill-conditioning. Switching the internal arithmetic from float to double improved results at degree 3, but degree 4 and above still produced unreliable fits. A more robust approach would use QR decomposition or Support Vector Decomposition (SVD) [10]. These approaches do not form the problematic normal matrix.
 
-I report codes for an experiment asking at what degree RANSAC fails when $k$ is at a fixed budget of $k = 100$ and $k = 1000$ and the outlier fraction is held at moderate $\varepsilon = 0.5$.  Based on the theoretical $k$ required, I expected to see that for $k = 100$ models up to degree 4 are well estimated in tight bounds of error the error band is too wide (catastrophic failure). And so show this is due to $k$, a higher $k = 1000$ as well, showing failer at degree 8.
+A key limitation of this implementation is how the polynomial fitting step solves for model parameters. The code builds a matrix from powers of x and solves the resulting system using Gaussian elimination on the normal equations. For low-degree polynomials this works well, but as the degree increases the matrix becomes increasingly difficult to solve accurately — a property called ill-conditioning. Switching the internal arithmetic from float to double improved results at degree 3, but degree 4 and above still produced unreliable fits. A more robust approach would use QR decomposition or Support Vector Decomposition (SVD) [12]. These approaches do not form the problematic normal matrix.
 
-In reality, my models started failiting at m = 4 for all $k$ - even 10 and 100 times the `k_theoretical` - likely due to the numerical solving on normal equation. For this reason, experiments involving model complexity are restricted to degrees 2 and 3. I also do not report experiment 6 in the report, although it is still kept in the empirical_analysis folder [experiment6.c](empirical_analysis/experiment6.c).
+I report codes for an experiment asking at what degree RANSAC fails when $k$ is at a fixed budget of $k = 100$ and $k = 1000$ and the outlier fraction is held at moderate $\varepsilon = 0.5$.  Based on the theoretical $k$ required, I expected to see that for $k = 100$ models up to degree 4 are well estimated in tight bounds of error the error band is too wide (catastrophic failure). And so show this is due to $k,$ a higher $k = 1000$ as well, showing failer at degree 8.
+
+In reality, my models started failiting at $m = 4$ for all $k$ - even 10 and 100 times the `k_theoretical` - likely due to the numerical solving on normal equation. For this reason, experiments involving model complexity are restricted to degrees 2 and 3. I also do not report experiment 6 in the report, although it is still kept in the empirical_analysis folder [experiment6.c](empirical_analysis/experiment6.c).
 
 ![exp6](figures/exp6.png)
-
 
 | Model degree | $m$ | Theoretical $k$ |
 |---|---|---|
@@ -1237,7 +1241,9 @@ In reality, my models started failiting at m = 4 for all $k$ - even 10 and 100 t
 | Degree 7 | 7 | 588 |
 | Degree 8 | 8 | 1177 |
 
+
 #### Test Theoretetical $p$ Versus Reality
+
 If I were to do this again using QR decomposition and be sure that the failures of the recovered models is due to randomness. Then, I may be able to test whether the designed failure rate of $p = 0.01$ is actually working in the empirical data. The theoretical guarantee is that with $k$ iterations computed from the $k$ formula, RANSAC finds a correct model with probability at least $1 - p$. Currently, I am unable to differentiate deviation from true model due to random nature of RANSAC or due to garbage values being returned due to lack of precision.
 
 
