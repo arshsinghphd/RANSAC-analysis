@@ -30,10 +30,11 @@
 #define DEGREE_MIN 2
 #define DEGREE_MAX 5
 #define DEGREE_STEPS (DEGREE_MAX - DEGREE_MIN + 1)
-#define EPS_FIXED  0.5f
+#define T_FIXED 1  // threshold fixed at 2 * NOISE_STD
+#define EPS_FIXED  0.15f
 #define N_BUDGETS  2
 
-static const int K_BUDGETS[N_BUDGETS] = {1500, 15000};
+static const int K_BUDGETS[N_BUDGETS] = {800, 8000};
 
 int main(void) {
     srand((unsigned int) time(NULL));
@@ -74,18 +75,18 @@ int main(void) {
                 float points_x[N_TOTAL], points_y[N_TOTAL];
                 float t;
 
-                /* generate noisy data with outliers, no structural bias */
+                /* generate noisy data with outliers, no structural bias. */
                 make_data(points_x, points_y,
                             n_inliers, n_outliers,
                             true_params, n_params,
                             NOISE_STD, &t,
                             0, NULL, 0.0f);
 
-                /* run ransac with fixed k budget */
+                /* run ransac with fixed k_budget, and threshold T_FIXED. */
                 RansacResult res = run_ransac(points_x, points_y,
                                                 N_TOTAL, n_params,
                                                 true_params,
-                                                EPS_FIXED, t, d, k_budget,
+                                                EPS_FIXED, T_FIXED, d, k_budget,
                                                 r, index++);
 
                 /* write one CSV row */
