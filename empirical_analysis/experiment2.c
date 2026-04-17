@@ -81,17 +81,17 @@ int main(void) {
 
                 // generate fresh noisy data with outliers for each repeat
                 make_data(points_x, points_y,
-                          n_inliers, n_outliers,
-                          true_params, n_params,
-                          NOISE_STD, &t,
-                          0, NULL, 0.0f);
+                            n_inliers, n_outliers,
+                            true_params, n_params,
+                            NOISE_STD, &t,
+                            0, NULL, 0.0f);
 
                 // run ransac and record wall-clock time inside run_ransac
                 RansacResult res = run_ransac(points_x, points_y,
-                                             N_TOTAL, n_params,
-                                             true_params,
-                                             epsilon, t, d, k,
-                                             r, index++);
+                                                N_TOTAL, n_params,
+                                                true_params,
+                                                epsilon, t, d, k,
+                                                r, index++);
 
                 // write one row per repeat
                 fprintf(fp, "%d,%d,%.2f,%d,%d,%d,%.4f,%d,%.2f,%.6f\n",

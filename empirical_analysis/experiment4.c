@@ -62,10 +62,10 @@ int main(void) {
         printf("model m=%d  k_fixed=%d\n", n_params, k_fixed);
 
         for (int e = 0; e < EPSILON_STEPS; e++) {
-            float epsilon    = EPSILONS[e];
-            int   n_inliers  = (int)((1.0f - epsilon) * N_TOTAL);
+            float epsilon = EPSILONS[e];
+            int   n_inliers = (int)((1.0f - epsilon) * N_TOTAL);
             int   n_outliers = N_TOTAL - n_inliers;
-            int   d          = compute_d(epsilon, N_TOTAL);
+            int   d = compute_d(epsilon, N_TOTAL);
 
             for (int r = 0; r < N_REPEATS; r++) {
                 float points_x[N_TOTAL], points_y[N_TOTAL];

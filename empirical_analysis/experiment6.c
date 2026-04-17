@@ -42,7 +42,7 @@ int main(void) {
     FILE* fp = fopen(EXP6_CSV, "w");
     if (!fp) {
         fprintf(stderr, "Error: could not open %s\n", EXP6_CSV);
-    return 1;
+        return 1;
     }
 
     /* CSV header */

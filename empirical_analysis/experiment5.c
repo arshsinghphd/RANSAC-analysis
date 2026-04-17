@@ -97,15 +97,15 @@ int main(void) {
 
                     /* generate noisy data with outliers and structural bias */
                     make_data(points_x, points_y, n_inliers, n_outliers,
-                            true_params, n_params,
-                            NOISE_STD, &t, 1, bias_fn, pr);
+                                true_params, n_params,
+                                NOISE_STD, &t, 1, bias_fn, pr);
 
                     /* run ransac and collect result */
                     RansacResult res = run_ransac(points_x, points_y,
-                         N_TOTAL, n_params,
-                         true_params,
-                         EPS_FIXED, t, d, k,
-                         r, index++);
+                                                    N_TOTAL, n_params,
+                                                    true_params,
+                                                    EPS_FIXED, t, d, k,
+                                                    r, index++);
 
                     /* write one CSV row */
                     fprintf(fp, "%d,%d,%.2f,%d,%d,%d,%.4f,%.2f,%s,"
