@@ -531,15 +531,11 @@ The graph also confirms that wall-clock time grows linearly with the number of i
 
 ![Exp02](figures/exp2.png)
 
-Experiment 2 measures how wall-clock time varies with the outlier fraction $\varepsilon$, swept from 0.05 to 0.95 in steps of 0.05. One special condition I am imposing here is that there is no noise in the data (which can sometimes be interpreted as outlier). The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$ for each model, so $k$ does not change as $\varepsilon$ varies. Both the linear ($m=2$) and quadratic ($m=3$) models are tested, each repeated 100 times per condition with $N = 1000$ points throughout. Model error is recorded alongside time to show how accuracy degrades as the outlier fraction increases beyond the value $k$ was designed for.
+Experiment 2 measures how wall-clock time varies with the outlier fraction $\varepsilon$, swept from 0.05 to 0.95 in steps of 0.05. One special condition I am imposing here is that there is no noise in the data (which can sometimes be interpreted as outlier). The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$ for each model, so $k$ does not change as $\varepsilon$ varies. Both the linear ($m=2$) and quadratic ($m=3$) models are tested, each repeated 100 times per condition with $N = 1000$ points throughout.
 
-The graph plots wall-clock time (μs) against outlier fraction $\varepsilon$, varied from 0.05 to 0.95 in steps of 0.05, with $k$ fixed at 17 throughout. Two models are shown — linear ($m=2$) in blue and quadratic ($m=3$) in red — each as a solid line with markers showing the median time across repeats and a shaded band covering the 10th to 90th percentile. A secondary y-axis on the right shows median model error for each model as a dashed line, using the same colors.
+The graph plots wall-clock time (μs) against outlier fraction $\varepsilon$, varied from 0.05 to 0.95 in steps of 0.05, with $k$ fixed at 17 throughout. Two models are shown — linear ($m=2$) in blue and quadratic ($m=3$) in red — each as a solid line with markers showing the median time across repeats and a shaded band covering the 10th to 90th percentile. 
 
-Since $k$ is fixed at $\varepsilon = 0.5$ , we expect the models to be recovered with precision up to that level. After that the errors start risign. 
-
-The increase in both time and error from 0.5 up to 0.8 is simply the cost of checking more outliers per iteration. In this range, as epsilon rises there are fewer inliers and the chances of running all `k` iterations each time increases with $\varepsilon$.
-
-The error in model also increases with $\varepsilon$. The random high spikes in the model error are likely driven by chance models that could not find any of very few inliers in this range of $\varepsilon$. Notice that these occur only after $\varepsilon = 0.5$ for which $k$ is fixed. 
+The increase in time from 0.5 up to 0.8 is the cost of checking more outliers per iteration. In this range, as epsilon rises there are fewer inliers and the chances of running all `k` iterations each time increases with $\varepsilon$. After 0.8 there is a flat-line with very little spread showing that all `k` iterations are exhusted for the 100 repeats of the experiments.
 
 ### Experiment 3: Time Vs Threshold ($t$)
 
