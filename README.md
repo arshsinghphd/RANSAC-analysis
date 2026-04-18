@@ -537,11 +537,9 @@ The graph plots wall-clock time (μs) against outlier fraction $\varepsilon$, va
 
 Since $k$ is fixed at $\varepsilon = 0.5$ , we expect the models to be recovered with precision up to that level. After that the errors start risign. 
 
-With noiseless data, `t` is very tight — only exact inliers pass. So early-stop almost never triggers, and RANSAC runs close to all `k` iterations every time. The linear increase up to $\varepsilon = 0.8$ is simply the cost of checking more outliers per iteration — as epsilon rises, there are more points that fail the threshold check, but RANSAC still runs the full `k` iterations each time. Time scales linearly with $N$.
+The increase in both time and error from 0.5 up to 0.8 is simply the cost of checking more outliers per iteration. In this range, as epsilon rises there are fewer inliers and the chances of running all `k` iterations each time increases with $\varepsilon$.
 
-The flattening at $\varepsilon = 0.8$ is the early-stop finally kicking in. At that point $d = 0.2 \times N = 200$, is small enough that a lucky random sample occasionally clears the threshold, and RANSAC exits early.The flat region is the early-stop dominating over the otherwise low $k$. 
-
-Also notice that just before $\varepsilon = 0.8$, model error spikes. At this point `k` is no longer a sufficient budget — RANSAC exhausts its iterations without reliably finding a clean consensus set, so the best model it returns is poor. At $\varepsilon = 0.8$, early-stop kicks in and paradoxically pulls the error back down. RANSAC now exits on the first accidental threshold hit, and the refit on inliers recovers a reasonable model even from a lucky sample. The spike is the budget running out. Chance early-stopping helps partially recover from that in average data presented here.
+The error in model also increases with $\varepsilon$. The random high spikes in the model error are likely driven by chance models that could not find any of very few inliers in this range of $\varepsilon$. Notice that these occur only after $\varepsilon = 0.5$ for which $k$ is fixed. 
 
 ### Experiment 3: Time Vs Threshold ($t$)
 
