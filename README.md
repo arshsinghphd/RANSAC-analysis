@@ -11,10 +11,6 @@
   - [Repository Structure](#repository-structure)
   - [Introduction](#introduction)
     - [Motivating Problem: Stitching Two Overlapping Graphs](#motivating-problem-stitching-two-overlapping-graphs)
-      - [Assumptions](#assumptions)
-      - [Linear Regression Approach](#linear-regression-approach)
-      - [RANSAC Approach](#ransac-approach)
-      - [Comparison of Goodness of Fit: Model Error (Mean Squared Error)](#comparison-of-goodness-of-fit-model-error-mean-squared-error)
     - [History of RANSAC](#history-of-ransac)
     - [Organization of the Paper](#organization-of-the-paper)
   - [Analysis of Algorithm](#analysis-of-algorithm)
@@ -22,20 +18,13 @@
     - [Flow Chart for RANSAC Algorithm](#flow-chart-for-ransac-algorithm)
     - [Proof of Correctness](#proof-of-correctness)
     - [Time Complexity Analysis](#time-complexity-analysis)
-      - [Best, Worst, and Average Cases: Time Complexity](#best-worst-and-average-cases-time-complexity)
     - [Space Complexity](#space-complexity)
-      - [Best, Worst, and Average Cases: Space Complexity](#best-worst-and-average-cases-space-complexity)
   - [RANSAC Parameters: Forming Hypothesis for Empirical Analysis](#ransac-parameters-forming-hypothesis-for-empirical-analysis)
     - [Iteration count $k$](#iteration-count-k)
-      - [Table: $k$ for various $\\varepsilon$ for $p = 0.01$ and for line fitting where $m = 2$.](#table-k-for-various-varepsilon-for-p--001-and-for-line-fitting-where-m--2)
     - [Expected Inlier count $d$ or Outlier Fraction $\\varepsilon$](#expected-inlier-count-d-or-outlier-fraction-varepsilon)
     - [Threshold distance $t$](#threshold-distance-t)
   - [Empirical Analysis](#empirical-analysis)
     - [Experimental Setup](#experimental-setup)
-      - [Synthetic Data Generation](#synthetic-data-generation)
-      - [Measuring Recovery Quality](#measuring-recovery-quality)
-      - [Experiment Parameters](#experiment-parameters)
-      - [A Note on Numerical Precision](#a-note-on-numerical-precision)
     - [Experiment 1: Time Vs RANSAC Resampling Iterations $k$](#experiment-1-time-vs-ransac-resampling-iterations-k)
     - [Experiment 2: Time Vs Fraction of Outliers](#experiment-2-time-vs-fraction-of-outliers)
     - [Experiment 3: Time Vs Threshold ($t$)](#experiment-3-time-vs-threshold-t)
@@ -61,9 +50,6 @@
     - [Summary of Findings](#summary-of-findings)
     - [Higher-Level Learning](#higher-level-learning)
     - [Future Work](#future-work)
-      - [Testing RANSAC Failure with Increasing Model Complexity or $m$](#testing-ransac-failure-with-increasing-model-complexity-or-m)
-      - [Replace Gaussian Elimination of Normal Equation with QR Decomposition](#replace-gaussian-elimination-of-normal-equation-with-qr-decomposition)
-      - [Test Theoretical $p$ Versus Reality](#test-theoretical-p-versus-reality)
   - [Disclosures](#disclosures)
   - [References](#references)
 
@@ -621,7 +607,7 @@ The expected result is that at design $\varepsilon = 0.3$, at $N = 4$, we will h
 
 ![Exp6](figures/exp7.png)
 
-The graph shows that in practice RANSAC is unliklely to recover the true underlying model for $N < 16$. At $N \ge 2^{6}$ we can be assure (within the designed $p_{fail}$), that we will recover the true model. This is, the likelihood of finding the true model is 80%, 10 - 90 percentile. 
+The graph shows that in practice RANSAC is unliklely to recover the true underlying model for $N < 16$. At $N \ge 2^{8}$ we can be assure (within the designed $p_{fail}$), that we will recover the true model. This is, the likelihood of finding the true model is 99%, 0.05 - 99.5 percentile. 
 
 
 ## Application
