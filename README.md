@@ -535,13 +535,13 @@ Experiment 2 measures how wall-clock time varies with the outlier fraction $\var
 
 The graph plots wall-clock time (μs) against outlier fraction $\varepsilon$, varied from 0.05 to 0.95 in steps of 0.05, with $k$ fixed at 17 throughout. Two models are shown — linear ($m=2$) in blue and quadratic ($m=3$) in red — each as a solid line with markers showing the median time across repeats and a shaded band covering the 10th to 90th percentile. A secondary y-axis on the right shows median model error for each model as a dashed line, using the same colors.
 
-The expected behavior is that there will be an "avalanche", the wall clock times should decreases after $\varepsilon = 0.5$. The algorithm terminates as soon as it finds a consensus set of size d, the minimum expected inlier count derived from epsilon. As epsilon increases, d shrinks — fewer points need to agree for RANSAC to declare success. At high outlier fractions, even a poor model can accumulate d inliers quickly by chance, causing early termination. Paradoxically, this means RANSAC runs fastest precisely when the data is most contaminated, though the returned model is correspondingly less reliable, as confirmed by the rising model error on the secondary axis.
+The expected behavior is that there will be an "avalanche", the wall clock times should decreases after $\varepsilon = 0.5$. The algorithm terminates as soon as it finds a consensus set of size d, the minimum expected inlier count derived from epsilon. As epsilon increases, d shrinks — fewer points need to agree for RANSAC to declare success. At high outlier fractions, even a poor model can accumulate d inliers quickly by chance, causing early termination. Paradoxically, this means RANSAC runs fastest precisely when the data is most contaminated, though the returned model is less reliable, as confirmed by the rising model error on the secondary axis.
 
 Allowing for this design limitation, the graph confirms that as $m$ increases the time for all $\varepsilon$ increases. This graph also confirms that time should reduce as $\varepsilon$ increases. 
 
-A notable feature of the wall-clock time profile is that time peaks near $\varepsilon$= 0.65 rather than the expected 0.5. I even tried to changed the design $\varepsilon$ for $k$ from 0.1 to 0.7 in graphs I do not show, but the avalanche always occurs at around the same spot of 0.7. 
+A notable feature of the wall-clock time profile is that time is flat from 0 to near $\varepsilon$= 0.65 rather than the expected range of (0, 0.5). I tried to changed the design $\varepsilon$ for $k$ from 0.1 to 0.7 in graphs that I do not present in this report, but the avalanche always occurs at around the same spot of 0.7.
 
-**I do not have a good explanation for why the graph is flat from $\varepsilon$ range (0, 0.7).**
+
 
 
 ### Experiment 3: Time Vs Threshold ($t$)
@@ -1282,7 +1282,7 @@ If I were to do this again using QR decomposition, I can be sure that the failur
 
 **Claude**: I used Claude for planning a 4-week timeline for studying this topic. I also used Claude to add doc strings for my functions and check edge-cases in the tests. I also used Claude for trouble shooting when I was unable to figure a bug in functions which caused persistent test failures - I found out that I was returning `int` instead of `float` for `compute_t`, something I could have figured out with a few well placed prints. I also used Claude to make final flow chart.
 
-**Google Gemini**: I used Google Gemini to look up many unknown terms and to search for better ways of solving models. The Box Muller methd for Gaussian noise and 
+**Google Gemini**: I used Google Gemini to look up many unknown terms and to search for better ways of solving models. My use of Box Muller method for Gaussian noise and Fisher Yates algorithms for randomization of array was based on suggestions of Google Gemini.
 
 I used **MS Word** for checking the report for syntax and grammar.
 
