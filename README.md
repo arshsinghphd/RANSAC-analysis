@@ -531,18 +531,17 @@ The graph also confirms that wall-clock time grows linearly with the number of i
 
 ![Exp02](figures/exp2.png)
 
-Experiment 2 measures how wall-clock time varies with the outlier fraction $\varepsilon$, swept from 0.05 to 0.95 in steps of 0.05. The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$ for each model, so $k$ does not change as $\varepsilon$ varies. Both the linear ($m=2$) and quadratic ($m=3$) models are tested, each repeated 100 times per condition with $N = 1000$ points throughout. Model error is recorded alongside time to show how accuracy degrades as the outlier fraction increases beyond the value $k$ was designed for.
+Experiment 2 measures how wall-clock time varies with the outlier fraction $\varepsilon$, swept from 0.05 to 0.95 in steps of 0.05. One special condition I am imposing here is that there is no noise in the data (which can sometimes be interpreted as outlier). The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$ for each model, so $k$ does not change as $\varepsilon$ varies. Both the linear ($m=2$) and quadratic ($m=3$) models are tested, each repeated 100 times per condition with $N = 1000$ points throughout. Model error is recorded alongside time to show how accuracy degrades as the outlier fraction increases beyond the value $k$ was designed for.
 
 The graph plots wall-clock time (μs) against outlier fraction $\varepsilon$, varied from 0.05 to 0.95 in steps of 0.05, with $k$ fixed at 17 throughout. Two models are shown — linear ($m=2$) in blue and quadratic ($m=3$) in red — each as a solid line with markers showing the median time across repeats and a shaded band covering the 10th to 90th percentile. A secondary y-axis on the right shows median model error for each model as a dashed line, using the same colors.
 
-The expected behavior is that there will be an "avalanche", the wall clock times should decreases after $\varepsilon = 0.5$. The algorithm terminates as soon as it finds a consensus set of size d, the minimum expected inlier count derived from epsilon. As epsilon increases, d shrinks — fewer points need to agree for RANSAC to declare success. At high outlier fractions, even a poor model can accumulate d inliers quickly by chance, causing early termination. Paradoxically, this means RANSAC runs fastest precisely when the data is most contaminated, though the returned model is less reliable, as confirmed by the rising model error on the secondary axis.
+Since $k$ is fixed at $\varepsilon = 0.5$ , we expect the models to be recovered with precision up to that level. After that the errors start risign. 
 
-Allowing for this design limitation, the graph confirms that as $m$ increases the time for all $\varepsilon$ increases. This graph also confirms that time should reduce as $\varepsilon$ increases. 
+With noiseless data, `t` is very tight — only exact inliers pass. So early-stop almost never triggers, and RANSAC runs close to all `k` iterations every time. The linear increase up to $\varepsilon = 0.8$ is simply the cost of checking more outliers per iteration — as epsilon rises, there are more points that fail the threshold check, but RANSAC still runs the full `k` iterations each time. Time scales linearly with $N$.
 
-A notable feature of the wall-clock time profile is that time is flat from 0 to near $\varepsilon$= 0.65 rather than the expected range of (0, 0.5). I tried to changed the design $\varepsilon$ for $k$ from 0.1 to 0.7 in graphs that I do not present in this report, but the avalanche always occurs at around the same spot of 0.7.
+The flattening at $\varepsilon = 0.8$ is the early-stop finally kicking in. At that point $d = 0.2 \times N = 200$, is small enough that a lucky random sample occasionally clears the threshold, and RANSAC exits early.The flat region is the early-stop dominating over the otherwise low $k$. 
 
-
-
+Also notice that just before $\varepsilon = 0.8$, model error spikes. At this point `k` is no longer a sufficient budget — RANSAC exhausts its iterations without reliably finding a clean consensus set, so the best model it returns is poor. At $\varepsilon = 0.8$, early-stop kicks in and paradoxically pulls the error back down. RANSAC now exits on the first accidental threshold hit, and the refit on inliers recovers a reasonable model even from a lucky sample. The spike is the budget running out. Chance early-stopping helps partially recover from that in average data presented here.
 
 ### Experiment 3: Time Vs Threshold ($t$)
 

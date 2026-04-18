@@ -24,6 +24,7 @@
 // two models: linear (m=2) and quadratic (m=3)
 #define N_MODELS 2
 #define EPS_FOR_K 0.5f
+#define NOISE_STD_2 0.0f 
 
 // epsilon from 0.05 to 0.95 in steps of 0.05
 static const float EPSILONS[EPSILON_STEPS] = {
@@ -83,7 +84,7 @@ int main(void) {
                 make_data(points_x, points_y,
                             n_inliers, n_outliers,
                             true_params, n_params,
-                            NOISE_STD, &t,
+                            NOISE_STD_2, &t,
                             0, NULL, 0.0f);
 
                 // run ransac and record wall-clock time inside run_ransac
