@@ -1294,9 +1294,6 @@ If I were to do this again using QR decomposition, I can be sure that the failur
 
 I used **MS Word** for checking the report for syntax and grammar.
 
-I did not use any LLM to write codes. I implemented my codes based on my reading of the original Fishler and Bolles paper [1] and its representation in other textbooks [2, 3, 4]. I learnt solving normal equations using Gaussian elimination from youtube video tutorials [7, 8].
-
-
 ## References
 
 [1] Fischler, M. A. and Bolles, R. C. 1981. Random sample consensus: a paradigm for model fitting with applications to image analysis and automated cartography. Commun. ACM 24, 6 (June 1981), 381–395. https://doi.org/10.1145/358669.358692.
