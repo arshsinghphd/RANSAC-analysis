@@ -21,7 +21,7 @@
     - [Space Complexity](#space-complexity)
   - [RANSAC Parameters: Forming Hypothesis for Empirical Analysis](#ransac-parameters-forming-hypothesis-for-empirical-analysis)
     - [Iteration count $k$](#iteration-count-k)
-    - [Expected Inlier count $d$ or Outlier Fraction $\\varepsilon$](#expected-inlier-count-d-or-outlier-fraction-varepsilon)
+    - [Expected Inlier Count $d$ or Outlier Fraction $\\varepsilon$](#expected-inlier-count-d-or-outlier-fraction-varepsilon)
     - [Threshold distance $t$](#threshold-distance-t)
   - [Empirical Analysis](#empirical-analysis)
     - [Experimental Setup](#experimental-setup)
@@ -419,7 +419,7 @@ This exponential growth motivates the early stop parameter $d$ — at high outli
 
 Increasing $k$ will lead to more iterations and thus more time, but also more likely that we will reach the true underlying model. I test this hypothesis in Experiment 1, by fixing other parameters.
 
-### Expected Inlier count $d$ or Outlier Fraction $\varepsilon$
+### Expected Inlier Count $d$ or Outlier Fraction $\varepsilon$
 
 The expected inlier count ($d$) serves as an early stopping criterion. Once a candidate model achieves a consensus set of size at least $d$, the search terminates without exhausting all $k$ iterations. At an outlier fraction of 0.90 the required iteration count reaches 459, making early stopping practically important. 
 
@@ -478,7 +478,7 @@ In these experiments I abstract away from images and use Cartesian graph points 
 
 **Inlier generation.** A set of $N_{\text{inlier}}$ points is placed exactly on the true polynomial model $y = a_0 + a_1 x + \cdots + a_{m-1} x^{m-1}$, with $x$ values spaced evenly across a fixed range $[x_{\min}, x_{\max}]$. The true parameters are fixed at $a_0 = 5$, $a_1 = 2$ for linear experiments, and $a_0 = 1$, $a_1 = 1$, $a_2 = 1$ for quadratic experiments.
 
-**Gaussian noise.** Zero-mean Gaussian noise with standard deviation $\sigma$ is added to the $y$ values of all inlier points. This models sensor measurement error — the dominant noise type in most physical measurement systems. Gaussian noise is generated using the Box-Muller transform [5], which produces exactly Gaussian samples from two uniform random draws without rejection sampling:
+**Gaussian noise.** Zero-mean Gaussian noise with standard deviation $\sigma$ is added to the $y$ values of all inlier points. This models sensor measurement error — the dominant noise type in most physical measurement systems. Gaussian noise is generated using the Box-Muller transform [5] which produces Gaussian distribution from two uniform random draws:
 
 $$z = \sqrt{-2 \ln u_1} \cos(2\pi u_2), \qquad u_1, u_2 \sim \text{Uniform}(0, 1)$$
 
@@ -510,7 +510,7 @@ All computations use single-precision floating point (`float`), which stores num
 
 The limitation of single precision becomes visible when fitting high-degree polynomials. The least squares solver builds a matrix $X^\top X$ whose entries are sums of powers of $x_i$. As the polynomial degree grows, those powers grow rapidly — for degree 6 over $x \in [0, 9]$, the largest entry reaches roughly $10^{15}$, far beyond what seven digits of precision can represent accurately. When Gaussian elimination then tries to solve a system built from such large numbers, small rounding errors get amplified into large errors in the recovered coefficients. The result is a model that looks numerically valid but is wildly wrong — not because RANSAC failed, but because the underlying solver lost precision.
 
-Ideally, after discovering this, I should’ve avoided gaussian elimination approach altogether, but for this class project, I did not have enough time to understand the QR decomposition, implement, and test it. So, I have tried by best to work within its confines: $x$ is scaled to $[0, 1]$ and I use `double` precision for gaussian elimination in the function `fit_model` in `model.c`. Yes, I cannot use $m$ > 4. Even in $m = 3$, a small number of runs across all experiments produce unrealistically large model errors due to this and are precision concerns rather than RANSAC failures. I ignore these by plotting mean and the confidence interval is 10th percentile to 90th percentile of the value.
+Ideally, after discovering this, I should’ve avoided gaussian elimination approach altogether, but for this class project, I did not have enough time to understand the QR decomposition, implement, and test it. So, I have tried by best to work within its confines: $x$ is scaled to $[0, 1]$ and I use `double` precision for gaussian elimination in the function `fit_model` in `model.c`. So, I cannot use $m$ > 4. Even in $m = 3$, a small number of runs across all experiments produce unrealistically large model errors due to this and are precision concerns rather than RANSAC failures. I ignore these by plotting mean and the confidence interval is 10th percentile to 90th percentile of the value for most experiments.
 
 In the next 6 sections I discuss the empirical results of my experiments using graphs. Experiment 1, 2, and 3, test the theoretical relationship of parameters with time complexity using run times and efficacy using model error. Experiments 4, 5, and 6 test the limits of RANSAC against $\varepsilon$, amount of bias in the data, and the data size, respectively, with a focus on breakdown of the model as measured by the model error against the known true model.
 
@@ -535,9 +535,13 @@ Experiment 2 measures how wall-clock time varies with the outlier fraction $\var
 
 The graph plots wall-clock time (μs) against outlier fraction $\varepsilon$, varied from 0.05 to 0.95 in steps of 0.05, with $k$ fixed at 17 throughout. Two models are shown — linear ($m=2$) in blue and quadratic ($m=3$) in red — each as a solid line with markers showing the median time across repeats and a shaded band covering the 10th to 90th percentile. A secondary y-axis on the right shows median model error for each model as a dashed line, using the same colors.
 
-The "avalanche" decreases after $\varepsilon = 0.5$ is the expected behavior: it is due to RANSAC's early stopping condition: the algorithm terminates as soon as it finds a consensus set of size d, the minimum expected inlier count derived from epsilon. As epsilon increases, d shrinks — fewer points need to agree for RANSAC to declare success. At high outlier fractions, even a poor model can accumulate d inliers quickly by chance, causing early termination. Paradoxically, this means RANSAC runs fastest precisely when the data is most contaminated, though the returned model is correspondingly less reliable, as confirmed by the rising model error on the secondary axis.
+The expected behavior is that there will be an "avalanche", the wall clock times should decreases after $\varepsilon = 0.5$. The algorithm terminates as soon as it finds a consensus set of size d, the minimum expected inlier count derived from epsilon. As epsilon increases, d shrinks — fewer points need to agree for RANSAC to declare success. At high outlier fractions, even a poor model can accumulate d inliers quickly by chance, causing early termination. Paradoxically, this means RANSAC runs fastest precisely when the data is most contaminated, though the returned model is correspondingly less reliable, as confirmed by the rising model error on the secondary axis.
 
-Allowing for this design limitation, the graph confirms that as $m$ increases the time for all $\varepsilon$ increases. This graph also confirms that time should reduce as $\varepsilon$ increases. A notable feature of the wall-clock time profile is that time peaks near ε = 0.5 and then decreases at higher outlier fractions. The flat part of the curve is because at low $\varepsilon$ we expect large $d$ and the RANSAC usually does not terminate due to early stop, but due to exhaustion of $k$ which is set for $\varepsilon = 0.5$.
+Allowing for this design limitation, the graph confirms that as $m$ increases the time for all $\varepsilon$ increases. This graph also confirms that time should reduce as $\varepsilon$ increases. 
+
+A notable feature of the wall-clock time profile is that time peaks near $\varepsilon$= 0.65 rather than the expected 0.5. I even tried to changed the design $\varepsilon$ for $k$ from 0.1 to 0.7 in graphs I do not show, but the avalanche always occurs at around the same spot of 0.7. 
+
+**I do not have a good explanation for why the graph is flat from $\varepsilon$ range (0, 0.7).**
 
 
 ### Experiment 3: Time Vs Threshold ($t$)
@@ -1261,7 +1265,7 @@ Keeping this in mind, in this report, all experiments involving model complexity
 | Linear | 2 | 5 |
 | Quadratic | 3 | 7 |
 | Cubic | 4 | 8 |
-| Degree 5 | 5 | 10 |
+| Degree 4 | 5 | 10 |
 
 
 #### Replace Gaussian Elimination of Normal Equation with QR Decomposition
@@ -1278,7 +1282,7 @@ If I were to do this again using QR decomposition, I can be sure that the failur
 
 **Claude**: I used Claude for planning a 4-week timeline for studying this topic. I also used Claude to add doc strings for my functions and check edge-cases in the tests. I also used Claude for trouble shooting when I was unable to figure a bug in functions which caused persistent test failures - I found out that I was returning `int` instead of `float` for `compute_t`, something I could have figured out with a few well placed prints. I also used Claude to make final flow chart.
 
-**Google Gemini**: I used Google Gemini to look up many unknown terms and to search for better ways of solving models. 
+**Google Gemini**: I used Google Gemini to look up many unknown terms and to search for better ways of solving models. The Box Muller methd for Gaussian noise and 
 
 I used **MS Word** for checking the report for syntax and grammar.
 
