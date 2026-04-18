@@ -1276,13 +1276,13 @@ If I were to do this again using QR decomposition, I can be sure that the failur
 
 ## Disclosures
 
-Claude: I used Claude for planning a 4-week timeline for studying this topic. I also used Claude to add doc strings for my functions and check edge-cases in the tests. I also used Claude for trouble shooting when I was unable to figure a bug in functions which caused persistent test failures - I found out that I was returning `int` instead of `float` for `compute_t`. I also used Claude to make final flow chart.
+**Claude**: I used Claude for planning a 4-week timeline for studying this topic. I also used Claude to add doc strings for my functions and check edge-cases in the tests. I also used Claude for trouble shooting when I was unable to figure a bug in functions which caused persistent test failures - I found out that I was returning `int` instead of `float` for `compute_t`. I also used Claude to make final flow chart.
 
-Google Gemini: I used Google Gemini to look up many unknown terms and to search for better ways of solving models. 
+**Google Gemini**: I used Google Gemini to look up many unknown terms and to search for better ways of solving models. 
 
-I used MS Word for checking the report for syntax and grammar.
+I used **MS Word** for checking the report for syntax and grammar.
 
-I did not any LLM to write codes. I implemented my codes based on my reading of the original Fishler and Bolles paper [1] and its representation in other textbooks [2, 3, 4]. Although I had done so by hand, I had not implemented solution of a system of equations (vandermont matrix) using gaussian elimination before. I learnt to do that from youtube video tutorials [7, 8].
+I did not use any LLM to write codes. I implemented my codes based on my reading of the original Fishler and Bolles paper [1] and its representation in other textbooks [2, 3, 4]. I learnt solving normal equations using Gaussian elimination from youtube video tutorials [7, 8].
 
 
 ## References
