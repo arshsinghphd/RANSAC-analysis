@@ -41,6 +41,7 @@
     - [Experiment 3: Time Vs Threshold ($t$)](#experiment-3-time-vs-threshold-t)
     - [Experiment 4: How Does RANSAC Break Down as Outlier Fraction Increases?](#experiment-4-how-does-ransac-break-down-as-outlier-fraction-increases)
     - [Experiment 5: Structural Bias and RANSAC Failure](#experiment-5-structural-bias-and-ransac-failure)
+    - [Experiment 6 — How Does Dataset Size Affect RANSAC Recovery?](#experiment-6--how-does-dataset-size-affect-ransac-recovery)
   - [Application](#application)
   - [Implementation](#implementation)
     - [Language, Libraries, and Design Philosophy](#language-libraries-and-design-philosophy)
@@ -61,7 +62,6 @@
     - [Higher-Level Learning](#higher-level-learning)
     - [Future Work](#future-work)
       - [Testing RANSAC Failure with Increasing Model Complexity or $m$](#testing-ransac-failure-with-increasing-model-complexity-or-m)
-      - [RANSAC Failure Versus $N$ - The Size of Data](#ransac-failure-versus-n---the-size-of-data)
       - [Replace Gaussian Elimination of Normal Equation with QR Decomposition](#replace-gaussian-elimination-of-normal-equation-with-qr-decomposition)
       - [Test Theoretical $p$ Versus Reality](#test-theoretical-p-versus-reality)
   - [Disclosures](#disclosures)
@@ -609,6 +609,18 @@ The x-axis runs from $pr=0$ (no bias) to $pr=1.0$ (all outliers are biased), and
 The red dashed horizontal line marks the breakdown threshold, defined as the mean error at $pr=0$ plus two standard deviations (only due to noise) — the point at which error can no longer be attributed to noise alone. A subplot where the mean error crosses this threshold indicates that the corresponding bias type has overwhelmed RANSAC's ability to distinguish inliers from biased outliers, and the returned model is no longer reliable.
 
 The graph shows that constant, and linear bias are tolerated for almost all probabilities by both linear and quadratic model, but periodic bias breaks down RANSAC at probability of about 0.5 in both models.
+
+### Experiment 6 — How Does Dataset Size Affect RANSAC Recovery?
+
+The iteration count $k$ is derived from the outlier fraction $\varepsilon$ and the minimum sample size $m$, with no dependence on the total number of points $N$. In theory RANSAC should recover the true model regardless of dataset size, as long as $k$ is set correctly. Experiment 6 tests whether this theoretical independence holds in practice.
+
+
+The linear model ($m = 2$) is used with a fixed outlier fraction $\varepsilon = 0.3$ and $k$ computed from the analytical formula but use 10x the theoretical value to give it a clean berth from being the rate-limiting parameter. Dataset size $N$ is varied from 2 to 8192 $(2^{13})$, doubling at each step. The experiment is repeated 100 times per condition and model error is recorded. The expected result is that model error remains low and roughly constant across all values of $N$, with a possible increase at very small $N$ where the number of inliers is too small to support a reliable consensus set. A breakdown threshold of $\text{model error} > 1.0$ is used to identify any $N$ at which recovery becomes unreliable.
+
+![Exp6](figures/exp7.png)
+
+The graph shows that in practice RANSAC is unliklely to recover the true underlying model for $N < 16$. At $N \ge 2^{7}$ we can be assure (within the designed $p_{fail}$), that we will recover the true model. This is, the spread of 10 - 90 percentile of model errors is all within model error of 1. 
+
 
 ## Application
 <!-- 
@@ -1257,11 +1269,6 @@ In this report, all experiments involving model complexity are restricted to deg
 | Quadratic | 3 | 7 |
 | Cubic | 4 | 8 |
 | Degree 5 | 5 | 10 |
-
-
-#### RANSAC Failure Versus $N$ - The Size of Data
-
-As I claim in the motivating experiment, it is a feature of RANSAC that with increasing $d$, RANSAC becomes more efficient and less error prone. Testing this would have been a relatively simple experiment that I could have easily implemented, but it did not occur to me earlier. The theory is simple, with increased $d$, we expect RANSAC to do better, even if the outliers increase proportionately. 
 
 
 #### Replace Gaussian Elimination of Normal Equation with QR Decomposition
