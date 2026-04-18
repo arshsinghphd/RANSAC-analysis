@@ -66,9 +66,15 @@ exp6: experiment6.c $(SHARED) $(HEADERS)
 	$(CC) $(CFLAGS) -o exp6.out experiment6.c $(SHARED) $(LFLAGS)
 	./exp6.out
 
+# compile and run experiment 7 — effect of iteration budget k on model degree
+# $ make exp7
+exp7: experiment7.c $(SHARED) $(HEADERS)
+	$(CC) $(CFLAGS) -o exp7.out experiment7.c $(SHARED) $(LFLAGS)
+	./exp7.out
+
 # run all experiments in sequence
 # $ make run
-run: exp1 exp2 exp3 exp4 exp5 exp6
+run: exp1 exp2 exp3 exp4 exp5 exp6 exp7
 
 example: motivating_example.c $(SHARED) $(HEADERS)
 	$(CC) $(CFLAGS) -o example.out motivating_example.c $(SHARED) $(LFLAGS)
