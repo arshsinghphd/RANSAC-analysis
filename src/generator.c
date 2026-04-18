@@ -64,8 +64,8 @@ int make_inliers(float* points_x, float* points_y, int n_inliers,
  * float,   random sample from N(0, sigma^2)
  */
 static float _box_muller(float std) {
-    float u1 = (float) rand() / RAND_MAX;
-    float u2 = (float) rand() / RAND_MAX;
+    float u1 = (float) rand() / (float) RAND_MAX;
+    float u2 = (float) rand() / (float) RAND_MAX;
     float z = sqrt(-2 * log(u1)) * cos(2 * M_PI * u2);
     return z * std;
 }
@@ -159,7 +159,7 @@ int add_outliers(float* points_x, float* points_y,
     int idx = n_inliers;
     for (int i = 0; i < n_outliers; i++) {
         // pick random x on x_range
-        x = x_min + ((float) rand() / RAND_MAX) * x_range;
+        x = x_min + ((float) rand() / (float) RAND_MAX) * x_range;
         // estimate corresponding y on model
         y_on_model = 0.0;
         for (int j = 0; j < n_params; j++) {
@@ -168,9 +168,9 @@ int add_outliers(float* points_x, float* points_y,
         // 50% change above model. 50% chance below model
         // outliers are some random fraction of the range of y outside the band
         if (rand()/RAND_MAX < 0.5)
-            y = y_on_model + inlier_band + ((float) rand()/RAND_MAX) * y_range;
+            y = y_on_model + inlier_band + ((float) rand()/ (float) RAND_MAX) * y_range;
         else
-            y = y_on_model - inlier_band - ((float) rand()/RAND_MAX) * y_range;
+            y = y_on_model - inlier_band - ((float) rand()/ (float) RAND_MAX) * y_range;
         points_x[idx] = x;
         points_y[idx] = y;
         idx++;
@@ -202,7 +202,7 @@ int add_outliers(float* points_x, float* points_y,
         return -1;
     }
     for (int i = 0; i < n_inliers; i++) {
-        if (pr > (float) rand() / RAND_MAX) {
+        if (pr > (float) rand() / (float) RAND_MAX) {
             points_y[i] += bias_fn(points_x[i]);
         }
     }
