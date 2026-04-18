@@ -70,7 +70,7 @@
 
 ## Executive Summary
 
-This paper presents an empirical analysis of the RANSAC algorithm for robust polynomial model fitting, implemented in C and evaluated through five experiments. The implementation supports polynomial models of any arbitrary degree and is tested on synthetic data with provided parameters, allowing measurement of model recovery accuracy. All experiments use $N = 1000$ points and 100 repeats per condition. 
+This paper studies the RANSAC algorithm for polynomial model fitting. The implementation supports models of arbitrary degree and is tested on synthetic data with known parameters, so recovery accuracy can be measured directly. For all experiments I use $N = 1000$ and for modelling spread each experiment is repeating $100$ times and each model error recorded.
 
 A motivating example with $N = 60$, demonstrates the stitching application directly. I created two overlapping graphs of noisy data with $6$ outliers each generated from the same true linear model. Then I fit these separately using RANSAC and then combined via `stitch_models`. I do the same using Ordinary Least Squared (OLS). I compare the goodness of fit of RANSAC stitching with OLS on the combined dataset. I show that stitched RANSAC is much more accurate than OLS on combined data. I also show that the stitched RANSAC model is more accurate that each model alone. Compare this to OLS where the combined model is worse than the individual models.
 
@@ -498,9 +498,9 @@ $$z = \sqrt{-2 \ln u_1} \cos(2\pi u_2), \qquad u_1, u_2 \sim \text{Uniform}(0, 1
 
 The noise standard deviation $\sigma$ is set to $0.5$ in all experiments unless stated otherwise, giving a signal-to-noise ratio that is realistic but tractable.
 
-**Outliers.** Classification errors — points that lie far outside the inlier band — are appended to the dataset after noise injection. Outliers are placed in an $x$ range that extends two data ranges beyond the inlier $x$ extent, and at $y$ values guaranteed to lie outside the inlier band $|y - \hat{y}| > 2\sigma$. This construction guarantees that every appended point is a true classification error and not an accidental inlier, giving exact control over the outlier fraction $\varepsilon = N_{\text{outlier}} / (N_{\text{inlier}} + N_{\text{outlier}})$.
+**Outliers.** Classification errors — points that lie far outside the inlier band — are appended to the dataset after noise injection. Outliers are placed in an $x$ range that extends two data ranges beyond the inlier $x$ extent, and at $y$ values guaranteed to lie outside the inlier band $|y - \hat{y}| > 2\sigma$. This construction guarantees that every point is a true classification error and not an accidental inlier, giving exact control over the outlier fraction $\varepsilon = N_{\text{outlier}} / (N_{\text{inlier}} + N_{\text{outlier}})$.
 
-**Structural bias.** Structural bias is a systematic deviation applied to a random fraction $pr$ of inlier points using a deterministic function $b(x)$. Unlike Gaussian noise, which is independent at each point and averages to zero over the dataset, structural bias introduces a coherent shift that RANSAC cannot distinguish from a different true model if $pr$ is large enough. Three bias functions are used: constant bias $b(x) = c$, linear bias $b(x) = \alpha x$, and periodic bias $b(x) = \sin(x)$. Periodic bias is expected to be more benign than constant or linear bias because it averages to near zero over a full period, reducing its net effect on the consensus set.
+**Structural bias.** Structural bias is a systematic deviation applied to a random fraction $pr$ of inlier points using a deterministic function $b(x)$. Unlike Gaussian noise, which is independent at each point and averages to zero over the dataset, structural bias introduces a $x$ dependent shift in $y$ that RANSAC cannot distinguish from a different true model if $pr$ is large enough. Three bias functions are used: constant bias $b(x) = c$, linear bias $b(x) = \alpha x$, and periodic bias $b(x) = \sin(x)$. Periodic bias is expected to be more benign than constant or linear bias because it averages to near zero over a full period, reducing its net effect on the consensus set.
 
 #### Measuring Recovery Quality
 
@@ -508,7 +508,7 @@ In this analysis model recovery quality is measured as the Euclidean distance be
 
 `model_error` = $\| \hat{\mathbf{a}} - \mathbf{a*} \| = \sqrt{\sum_{j=0}^{m-1} (\hat{a}_j - a_j^{*})^2}$
 
-This is a single parameter that captures error across all model parameters simultaneously, regardless of polynomial degree. Because RANSAC is stochastic, each experiment is repeated $R = 100$ times with different random seeds and the mean error and standard deviation are reported.
+This is a single parameter that captures error across all model parameters regardless of polynomial degree. Because RANSAC is randomized, each experiment is repeated $R = 100$ times with different random seeds and the mean error and standard deviation are reported.
 
 #### Experiment Parameters
 
@@ -516,7 +516,7 @@ The three experiments share a common parameter baseline.
 
 For all experiments, $N = 1000$ points are used, split between inliers and outliers according to the outlier fraction $\varepsilon$. This choice is larger than the $N = 100$ commonly used in illustrative examples and is motivated by two practical considerations. First, timing resolution: the C implementation runs fast enough that at $N = 100$ individual function calls complete in nanoseconds, making wall-clock timing unreliable. At $N = 1000$ the dominant operations — normal equation accumulation in `fit_model` and residual computation in `find_model_inliers` — run long enough to be measured reliably in microseconds using `clock()`. Second, statistical stability: at $\varepsilon = 0.1$ and $N = 100$ only 10 outlier points are added, which is too few to represent a stable outlier distribution. At $N = 1000$ the same fraction produces 100 outliers, giving a more representative and repeatable experiment across the `N_REPEATS` $= 100$ independent runs.
 
-The inlier threshold $t$ is estimated from the noisy inlier data before outliers are added, using $t = \bar{e} + 2\sigma$ applied to the vertical residuals of a preliminary least squares fit. The expected inlier count $d$ is computed from the true $\varepsilon$ as $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. The iteration count $k$ is computed from the true $\varepsilon$ and the model degree using the analytical formula with failure probability $p_{\text{fail}} = 0.01$.
+The inlier threshold $t$ is estimated from the noisy data before outliers are added, using $t = \bar{e} + 2\sigma$ applied to the vertical residuals of a preliminary least squares fit. The expected inlier count $d$ is computed from the true $\varepsilon$ as $d = \lfloor (1 - \varepsilon) \cdot N \rfloor$. The iteration count $k$ is computed from the true $\varepsilon$ and the model degree analytically assuming failure probability $p_{\text{fail}} = 0.01$.
 
 #### A Note on Numerical Precision
 
@@ -632,13 +632,13 @@ The graph shows that in practice RANSAC is unliklely to recover the true underly
 - Make sure to provide sources for your information.
 -->
 
-RANSAC (Random Sample Consensus) is one of the most widely used tools for outlier rejection and robust model fitting, particularly in computer vision tasks such as image stitching and structure from motion. To motivate its need, consider the problem of image stitching. 
+RANSAC is used widely in computer vision, particularly for image stitching and structure from motion. Image stitching requires aligning overlapping images by estimating a geometric transformation — typically a homography — between them. Feature matching between images produces many incorrect correspondences, and handling these incorrect matches is the core problem RANSAC addresses.
 
 Many real-world applications require a field of view far wider than a single camera can capture — from the panoramic and video stabilization features familiar to smartphone users, to industrial applications such as satellite and aerial imaging, medical imaging, autonomous navigation, and augmented reality, anywhere a spatial context is needed that a single image cannot provide.
 
 In image stitching, the goal is to align two or more overlapping images by estimating a geometric transformation — such as a homography — that maps points from one image to corresponding points in another. This requires finding reliable feature correspondences between images. However, automated feature matching is inherently noisy: many matched point pairs will be incorrect due to repetitive textures, illumination differences, and other artefacts. These incorrect matches are outliers and handling them gracefully and efficiently is precisely the problem RANSAC was designed to solve.
 
-Classical least squares fitting (OLS) is sensitive to outliers because squaring the residuals amplifies the influence of large errors, pulling the estimated model toward the contaminated data. RANSAC avoids this by inverting the fitting logic entirely: rather than fitting all the data and trying to clean up afterwards, it repeatedly draws the smallest possible random sample, fits a model to that sample, and counts how many remaining points agree with it within a tolerance. The hypothesis that collects the most support — the largest consensus set — is returned as the final model. Because the minimal sample is drawn randomly, even a dataset with most outliers has a non-negligible probability of yielding an all-inlier sample in sufficiently many iterations.
+Least squares is sensitive to outliers because squaring residuals gives large errors a disproportionate influence on the result. RANSAC takes a different approach: it draws the smallest possible sample, fits a model, and counts how many other points agree with it. The sample with the most agreement is returned as the final model. Because the sample is drawn randomly, even heavily contaminated data has a chance of yielding an all-inlier sample given enough iterations.
 
 Over the last four decades, several variants of RANSAC have been proposed to reduce its computational cost. I will discuss three accessible ones here. 
 
@@ -1197,7 +1197,7 @@ int find_model_inliers(float* points_x, float* points_y, int n_points,
 
 ### The Final Refit
 
-A critical implementation detail follows a-la LO-RANSAC directly [9]: the final refit on all inliers of the best consensus set is a post-processing step, not part of the RANSAC iteration. Inside the loop, the model is fit only to the $m$-point sample. After the loop, all inliers of the best model are collected, and the model is refit on the full consensus set. This two-stage design is what gives RANSAC its accuracy: the loop finds the consensus, and the refit uses that consensus to produce a statistically efficient estimate.
+A critical implementation detail follows a-la LO-RANSAC directly [9]: the final refit on all inliers of the best consensus set is a post-processing step, not part of the RANSAC iteration. Inside the loop, the model is fit only to the $m$-point sample. After the loop, all inliers of the best model are collected, and the model is refit on the full consensus set. This two-stage design makes RANSAC more accurate: the loop finds the consensus, and the refit uses that consensus to produce a statistically efficient estimate.
 
 ```c
 /* _final_refit call (akin to LO-RANSAC) */
@@ -1222,7 +1222,7 @@ static int _final_refit(float* points_x, float* points_y, int n_points,
 
 Because RANSAC is a randomized algorithm, its tests are inherently probabilistic. With a failure probability of $p = 0.01$, approximately one test run in one hundred will fail even on a correct implementation. This is not a bug — it is the designed behavior of the algorithm, and it means that a single test failure is not evidence of a defect. The test suite is designed to reflect this: tolerance deltas are set wide enough to accommodate the noise level of the synthetic data.
 
-Although the [tests I report](proof_of_tests/proof_of_tests_all.txt) pass, there were a few tests that fail randomly. The empirical analysis repeats each experiment 100 times to report average behavior and standard deviation rather than a single run of RANSAC.
+Although the [tests I report](proof_of_tests/proof_of_tests_all.txt) pass, there were a few tests that fail randomly. The empirical analysis repeats each experiment 100 times to report average behavior and quantiles rather than a single run of RANSAC.
 
 The theoretical guarantee is that with $k$ iterations computed from the $k$ formula, RANSAC finds a correct model with probability at least $1 - p$. Given that I ran into issues of numerical precision, this is difficult to test. I am unable to differentiate deviation from true model due to random nature of RANSAC or due to garbage values being returned due to lack of precision.  
 
@@ -1237,7 +1237,7 @@ The theoretical guarantee is that with $k$ iterations computed from the $k$ form
 
 RANSAC provides robust model recovery in the presence of substantial contamination — up to ~65% outliers for linear models and ~35% for quadratic models — while running in $O(kN)$ time. Even at low resolutions such as 144p has 27,648 pixels in a single frame, far many more pixels than the $N = 1000$ points used here, yet RANSAC remains fast because $k$ is small when $\varepsilon$ is moderate. In the context of image stitching, where the homography requires $(m = 3)$, the computational cost is comparable to the quadratic case studied here, confirming that RANSAC is practical for real feature matching pipelines.
 
-The experiments demonstrate that runtime is directly proportional to $k$ and inversely related to both $\varepsilon$ and the inlier threshold $t$ — a consequence of RANSAC's early stopping condition, which terminates as soon as a consensus set of size $d$ is found. Tuning these parameters is a trade-off: a tighter threshold improves model accuracy but increases runtime, while a looser threshold accelerates termination at the cost of admitting outliers into the consensus set.
+The experiments show that runtime grows linearly with $k$ and falls with increasing $\varepsilon$ and threshold $t$ both due to the early stopping condition. Choosing these parameters involves a trade-off — a tighter threshold gives more accurate models but takes longer, while a looser threshold speeds up termination at the cost of model quality.
 
 Accuracy experiments confirm that breakdown is not always well-predicted by the theoretical framework. Since the true model parameters and noise level are known in these experiments, breakdown can be identified precisely as the point where recovered parameters diverge from ground truth. Experiment 4 confirms that as theory predicts higher-degree models are more sensitive to outlier fraction and structured bias particularly for periodic types. 
 
@@ -1247,9 +1247,9 @@ Experiment 6 shows that with correct $k$ while in theory RANSAC should be able t
 
 ### Higher-Level Learning
 
-At a broader level, this study highlights the value of synthetic data for exploring RANSAC's behavior. Working with known ground truth parameters and controlled noise allowed precise identification of the causes behind observed patterns in the empirical results — something that would be difficult or impossible to determine from real images alone.
+Working with synthetic data made it possible to identify the causes behind experimental results precisely because the true parameters and noise level are always known. This would be much harder with real image data where ground truth is unavailable.
 
-The project also reinforced the importance of numerical foundations in algorithm implementation. For polynomial models of degree 3 ($m = 4$) and higher, the rate-limiting step is not the RANSAC loop itself, but the internal least squares solve. Gaussian elimination on the normal equations is a natural first choice — straightforward to understand and implement — but it squares the condition number of the design matrix, causing numerical instability at higher degrees even with double-precision arithmetic. This is discussed further in the limitations section below. Therefore, experiments involving model complexity are restricted to degrees 2 and 3, and one experiment exploring higher degrees is omitted from the main report.
+The project also reinforces the importance of numerical foundations in algorithm implementation. For polynomial models of degree 3 ($m = 4$) and higher, the rate-limiting step is not the RANSAC loop itself, but the internal least squares solve. Gaussian elimination on the normal equations is a natural first choice — straightforward to understand and implement — but it squares the condition number of the design matrix, causing numerical instability at higher degrees even with double-precision arithmetic. This is discussed further in the limitations section below. Therefore, experiments involving model complexity are restricted to degrees 2 and 3, and one experiment exploring higher degrees is omitted from the main report.
 
 In a rather jarring way, I also learnt the value of testing seemingly unimportant edge cases. For example, while testing `fit_model` I only tested with $m \in \{2, 3\}$, had I tested for higher $m$ I would have encountered the issue of interaction between higher $m$, required $k$, and imprecision of solving Normal Equations using gaussian elimination, earlier. I describe this in the next section. 
 
@@ -1262,9 +1262,11 @@ I report codes for an experiment asking at what degree RANSAC fails when $k$ is 
 
 My models started failing at $m = 4$ for all $k$ - even 10 and 100 times the `k_theoretical`.
 
-There could be many reasons for this. As one can observe in experiment 4, as $m$ increases, RANSAC breaksdown at lower $\varepsilon$. Likely at $m = 4$, even low levels of $\varepsilon$ such as 0.15 is too high. The other reason can be the inaccuracy associated with higher degree models and solving Normal Equation with gaussian elimination.
+There could be two reasons for this. First, as one can observe in experiment 4, for higher-degree models ($m$), RANSAC breaksdown at lower $\varepsilon$. Likely at $m = 4$, even low levels of $\varepsilon$ such as 0.15 is too high. Second, the inaccuracy associated with higher degree models and solving Normal Equation with gaussian elimination.
 
-In this report, all experiments involving model complexity are restricted to degrees 2 and 3. I also do not report experiment 6 in the report, although it is kept in the empirical_analysis folder [experiment6.c](empirical_analysis/experiment6.c).
+I eliminate the likelihood of $\varepsilon being too high for budgeted $k$, I budget 100 and 1000 times the theoretical $k$. RANSAC still fails to recover models with $m \ge 4$. This shows that the second possible reason: of numerical inaccuracies associated with solving normal equation using gaussian elimination is likely the problem. 
+
+Keeping this in mind, in this report, all experiments involving model complexity are restricted to degrees 3. I also do not report this experiment in the report, although it is kept in the empirical_analysis folder [experiment_unreported.c](empirical_analysis/experiment_unreported.c).
 
 ![exp6](figures/exp6.png)
 
@@ -1288,7 +1290,7 @@ If I were to do this again using QR decomposition, I can be sure that the failur
 
 ## Disclosures
 
-**Claude**: I used Claude for planning a 4-week timeline for studying this topic. I also used Claude to add doc strings for my functions and check edge-cases in the tests. I also used Claude for trouble shooting when I was unable to figure a bug in functions which caused persistent test failures - I found out that I was returning `int` instead of `float` for `compute_t`. I also used Claude to make final flow chart.
+**Claude**: I used Claude for planning a 4-week timeline for studying this topic. I also used Claude to add doc strings for my functions and check edge-cases in the tests. I also used Claude for trouble shooting when I was unable to figure a bug in functions which caused persistent test failures - I found out that I was returning `int` instead of `float` for `compute_t`, something I could have figured out with a few well placed prints. I also used Claude to make final flow chart.
 
 **Google Gemini**: I used Google Gemini to look up many unknown terms and to search for better ways of solving models. 
 
