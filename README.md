@@ -76,10 +76,11 @@ A motivating example with $N = 60$, demonstrates the stitching application direc
 
 Experiments 1 through 3 characterize the computational properties of RANSAC. Experiment 1 measures wall-clock time as a function of the iteration count $k$ when other parameters are fixed. Experiment 2 measures wall-clock time as a function of the outlier fraction $\varepsilon$, with other parameters fixed. Experiment 3 measures wall-clock time as a function of the inlier threshold $t$, expressed as a multiplier of the noise standard deviation, with both $k$ and $\varepsilon$ fixed. I find that the wall-clock time shows behaviour as expected by theory. 
 
-Experiments 4 and 5 characterize the accuracy limits of RANSAC. Experiment 4 varies the outlier fraction $\varepsilon$ from 0.05 to 0.95 with $k$ fixed, measuring model error for both the linear ($m=2$) and quadratic ($m=3$) models. I find that for $m = 2$ RANSAC is very robust up to $\varepsilon$ close to 0.6. For $m = 3$ RANSAC is robust for moderate for $\varepsilon$ close to 0.3.
+Experiments 4 and 6 characterize the accuracy limits of RANSAC. Experiment 4 varies the outlier fraction $\varepsilon$ from 0.05 to 0.95 with $k$ fixed, measuring model error for both the linear ($m=2$) and quadratic ($m=3$) models. I find that for $m = 2$ RANSAC is very robust up to $\varepsilon$ close to 0.6. For $m = 3$ RANSAC is robust for moderate for $\varepsilon$ close to 0.3.
 
 Experiment 5 fixes $\varepsilon = 0.1$ and varies the structural bias probability $pr$ from 0.0 to 1.0 across three bias types — constant, linear, and periodic — again for both models. I find that some kind of biases are easy to recover from such as constant (like outliers) and linear, while periodic bias make it more difficult to recover true model from.
 
+Experiment 6 fixes $m = 2$ (linear model), $\varepsilon = 0.3$, and $k = 70$ at 10 times the theoretically required $k$ of 7. The size of the data (inliers) is varied from $2$ to $2^{13}$. In theory RANSAC should be able to find the true underlying model for $k = 7$ without at $N = 2$. What I find is that at $N < 8$, RANSAC is unlikely to recover the true model and to be sure that the true model is recovered, with at least 80 percent likelihood, we need $N = 2^{5}$.
 
 ## Repository Structure
 
@@ -525,7 +526,7 @@ The limitation of single precision becomes visible when fitting high-degree poly
 
 Ideally, after discovering this, I should’ve avoided gaussian elimination approach altogether, but for this class project, I did not have enough time to understand the QR decomposition, implement, and test it. So, I have tried by best to work within its confines: $x$ is scaled to $[0, 1]$ and I use `double` precision for gaussian elimination in the function `fit_model` in `model.c`. Yes, I cannot use $m$ > 4. Even in $m = 3$, a small number of runs across all experiments produce unrealistically large model errors due to this and are precision concerns rather than RANSAC failures. I ignore these by plotting mean and the confidence interval is 10th percentile to 90th percentile of the value.
 
-In the next 5 sections I discuss the empirical results of my experiments using graphs. Experiment 1, 2, and 3, test the theoretical relationship of parameters with time complexity using run times and efficacy using model error. Experiments 4 and 5 test the limits of RANSAC against $\varepsilon$ and amount of bias in the data, respectively, with a focus on breakdown of the model as measured by the model error against the known true model.
+In the next 6 sections I discuss the empirical results of my experiments using graphs. Experiment 1, 2, and 3, test the theoretical relationship of parameters with time complexity using run times and efficacy using model error. Experiments 4, 5, and 6 test the limits of RANSAC against $\varepsilon$, amount of bias in the data, and the data size, respectively, with a focus on breakdown of the model as measured by the model error against the known true model.
 
 ### Experiment 1: Time Vs RANSAC Resampling Iterations $k$
 
@@ -614,12 +615,13 @@ The graph shows that constant, and linear bias are tolerated for almost all prob
 
 The iteration count $k$ is derived from the outlier fraction $\varepsilon$ and the minimum sample size $m$, with no dependence on the total number of points $N$. In theory RANSAC should recover the true model regardless of dataset size, as long as $k$ is set correctly. Experiment 6 tests whether this theoretical independence holds in practice.
 
+The linear model ($m = 2$) is used with a fixed outlier fraction $\varepsilon = 0.3$ and $k$ computed from the analytical formula but use 10x the theoretical value to give it a clean berth from being the rate-limiting parameter. Dataset size $N$ is varied from 2 to 8192 $(2^{13})$, doubling at each step. The experiment is repeated 100 times per condition and model error is recorded. 
 
-The linear model ($m = 2$) is used with a fixed outlier fraction $\varepsilon = 0.3$ and $k$ computed from the analytical formula but use 10x the theoretical value to give it a clean berth from being the rate-limiting parameter. Dataset size $N$ is varied from 2 to 8192 $(2^{13})$, doubling at each step. The experiment is repeated 100 times per condition and model error is recorded. The expected result is that model error remains low and roughly constant across all values of $N$, with a possible increase at very small $N$ where the number of inliers is too small to support a reliable consensus set. A breakdown threshold of $\text{model error} > 1.0$ is used to identify any $N$ at which recovery becomes unreliable.
+The expected result is that at $\varepsilon = 0.3$, at $N = 4$, we will have more than $m = 2$ inliers, and thus starting at $N = 4$, we should be able to recover true model with very high likelihood (99% by design). A breakdown threshold of $\text{model error} > 1.0$ is used to identify any $N$ at which recovery becomes unreliable.
 
 ![Exp6](figures/exp7.png)
 
-The graph shows that in practice RANSAC is unliklely to recover the true underlying model for $N < 16$. At $N \ge 2^{7}$ we can be assure (within the designed $p_{fail}$), that we will recover the true model. This is, the spread of 10 - 90 percentile of model errors is all within model error of 1. 
+The graph shows that in practice RANSAC is unliklely to recover the true underlying model for $N < 16$. At $N \ge 2^{6}$ we can be assure (within the designed $p_{fail}$), that we will recover the true model. This is, the likelihood of finding the true model is 80%, 10 - 90 percentile. 
 
 
 ## Application
@@ -1237,8 +1239,11 @@ RANSAC provides robust model recovery in the presence of substantial contaminati
 
 The experiments demonstrate that runtime is directly proportional to $k$ and inversely related to both $\varepsilon$ and the inlier threshold $t$ — a consequence of RANSAC's early stopping condition, which terminates as soon as a consensus set of size $d$ is found. Tuning these parameters is a trade-off: a tighter threshold improves model accuracy but increases runtime, while a looser threshold accelerates termination at the cost of admitting outliers into the consensus set.
 
-Accuracy experiments confirm that breakdown is well-predicted by the theoretical framework. Because the true model parameters and noise level are known, breakdown can be identified precisely as the point where recovered parameters diverge from ground truth. Higher-degree models are more sensitive to outlier fraction, and structured bias accelerates breakdown further, particularly for periodic types. Constant bias and linear bias are tolerated for almost all probabilities by both linear and quadratic model, but periodic bias breaks down RANSAC at probability if it occurs with probability of about 0.5 in both models. These findings reinforce the importance of choosing model complexity appropriate to the expected noise and outlier conditions.
+Accuracy experiments confirm that breakdown is not always well-predicted by the theoretical framework. Since the true model parameters and noise level are known in these experiments, breakdown can be identified precisely as the point where recovered parameters diverge from ground truth. Experiment 4 confirms that as theory predicts higher-degree models are more sensitive to outlier fraction and structured bias particularly for periodic types. 
 
+Experiment 5 shows that the presence of bias will not necessarily break RANSAC. The kind of bias and its interaction with the kind of model we are trying to recover, both matter. RANSAC can recover true model in presense of constant bias (same as outleirs); linear bias are tolerated for almost all probabilities by both linear and quadratic model; but periodic bias breaks down RANSAC if it occurs with probability of about 0.5 in both the models. These findings reinforce the importance of choosing model complexity appropriate to the expected noise and outlier conditions.
+
+Experiment 6 shows that with correct $k$ while in theory RANSAC should be able to find the true underlying model for the data as small as the size of the model being estimated as long as there are as many inliers as the minimum model parameters ($d = m$). In my experiment I find that many times more data is needed. 
 
 ### Higher-Level Learning
 
