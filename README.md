@@ -64,7 +64,7 @@ Experiments 1 through 3 characterize the computational properties of RANSAC. Exp
 
 Experiments 4 and 6 characterize the accuracy limits of RANSAC. Experiment 4 varies the outlier fraction $\varepsilon$ from 0.05 to 0.95 with $k$ fixed, measuring model error for both the linear ($m=2$) and quadratic ($m=3$) models. I find that for $m = 2$ RANSAC is very robust up to $\varepsilon$ close to 0.6. For $m = 3$ RANSAC is robust for moderate for $\varepsilon$ close to 0.3.
 
-Experiment 5 fixes $\varepsilon = 0.1$ and varies the structural bias probability $pr$ from 0.0 to 1.0 across three bias types — constant, linear, and periodic — again for both models. I find that some kind of biases are easy to recover from such as constant (like outliers) and linear, while periodic bias make it more difficult to recover true model from.
+Experiment 5 fixes $\varepsilon = 0.1$ and varies the structural bias probability $pr$ from 0.0 to 1.0 across three bias types — constant, linear, and periodic — again for both models. I find that some kind of biases are easy to recover from such as constant (like outliers). While presense of linear bias, of the order of model parameters, and periodic bias, at even small magnitudes, make it more difficult to recover true model from.
 
 Experiment 6 fixes $m = 2$ (linear model), $\varepsilon = 0.3$, and $k = 70$ at 10 times the theoretically required $k$ of 7. The size of the data (inliers) is varied from $2$ to $2^{13}$. In theory RANSAC should be able to find the true underlying model for $k = 7$ without at $N = 2$. What I find is that at $N < 8$, RANSAC is unlikely to recover the true model and to be sure that the true model is recovered, with at least 80 percent likelihood, we need $N = 2^{5}$.
 
@@ -580,9 +580,11 @@ The expected result is a sharp increase in model error above a critical $\vareps
 
 
 ### Experiment 5: Structural Bias and RANSAC Failure
-Experiment 5 investigates at what structural bias probability RANSAC begins to fail. Unlike Experiment 4 which varied the outlier fraction, here the outlier fraction is fixed at $\varepsilon = 0.3$ and the probability $pr$ that any outlier carries a structural bias is varied from 0.05 to 1.0 in steps of 0.05.
+Experiment 5 investigates at what structural bias probability RANSAC begins to fail. Unlike Experiment 4 which varied the outlier fraction, here the outlier fraction is fixed at $\varepsilon = 0.1$ and the probability $pr$ that any outlier carries a structural bias is varied from 0.05 to 1.0 in steps of 0.05.
 
-Three bias types are tested — constant (like outliers), linear, and periodic — each representing a different way that outliers might be systematically distributed rather than randomly scattered. Both the linear ($m=2$) and quadratic ($m=3$) models are evaluated. The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$, matching the convention established in Experiment 4, so that results are directly comparable across experiments. The breakdown threshold is defined as the mean model error at $pr = 0$ plus two standard deviations — any error above this level is attributed to the structural bias rather than noise alone. The size of the sample $N$ is 1000 each of the experiment is repeated 100 times, each run is recorded.
+Three bias types are tested — constant (like outliers of the order of $a_0$ of the models), linear (of the order $a_1$ of the models), and periodic (small 0 - 1) — each representing a different way that outliers might be systematically distributed rather than randomly scattered. Both the linear ($m=2$) and quadratic ($m=3$) models are evaluated. The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$, which ensures that $k$ is not a rate-limiting parameter. 
+
+The breakdown threshold is defined as the mean model error at $pr = 0$ plus two standard deviations — any error above this level is attributed to the structural bias rather than noise alone. The size of the sample $N$ is 1000 each of the experiment is repeated 100 times, each run is recorded.
 
 I plot model error against bias probability $pr$ for each combination of model degree and bias type, arranged as a 2×3 grid of subplots — rows correspond to $m=2$ (linear) and $m=3$ (quadratic), columns to the three bias types: constant, linear, and periodic.
 
@@ -592,7 +594,7 @@ The red dashed horizontal line marks the breakdown threshold, defined as the mea
 
 ![Exp5](figures/exp5.png)
 
-The graph shows that constant, and linear bias are tolerated for almost all probabilities by both linear and quadratic model, but periodic bias breaks down RANSAC at probability of about 0.5 in both models.
+The graph shows that constant bias of 2 is are tolerated for upto 0.5 for linear model and about 0.2 for quadratic model. Linear bias of size 5.0 breaks RANSAC at even lower probabilities. Periodic bias breaks down RANSAC at probability of about 0.5 in both models even though the size of periodic bias is small.
 
 ### Experiment 6 — How Does Dataset Size Affect RANSAC Recovery?
 
@@ -604,7 +606,7 @@ The expected result is that at design $\varepsilon = 0.3$, at $N = 4$, we will h
 
 ![Exp6](figures/exp7.png)
 
-The graph shows that in practice RANSAC is unliklely to recover the true underlying model for $N < 16$. At $N \ge 2^{8}$ we can be assure (within the designed $p_{fail}$), that we will recover the true model. This is, the likelihood of finding the true model is 99%, 0.05 - 99.5 percentile. 
+The graph shows that in practice RANSAC is unliklely to recover the true underlying model for $N < 16$. At $N \ge 2^{8}$ we can be assured that we will recover the true model. This is, the likelihood of finding the true model is 99%, 0.05 - 99.5 percentile. 
 
 
 ## Application
@@ -1224,7 +1226,7 @@ The experiments show that runtime grows linearly with $k$ and falls with increas
 
 Accuracy experiments confirm that breakdown is not always well-predicted by the theoretical framework. Since the true model parameters and noise level are known in these experiments, breakdown can be identified precisely as the point where recovered parameters diverge from ground truth. Experiment 4 confirms that as theory predicts higher-degree models are more sensitive to outlier fraction and structured bias particularly for periodic types. 
 
-Experiment 5 shows that the presence of bias will not necessarily break RANSAC. The kind of bias and its interaction with the kind of model we are trying to recover, both matter. RANSAC can recover true model in presense of constant bias (same as outleirs); linear bias are tolerated for almost all probabilities by both linear and quadratic model; but periodic bias breaks down RANSAC if it occurs with probability of about 0.5 in both the models. These findings reinforce the importance of choosing model complexity appropriate to the expected noise and outlier conditions.
+Experiment 5 shows that the presence of bias of the size of model parameters will breakdown RANSAC. The kind of bias, its absolute value, and its interaction with the kind of model we are trying to recover, all of these matter though. RANSAC can recover true model in presense of small amount of constant bias (same as outliers); linear bias are tolerated for considerably smaller probabilities than constants by both linear and quadratic model; but periodic bias breaks down RANSAC if it occurs with probability of about 0.5 and its absolute value is smaller than model parameters, in both the models. These findings reinforce the importance of choosing model complexity appropriate to the expected noise and outlier conditions.
 
 Experiment 6 shows that with correct $k$ while in theory RANSAC should be able to find the true underlying model for the data as small as the size of the model being estimated as long as there are as many inliers as the minimum model parameters ($d = m$). In my experiment I find that many times more data is needed. 
 
