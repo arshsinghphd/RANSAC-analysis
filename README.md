@@ -601,13 +601,13 @@ Experiment 5 investigates at what structural bias probability RANSAC begins to f
 
 Three bias types are tested — constant (like outliers), linear, and periodic — each representing a different way that outliers might be systematically distributed rather than randomly scattered. Both the linear ($m=2$) and quadratic ($m=3$) models are evaluated. The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$, matching the convention established in Experiment 4, so that results are directly comparable across experiments. The breakdown threshold is defined as the mean model error at $pr = 0$ plus two standard deviations — any error above this level is attributed to the structural bias rather than noise alone. The size of the sample $N$ is 1000 each of the experiment is repeated 100 times, each run is recorded.
 
-![Exp5](figures/exp5.png)
-
 I plot model error against bias probability $pr$ for each combination of model degree and bias type, arranged as a 2×3 grid of subplots — rows correspond to $m=2$ (linear) and $m=3$ (quadratic), columns to the three bias types: constant, linear, and periodic.
 
 The x-axis runs from $pr=0$ (no bias) to $pr=1.0$ (all outliers are biased), and the y-axis shows the Euclidean model error averaged across repeats. The shaded band shows the 10th to 90th percentile of model error across repeats, giving a sense of run-to-run variability.
 
 The red dashed horizontal line marks the breakdown threshold, defined as the mean error at $pr=0$ plus two standard deviations (only due to noise) — the point at which error can no longer be attributed to noise alone. A subplot where the mean error crosses this threshold indicates that the corresponding bias type has overwhelmed RANSAC's ability to distinguish inliers from biased outliers, and the returned model is no longer reliable.
+
+![Exp5](figures/exp5.png)
 
 The graph shows that constant, and linear bias are tolerated for almost all probabilities by both linear and quadratic model, but periodic bias breaks down RANSAC at probability of about 0.5 in both models.
 
@@ -617,7 +617,7 @@ The iteration count $k$ is derived from the outlier fraction $\varepsilon$ and t
 
 The linear model ($m = 2$) is used with a fixed outlier fraction $\varepsilon = 0.3$ and $k$ computed from the analytical formula but use 10x the theoretical value to give it a clean berth from being the rate-limiting parameter. Dataset size $N$ is varied from 2 to 8192 $(2^{13})$, doubling at each step. The experiment is repeated 100 times per condition and model error is recorded. 
 
-The expected result is that at $\varepsilon = 0.3$, at $N = 4$, we will have more than $m = 2$ inliers, and thus starting at $N = 4$, we should be able to recover true model with very high likelihood (99% by design). A breakdown threshold of $\text{model error} > 1.0$ is used to identify any $N$ at which recovery becomes unreliable.
+The expected result is that at design $\varepsilon = 0.3$, at $N = 4$, we will have more than $m = 2$ inliers, and thus starting at $N = 4$, we should be able to recover true model with very high likelihood (99% by design). As in other experiments, I use a breakdown threshold of $\text{model error} > 1.0$ to identify any $N$ at which recovery becomes unreliable.
 
 ![Exp6](figures/exp7.png)
 
