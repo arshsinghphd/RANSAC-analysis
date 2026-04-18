@@ -13,11 +13,11 @@
 
 float bias_constant(float x) {
     (void) x;
-    return 1.0f;
+    return 2.0f;
 }
 
 float bias_linear_bias(float x) {
-    return 0.5f * x;
+    return 5.0f * x;
 }
 
 float bias_periodic(float x) {
