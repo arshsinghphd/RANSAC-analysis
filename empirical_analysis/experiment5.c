@@ -3,7 +3,7 @@
  *
  * Experiment 5: At what structural bias probability does RANSAC fail?
  *
- *      Fixes epsilon = 0.3 and varies pr from 0.0 to 1.0 in steps of 0.05.
+ *      Fixes epsilon = 0.1 and varies pr from 0.0 to 1.0 in steps of 0.05.
  *      Runs for three bias types: constant, linear, periodic.
  *      Runs for linear (m = 2) and quadratic (m = 3) models.
  *      N_TOTAL = 1000 is fixed throughout.
