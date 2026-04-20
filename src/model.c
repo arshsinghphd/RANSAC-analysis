@@ -17,6 +17,8 @@ float eval_model(float x, float* params, int n_params) {
 
 
 /**
+ * fit_model
+ * 
  * Fits a polynomial model of degree n_params - 1 to n_points data points
  * using least squares, solved via Gaussian elimination on the normal
  * equations. Stores the n_params coefficients in params in order from
@@ -157,6 +159,8 @@ int fit_model(float* points_x, float* points_y, int n_points,
 
 
 /**
+ * find_model_inliers
+ * 
  * Collects inliers from points_x and points_y by computing the vertical
  * residual of each point from the polynomial model defined by params.
  * Points whose absolute residual is within threshold are written to
@@ -205,6 +209,8 @@ int find_model_inliers(float* points_x, float* points_y, int n_points,
 }
 
 /**
+ * stitch_models
+ * 
  * Combines inliers from two overlapping graphs of the same number of
  * parameters into a single refined polynomial model. Collects inliers
  * from each graph using their respective RANSAC-recovered models and
@@ -213,6 +219,8 @@ int find_model_inliers(float* points_x, float* points_y, int n_points,
  * analogous to homography estimation — if both graphs share the same
  * underlying model, the combined fit is more accurate than either
  * individual fit since it uses more inlier points.
+ * 
+ * Used to created motivating example for the report.
  *
  * Params:
  *     points_x1   array of n1 floats, x values of graph 1
@@ -283,12 +291,15 @@ int stitch_models(float* points_x1, float* points_y1, int n1, float* params1,
 
 
 /**
+ * points_to_line_distances
+ * 
  * Computes the perpendicular distance from each point to a line defined by 
- * slope and intercept, storing results in distances in place. This is used 
- * by ransac for line models (n_params = 2) where perpendicular distance is the 
+ * slope and intercept, storing results in distances in place. This could be 
+ * used for line models (n_params = 2) where perpendicular distance is the 
  * natural metric. For higher degree models use find_model_inliers with 
  * vertical residual instead.
- *  distances[i] = |slope * points_x[i] - points_y[i] + intercept|
+ * 
+ *      distances[i] = |slope * points_x[i] - points_y[i] + intercept|
  *                  / sqrt(1 + slope^2)
  * Params:
  *      points_x    a list of n_points floats
@@ -314,6 +325,8 @@ int points_to_line_distances(float* points_x, float* points_y, int n_points,
 
 
 /**
+ * model_error
+ * 
  * Measures the Euclidean distance between the estimated and true polynomial
  * model parameters:
  *      sqrt(sum((params[i] - true_params[i])^2 for i in range(n_params)))

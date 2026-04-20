@@ -5,6 +5,8 @@
 #include<stdlib.h>
 
 /**
+ * make_inliers
+ * 
  * Fills points_x and points_y in place with n_inliers points sampled uniformly 
  * from x_min to x_max, based on the polynomial model defined by params and 
  * n_params:
@@ -48,6 +50,8 @@ int make_inliers(float* points_x, float* points_y, int n_inliers,
 }
 
 /**
+ * _box_muller
+ * 
  * Helper function for add_gaussian_noise. Returns a random number drawn from a
  * zero mean gaussian distribution with standard deviation sigma, using the 
  * Box-Muller transform. This function is tested indirected via 
@@ -71,6 +75,8 @@ static float _box_muller(float std) {
 }
 
 /**
+ * add_gaussain_noise
+ * 
  * Adds zero mean gaussian noise to points_y in place.
  * 
  * Params:
@@ -92,6 +98,8 @@ int add_gaussian_noise(float* points_y, int n_inliers, float std) {
 }
 
 /**
+ * add_outliers
+ * 
  * Appends n_outliers points to points_x and points_y in place, guaranteeing 
  * that every added point lies outside the inlier band defined by the true 
  * polynomial model and noise_std. Outliers are placed in the x-range of inliers
@@ -179,6 +187,8 @@ int add_outliers(float* points_x, float* points_y,
 }
 
 /**
+ * add_structural_bias
+ * 
  * Adds structural bias to the data inplace based on user's inputs with a given 
  * probability.
  * 

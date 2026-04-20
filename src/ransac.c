@@ -83,6 +83,8 @@ void _fill_residuals(float* points_x, float* points_y, int n_points,
 }
 
 /* =============================================================================
+ * compute_t
+ * 
  * Estimates the inlier threshold t from the residual distribution of a
  * preliminary least squares fit computed from the data itself. Fits a
  * polynomial to all points using least squares, computes the vertical
@@ -121,6 +123,8 @@ float compute_t(float* points_x, float* points_y, int n_points, int n_params) {
 }
 
 /** ============================================================================
+ * estimate_epsilon
+ *
  * Estimates the outlier fraction epsilon from the residual distribution
  * of a preliminary least squares fit computed from the data itself.
  * Fits a polynomial to all points using least squares, computes the
@@ -179,6 +183,8 @@ float estimate_epsilon(float* points_x, float* points_y, int n_points,
 
 
 /* =============================================================================
+ * compute_k
+ *
  * Computes the number of RANSAC iterations k required to guarantee that
  * at least one clean sample is drawn with probability 1 - failure_prob
  * using the analytical formula:
@@ -210,6 +216,8 @@ int compute_k(float epsilon, int n_params, float failure_prob) {
 }
 
 /* =============================================================================
+ * compute_d
+ *
  * Computes the expected inlier count d as floor((1 - epsilon) * n_points).
  * This is consistent with the same epsilon used to compute k, ensuring
  * both parameters reflect a coherent assumption about the data.
@@ -231,6 +239,8 @@ int compute_d(float epsilon, int n_points) {
 
 
 /* =============================================================================
+ * fisher_yates
+ *
  * Partial Fisher-Yates in-place shuffle. Draws m random indices from
  * [0, n) into idx[0..m-1]. Only the first m positions are shuffled
  * at O(m) cost.
@@ -264,6 +274,8 @@ void fisher_yates(int* idx, int n, int m) {
 
 
 /* =============================================================================
+ * ransac
+ *
  * Finds the best fitting polynomial model from noisy data containing
  * outliers using the Random Sample Consensus algorithm. Randomly samples
  * n_params points k_resample times, fits a candidate model to each
