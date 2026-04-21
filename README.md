@@ -618,7 +618,7 @@ The graph shows that in practice RANSAC is unliklely to recover the true underly
 -->
  RANSAC (Random Sample Consensus) is used in biometrics, particularly for robust feature matching and image alignment in systems that must handle noisy data, such as fingerprints, iris scans, and facial recognition [14].
 
-RANSAC is used widely in computer vision, particularly for image stitching and structure from motion. Image stitching requires aligning overlapping images by estimating a geometric transformation — typically a homography — between them. Feature matching between images produces many incorrect correspondences, and handling these incorrect matches is the core problem RANSAC addresses.
+RANSAC is used widely in computer vision, particularly for image stitching and structure from motion. Image stitching requires aligning overlapping images by estimating a geometric transformation — typically a homography — between them. Feature matching between images produces many incorrect correspondences, and handling these incorrect matches is the core problem RANSAC addresses [3, 4].
 
 Many real-world applications require a field of view far wider than a single camera can capture — from the panoramic and video stabilization features familiar to smartphone users, to industrial applications such as satellite and aerial imaging, medical imaging, autonomous navigation, and augmented reality, anywhere a spatial context is needed that a single image cannot provide.
 
