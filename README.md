@@ -616,6 +616,7 @@ The graph shows that in practice RANSAC is unliklely to recover the true underly
 - Why is it useful / used in that field area?
 - Make sure to provide sources for your information.
 -->
+ RANSAC (Random Sample Consensus) is used in biometrics, particularly for robust feature matching and image alignment in systems that must handle noisy data, such as fingerprints, iris scans, and facial recognition [14].
 
 RANSAC is used widely in computer vision, particularly for image stitching and structure from motion. Image stitching requires aligning overlapping images by estimating a geometric transformation — typically a homography — between them. Feature matching between images produces many incorrect correspondences, and handling these incorrect matches is the core problem RANSAC addresses.
 
@@ -1313,3 +1314,5 @@ I used **MS Word** for checking the report for syntax and grammar.
 [12] Reilly, J. (2025). The QR Decomposition. In: Fundamentals of Linear Algebra for Signal Processing. Springer, Cham. https://doi-org.ezproxy.neu.edu/10.1007/978-3-031-68915-4_6
 
 [13] Scott, D.W. (2011), Box–Muller transformation. WIREs Comp Stat, 3: 177-179. https://doi-org.ezproxy.neu.edu/10.1002/wics.148
+
+[14] Vinay, A., Rao, A.S., Shekhar, V.S., Kumar, A., Murthy, K.B. and Natarajan, S. 2015. Feature extraction using ORB-RANSAC for face recognition. Procedia Computer Science 70 (2015), 174–184. DOI:doi.org
