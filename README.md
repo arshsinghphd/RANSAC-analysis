@@ -55,7 +55,7 @@ For experiments 1 - 5, I use $N = 1000$ and for modelling spread each experiment
     - [Experiment 3: Time Vs Threshold ($t$)](#experiment-3-time-vs-threshold-t)
     - [Experiment 4: How Does RANSAC Break Down as Outlier Fraction Increases?](#experiment-4-how-does-ransac-break-down-as-outlier-fraction-increases)
     - [Experiment 5: Structural Bias and RANSAC Failure](#experiment-5-structural-bias-and-ransac-failure)
-    - [Experiment 6 — How Does Dataset Size Affect RANSAC Recovery?](#experiment-6-dataset-size-and-ransac-failure)
+    - [Experiment 6: Dataset Size and RANSAC Failure](#experiment-6-dataset-size-and-ransac-failure)
   - [Application](#application)
   - [Implementation](#implementation)
     - [Language, Libraries, and Design Philosophy](#language-libraries-and-design-philosophy)
