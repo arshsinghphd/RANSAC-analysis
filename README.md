@@ -53,7 +53,7 @@ For experiments 1 - 5, I use $N = 1000$ and for modelling spread each experiment
     - [Experiment 1: Time Vs RANSAC Resampling Iterations $k$](#experiment-1-time-vs-ransac-resampling-iterations-k)
     - [Experiment 2: Time Vs Fraction of Outliers](#experiment-2-time-vs-fraction-of-outliers)
     - [Experiment 3: Time Vs Threshold ($t$)](#experiment-3-time-vs-threshold-t)
-    - [Experiment 4: How Does RANSAC Break Down as Outlier Fraction Increases?](#experiment-4-how-does-ransac-break-down-as-outlier-fraction-increases)
+    - [Experiment 4: Outlier Fraction and RANSAC Failure](#experiment-4-outlier-fraction-and-ransac-failure)
     - [Experiment 5: Structural Bias and RANSAC Failure](#experiment-5-structural-bias-and-ransac-failure)
     - [Experiment 6: Dataset Size and RANSAC Failure](#experiment-6-dataset-size-and-ransac-failure)
   - [Application](#application)
@@ -559,7 +559,7 @@ Allowing for the above design limitation, the plot confirms that as we increase 
 
 ![Exp03](figures/exp3.png)
 
-### Experiment 4: How Does RANSAC Break Down as Outlier Fraction Increases?
+### Experiment 4: Outlier Fraction And RANSAC Failure
 
 Experiment 4 investigates at what outlier fraction $\varepsilon$ RANSAC begins to fail. The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$ for each model and does not change as $\varepsilon$ varies from 0.05 to 0.95 in steps of 0.05. Both the linear ($m=2$) and quadratic ($m=3$) models are evaluated across 100 repeats per condition with $N = 1000$ points throughout and no structural bias applied to outliers.
 
