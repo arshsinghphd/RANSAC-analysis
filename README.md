@@ -1,6 +1,5 @@
 # Research Paper
 * Name: Arsh Singh
-* Semester: Spr 2026
 * Topic: Random Sample Consensus (RANSAC) Algorithm
 
 ## Table of Content
@@ -186,13 +185,13 @@ The original paper by Fischler and Bolles [1] demonstrated the application of RA
 
 The rest of the paper is organized as follows: 
 
-In the next section, [Analysis of Algorithm](#analysis-of-algorithm), I will present the theoretical analysis of the RANSAC algorithm trying to fit a linear and a quadratic model. [Maybe: I will also generalize this to a k-neighbors classification problem.] I will present the time and space complexity in the case of the specified models. 
+In the next section, [Analysis of Algorithm](#analysis-of-algorithm), I will present the theoretical analysis of the RANSAC algorithm trying to fit a linear and a quadratic model. I will present the time and space complexity in the case of the specified models. 
 
-In the section [Empirical Analysis](#empirical-analysis), I will present the empirical run time of the methods I implement in Python [Maybe: and C]. I will do a comparative analysis based on the models and the three variables for RANSAC. 
+In the section [Empirical Analysis](#empirical-analysis), I will present the empirical run time of the methods I implement in C. I will do a comparative analysis based on the models and the three variables for RANSAC. 
 
-In the section [Application](#application) I will take a deeper dive into the various applications of RANSAC. 
+In the section [Application](#application) I will take a deeper dive into the various applications of RANSAC.
 
-In the section [Implementation](#implementation) I will present code snippets of my final implementation [maybe C, else Python]. I will show snipets of codes and present a commentary on my design choices.
+In the section [Implementation](#implementation) I will present code snippets of my final implementation. I will show snipets of codes and present a commentary on my design choices.
 
 In conclusion, I will present a [Summary](#summary) of my findings and lessons I learnt.
 
