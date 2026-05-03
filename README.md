@@ -163,9 +163,10 @@ I will show how the problem solving will look like for linear regression and the
 -->
 
 <!-- graph: stitching using OLS -->
-![data](figures/example_ols.png)
 
 Linear Regression also known as Ordinary Least Squares (OLS) is a very common technique to estimate the underlying model from a given data set and that is why Fishler and Bolles compare their proposed method to it. OLS estimates the parameters that minimize the mean squared error or mean squared residuals. As Fishler and Bolles explain, this not only treats the outliers as valid points, but outliers have much larger impact per point than the inliers, since they are further away from the true model [1]. Thus, least squares may return completely inaccurate models. But OLS produces a solution in a single pass using all points and always terminates in one pass regardless of outlier fraction.
+
+![data](figures/example_ols.png)
 
 #### RANSAC Approach
 
@@ -181,11 +182,11 @@ In this way, RANSAC trades computational cost for robustness. RANSAC avoids givi
 
 #### Comparison of Goodness of Fit: Model Error (Mean Squared Error)
 
-![data](figures/example_combined.png)
-
-In the image above, for the RANSAC model we can hardly we differentiated the model line from the original model. OLS is unduly affected by the positive outliers. Although since RANSAC is a randomized approach and we may end up with models that are far worse that OLS with probability 1%. 
+In the image below, for the RANSAC model we can hardly we differentiated the model line from the original model. OLS is unduly affected by the positive outliers. Although since RANSAC is a randomized approach and we may end up with models that are far worse that OLS with probability 1%. 
 
 Also notice is that while combined OLS model is worse than the individual models, the stitched RANSAC model is more accurate than either one, this is by design of RANSAC - as the number of inliers increase the function gets better at extracting the true model despite noise and outliers. This is a claim that can be tested, and I have tested this in the [Experiment 6](#experiment-6-dataset-size-and-ransac-failure). 
+
+![data](figures/example_combined.png)
 
 ### History of RANSAC
 <!-- [discuss example of location determination - the one in the paper.] -->
