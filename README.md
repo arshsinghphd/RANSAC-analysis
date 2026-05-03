@@ -892,7 +892,7 @@ The following is accomplished in one RANSAC run:
   3. Count the number of inliers based on the fitted model
   4. If this count is greater than the expected $d$ - early return
 
-```
+```c
 static int _ransac_iteration(float* points_x, float* points_y,
                               int n_points, int n_params, float threshold,
                               float* best_params, int* best_inliers) {
@@ -939,13 +939,14 @@ This function fills an array in place that has a specific format:
 Guards against less than minimum $m$ and $n$C needed for a non-trivial model, threshold of 0.0f which assumes no noise, many of the helper functions misbehave at this value and a minimum $t$ is always passed. Also guards against the lack of early stop condition where $d > n$.
 
 Return_array layout (modified in place):
-```
+
+```text
 * return_array[0]               number of inliers in best model
 * return_array[1]               number of iterations actually run
 * return_array[2..2+n_params-1] best model params (a0, a1, ...)
 ```
 
-```
+```c
 int ransac(float* points_x, float* points_y, int n_points, int n_params,
            int k_resample, float threshold, int expected_inliers,
            float* return_array) {
@@ -996,7 +997,7 @@ int ransac(float* points_x, float* points_y, int n_points, int n_params,
 
 I randomly select $m$ points from the array of $n$ points using Fisher - Yates partial in place shuffle [6]. The run time of this shuffle is $O(m)$.
 
-```
+```c
 void fisher_yates(int* idx, int n, int m) {
     /* initialise index array 0..n-1 */
     for (int j = 0; j < n; j++)
@@ -1156,7 +1157,7 @@ This is the absolute difference between the predicted and observed $y$ value. In
 
 A separate vestigial function `points_to_line_distances` computes the true perpendicular distance for linear models only, that C module inherited from the Python prototype and is retained for completeness and comparison.
 
-```
+```c
 int find_model_inliers(float* points_x, float* points_y, int n_points,
     float* params, int n_params, float threshold, float* inliers_x, 
     float* inliers_y, int* n_inliers)
