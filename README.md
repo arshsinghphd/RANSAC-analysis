@@ -82,7 +82,7 @@ For experiments 1 - 5, I use $N = 1000$ and for modelling spread each experiment
 ## Repository Structure
 
 ```
-final-paper-arshsinghphd/
+RANSAC-analysis/
 |
 +--- src/(All C functions)
 |   |
