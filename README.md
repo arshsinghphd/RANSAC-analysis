@@ -173,7 +173,7 @@ In this way, RANSAC trades computational cost for robustness. RANSAC avoids givi
 
 In the image above, for the RANSAC model we can hardly we differentiated the model line from the original model. OLS is unduly affected by the positive outliers. Although since RANSAC is a randomized approach and we may end up with models that are far worse that OLS with probability 1%. 
 
-Also notice is that while combined OLS models is worse than the individual models, the stitched RANSAC model is more accurate than either one, this is by design of RANSAC - as the number of inliers increase the function gets better at extracting the true model despite noise and outliers. This is a claim that can be tested, but I have not done so in this report. I have listed this as a possible future work at the [concluding section](#summary). 
+Also notice is that while combined OLS models is worse than the individual models, the stitched RANSAC model is more accurate than either one, this is by design of RANSAC - as the number of inliers increase the function gets better at extracting the true model despite noise and outliers. This is a claim that can be tested, and I have tested this in the [Experiment 6](#experiment-6--how-does-dataset-size-affect-ransac-recovery). 
 
 ### History of RANSAC
 <!-- [discuss example of location determination - the one in the paper.] -->
