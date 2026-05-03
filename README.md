@@ -46,7 +46,7 @@ For experiments 1 - 5, I use $N = 1000$ and for modelling spread each experiment
   - [Space Complexity](#space-complexity)
 - [RANSAC Parameters: Forming Hypothesis for Empirical Analysis](#ransac-parameters-forming-hypothesis-for-empirical-analysis)
   - [Iteration count $k$](#iteration-count-k)
-  - [Expected Inlier Count $d$ or Outlier Fraction $\\varepsilon$](#expected-inlier-count-d-or-outlier-fraction-varepsilon)
+  - [Expected Inlier Count $d$ or Outlier Fraction](#expected-inlier-count-d-or-outlier-fraction)
   - [Threshold distance $t$](#threshold-distance-t)
 - [Empirical Analysis](#empirical-analysis)
   - [Experimental Setup](#experimental-setup)
@@ -441,7 +441,7 @@ This exponential growth motivates the early stop parameter $d$ — at high outli
 Increasing $k$ will lead to more iterations and thus more time, but also more likely that we will reach the true underlying model. I test this hypothesis in Experiment 1, by fixing other parameters.
 
 
-### Expected Inlier Count $d$ or Outlier Fraction $\varepsilon$
+### Expected Inlier Count $d$ or Outlier Fraction
 
 The expected inlier count ($d$) serves as an early stopping criterion. Once a candidate model achieves a consensus set of size at least $d$, the search terminates without exhausting all $k$ iterations. At an outlier fraction of 0.90 the required iteration count reaches 459, making early stopping practically important. 
 
@@ -504,7 +504,7 @@ In these experiments I abstract away from images and use Cartesian graph points 
 
 **Gaussian noise.** Zero-mean Gaussian noise with standard deviation $\sigma$ is added to the $y$ values of all inlier points. This models sensor measurement error — the dominant noise type in most physical measurement systems. Gaussian noise is generated using the Box-Muller transform [5] which produces Gaussian distribution from two uniform random draws:
 
-$$z = \sqrt{-2 \ln u_1} \cos(2\pi u_2), \qquad u_1, u_2 \sim \text{Uniform}(0, 1)$$
+$$z = \cos(2\pi u_2) \sqrt{-2 \ln u_1} , \qquad u_1, u_2 \sim \text{Uniform}(0, 1)$$
 
 The noise standard deviation $\sigma$ is set to $0.5$ in all experiments unless stated otherwise, giving a signal-to-noise ratio that is realistic but tractable.
 
