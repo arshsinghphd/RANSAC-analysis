@@ -55,7 +55,7 @@ For experiments 1 - 5, I use $N = 1000$ and for modelling spread each experiment
     - [Experiment 3: Time Vs Threshold ($t$)](#experiment-3-time-vs-threshold-t)
     - [Experiment 4: How Does RANSAC Break Down as Outlier Fraction Increases?](#experiment-4-how-does-ransac-break-down-as-outlier-fraction-increases)
     - [Experiment 5: Structural Bias and RANSAC Failure](#experiment-5-structural-bias-and-ransac-failure)
-    - [Experiment 6 — How Does Dataset Size Affect RANSAC Recovery?](#experiment-6--how-does-dataset-size-affect-ransac-recovery)
+    - [Experiment 6 — How Does Dataset Size Affect RANSAC Recovery?](#experiment-6-dataset-size-and-ransac-failure)
   - [Application](#application)
   - [Implementation](#implementation)
     - [Language, Libraries, and Design Philosophy](#language-libraries-and-design-philosophy)
@@ -185,7 +185,7 @@ In this way, RANSAC trades computational cost for robustness. RANSAC avoids givi
 
 In the image above, for the RANSAC model we can hardly we differentiated the model line from the original model. OLS is unduly affected by the positive outliers. Although since RANSAC is a randomized approach and we may end up with models that are far worse that OLS with probability 1%. 
 
-Also notice is that while combined OLS models is worse than the individual models, the stitched RANSAC model is more accurate than either one, this is by design of RANSAC - as the number of inliers increase the function gets better at extracting the true model despite noise and outliers. This is a claim that can be tested, and I have tested this in the [Experiment 6](#experiment-6--how-does-dataset-size-affect-ransac-recovery). 
+Also notice is that while combined OLS models is worse than the individual models, the stitched RANSAC model is more accurate than either one, this is by design of RANSAC - as the number of inliers increase the function gets better at extracting the true model despite noise and outliers. This is a claim that can be tested, and I have tested this in the [Experiment 6](#experiment-6-dataset-size-and-ransac-failure). 
 
 ### History of RANSAC
 <!-- [discuss example of location determination - the one in the paper.] -->
@@ -605,7 +605,7 @@ The graph shows that constant bias of 2 is are tolerated for upto 0.5 for linear
 
 ![Exp5](figures/exp5.png)
 
-### Experiment 6 — How Does Dataset Size Affect RANSAC Recovery?
+### Experiment 6: Dataset Size and RANSAC Failure
 
 The iteration count $k$ is derived from the outlier fraction $\varepsilon$ and the minimum sample size $m$, with no dependence on the total number of points $N$. In theory RANSAC should recover the true model regardless of dataset size, as long as $k$ is set correctly. Experiment 6 tests whether this theoretical independence holds in practice.
 
