@@ -505,18 +505,15 @@ The inlier threshold $t$ is estimated from the noisy data before outliers are ad
 
 #### A Note on Numerical Precision
 
-All computations use single-precision floating point (`float`), which stores numbers with about seven significant digits. This matches the C implementation and is the natural choice for a system designed with embedded targets in mind, where memory is limited and `double` precision doubles the cost per value.
+All computations in this analysis use single-precision floating point (`float`), which stores numbers with about seven significant digits. This matches the C implementation and is the natural choice for a system designed with embedded targets in mind, where memory is limited and `double` precision doubles the cost per value.
 
 The limitation of single precision becomes visible when fitting high-degree polynomials. The least squares solver builds a matrix $X^\top X$ whose entries are sums of powers of $x_i$. As the polynomial degree grows, those powers grow rapidly — for degree 6 over $x \in [0, 9]$, the largest entry reaches roughly $10^{15}$, far beyond what seven digits of precision can represent accurately. When Gaussian elimination then tries to solve a system built from such large numbers, small rounding errors get amplified into large errors in the recovered coefficients. The result is a model that looks numerically valid but is wildly wrong — not because RANSAC failed, but because the underlying solver lost precision.
 
-Ideally, after discovering this, I should’ve avoided gaussian elimination approach altogether, but for this class project, I did not have enough time to understand the QR decomposition, implement, and test it. So, I have tried by best to work within its confines: $x$ is scaled to $[0, 1]$ and I use `double` precision for gaussian elimination in the function `fit_model` in `model.c`. So, I cannot use $m$ > 4. Even in $m = 3$, a small number of runs across all experiments produce unrealistically large model errors due to this and are precision concerns rather than RANSAC failures. I ignore these by plotting mean and the confidence interval is 10th percentile to 90th percentile of the value for most experiments.
+Ideally, after discovering this, I should’ve avoided gaussian elimination approach altogether, but for this class project, I did not have enough time to understand the QR decomposition, implement, and test it. So, I have tried by best to work within its confines: $x$ is scaled to $[0, 1]$ and I use `double` precision for gaussian elimination in the function `fit_model` in `model.c`. Even so, I cannot use $m$ > 4. Even in $m = 3$, a small number of runs across all experiments produce unrealistically large model errors due to this and are precision concerns rather than RANSAC failures. I ignore these by plotting mean and the confidence interval is 10th percentile to 90th percentile of the value for most experiments.
 
 In the next 6 sections I discuss the empirical results of my experiments using graphs. Experiment 1, 2, and 3, test the theoretical relationship of parameters with time complexity using run times and efficacy using model error. Experiments 4, 5, and 6 test the limits of RANSAC against $\varepsilon$, amount of bias in the data, and the data size, respectively, with a focus on breakdown of the model as measured by the model error against the known true model.
 
 ### Experiment 1: Time Vs RANSAC Resampling Iterations $k$
-
-
-![Exp01](figures/exp1.png)
 
 Experiment 1 measures how wall-clock time scales with the number of RANSAC iterations $k$. The outlier fraction is fixed at $\varepsilon = 0.5$ and $k$ is varied from 10 to 500 in steps of 10, giving 50 conditions. Both the linear ($m=2$) and quadratic ($m=3$) models are tested, each repeated 100 times per condition with $N = 1000$ points throughout. Model error is also recorded at each condition to confirm whether additional iterations improve accuracy beyond the theoretically required budget.
 
@@ -526,9 +523,9 @@ The graph confirms that for higher degree model (higher $m$) the time taken is h
 
 The graph also confirms that wall-clock time grows linearly with the number of iterations $k$, as expected from the algorithm's structure — each iteration fits a model to a minimal random sample and counts inliers, both $O(N)$ operations, so total cost is $O(k\cdot N)$. The two models track closely, with the quadratic ($m=3$) slightly slower than the linear ($m=2$) at every $k$ value, reflecting the additional cost of fitting one extra parameter in the normal equations. Model error remains flat across all $k$ values for both models, confirming that beyond the theoretically required number of iterations, additional iterations do not improve accuracy — they only increase runtime. This linear relationship between $k$ and time is the key computational cost of RANSAC and motivates the importance of choosing $k$ carefully rather than running an arbitrarily large budget.
 
-### Experiment 2: Time Vs Fraction of Outliers
+![Exp01](figures/exp1.png)
 
-![Exp02](figures/exp2.png)
+### Experiment 2: Time Vs Fraction of Outliers
 
 Experiment 2 measures how wall-clock time varies with the outlier fraction $\varepsilon$, swept from 0.05 to 0.95 in steps of 0.05. One special condition I am imposing here is that there is no noise in the data (which can sometimes be interpreted as outlier). The iteration budget $k$ is fixed at the value computed for $\varepsilon = 0.5$ for each model, so $k$ does not change as $\varepsilon$ varies. Both the linear ($m=2$) and quadratic ($m=3$) models are tested, each repeated 100 times per condition with $N = 1000$ points throughout.
 
@@ -536,9 +533,9 @@ The graph plots wall-clock time (μs) against outlier fraction $\varepsilon$, va
 
 The increase in time from 0.5 up to 0.8 is the cost of checking more outliers per iteration. In this range, as epsilon rises there are fewer inliers and the chances of running all `k` iterations each time increases with $\varepsilon$. After 0.8 there is a flat-line with very little spread showing that all `k` iterations are exhusted for the 100 repeats of the experiments.
 
-### Experiment 3: Time Vs Threshold ($t$)
+![Exp02](figures/exp2.png)
 
-![Exp03](figures/exp3.png)
+### Experiment 3: Time Vs Threshold ($t$)
 
 Experiment 3 measures how wall-clock time varies with the inlier threshold $t$, expressed as a multiplier of $noise\_std$ and varied from $0.5 \times$ to $5.0 \times$ in steps of 0.5. Both $k$ and $\varepsilon = 0.5$ are fixed throughout, with $k$ set at the value computed for $\varepsilon = 0.5$. Both the linear ($m=2$) and quadratic ($m=3$) models are tested, each repeated 100 times per condition with $N = 1000$ points. The threshold $t$ is set directly as a multiple of $noise_std$ rather than being estimated from the data, so its effect on runtime and accuracy can be isolated.
 
@@ -548,6 +545,7 @@ The initial increase of the time (while error falls) is since we have injected n
 
 Allowing for the above design limitation, the plot confirms that as we increase threshold $t$: allow more observations to fall into inliers in every iteration of RANSAC, the time for the model to run decreases. But such models are also not accurate as is confirmed by the curve of error moving in the upward direction. The graph also confirms that these results are more pronounced for higher degree models ($m = 3$) than lower ($m = 2$).
 
+![Exp03](figures/exp3.png)
 
 ### Experiment 4: How Does RANSAC Break Down as Outlier Fraction Increases?
 
@@ -591,9 +589,9 @@ The x-axis runs from $pr=0$ (no bias) to $pr=1.0$ (all outliers are biased), and
 
 The red dashed horizontal line marks the breakdown threshold, defined as the mean error at $pr=0$ plus two standard deviations (only due to noise) — the point at which error can no longer be attributed to noise alone. A subplot where the mean error crosses this threshold indicates that the corresponding bias type has overwhelmed RANSAC's ability to distinguish inliers from biased outliers, and the returned model is no longer reliable.
 
-![Exp5](figures/exp5.png)
-
 The graph shows that constant bias of 2 is are tolerated for upto 0.5 for linear model and about 0.2 for quadratic model. Linear bias of size 5.0 breaks RANSAC at even lower probabilities. Periodic bias breaks down RANSAC at probability of about 0.5 in both models even though the size of periodic bias is small.
+
+![Exp5](figures/exp5.png)
 
 ### Experiment 6 — How Does Dataset Size Affect RANSAC Recovery?
 
@@ -603,10 +601,9 @@ The linear model ($m = 2$) is used with a fixed outlier fraction $\varepsilon = 
 
 The expected result is that at design $\varepsilon = 0.3$, at $N = 4$, we will have more than $m = 2$ inliers, and thus starting at $N = 4$, we should be able to recover true model with very high likelihood (99% by design). As in other experiments, I use a breakdown threshold of $\text{model error} > 1.0$ to identify any $N$ at which recovery becomes unreliable.
 
-![Exp6](figures/exp7.png)
-
 The graph shows that in practice RANSAC is unliklely to recover the true underlying model for $N < 16$. At $N \ge 2^{8}$ we can be assured that we will recover the true model. This is, the likelihood of finding the true model is 99%, 0.05 - 99.5 percentile. 
 
+![Exp6](figures/exp7.png)
 
 ## Application
 <!-- 
