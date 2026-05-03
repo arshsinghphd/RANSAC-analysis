@@ -1,13 +1,38 @@
 # Random Sample Consensus (RANSAC) Algorithm
 
-## Author: Arsh Singh 
-## Affiliation: Student, MSCS, Khoury College of Sciences, Northeastern University
+* Author: **Arsh Singh**
+* Affiliation: Student, MSCS, **Khoury College of Sciences, Northeastern University**
+
+## Executive Summary
+
+RANSAC is used widely in computer vision, particularly for image stitching and structure from motion. Image stitching requires aligning overlapping images by estimating a geometric transformation — typically a homography — between them. Feature matching between images produces many incorrect correspondences, and handling these incorrect matches is the core problem RANSAC addresses.
+
+This paper studies the RANSAC algorithm for polynomial model fitting. I abstract away from image pixels and use catesian points instead. This helps focus on the model accurancy and limitations rather than the complications of image processing.
+
+The implementation supports generating models of arbitrary degree and is tested on synthetic data with known parameters, so recovery accuracy can be measured directly. A motivating example with $N = 60$, demonstrates the stitching application directly. I created two overlapping graphs of noisy data with $6$ outliers each generated from the same true linear model. Then I fit these separately using RANSAC and then combined via `stitch_models`. I do the same using Ordinary Least Squared (OLS). I compare the goodness of fit of RANSAC stitching with OLS on the combined dataset. I show that stitched RANSAC is much more accurate than OLS on combined data. I also show that the stitched RANSAC model is more accurate that each model alone. Compare this to OLS where the combined model is worse than the individual models.
+
+Experiments 1 through 3 characterize the computational properties of RANSAC. 
+
+* Experiment 1 measures wall-clock time as a function of the iteration count $k$ when other parameters are fixed. 
+
+* Experiment 2 measures wall-clock time as a function of the outlier fraction $\varepsilon$, with other parameters fixed. 
+
+* Experiment 3 measures wall-clock time as a function of the inlier threshold $t$, expressed as a multiplier of the noise standard deviation, with both $k$ and $\varepsilon$ fixed. I find that the wall-clock time shows behaviour as expected by theory. 
+
+Experiments 4 through 6 characterize the accuracy limits of RANSAC. 
+
+* Experiment 4 varies the outlier fraction $\varepsilon$ from 0.05 to 0.95 with $k$ fixed, measuring model error for both the linear ($m=2$) and quadratic ($m=3$) models. I find that for $m = 2$ RANSAC is very robust up to $\varepsilon$ close to 0.6. For $m = 3$ RANSAC is robust for moderate for $\varepsilon$ close to 0.3.
+
+* Experiment 5 fixes $\varepsilon = 0.1$ and varies the structural bias probability $pr$ from 0.0 to 1.0 across three bias types — constant, linear, and periodic — again for both models. I find that some kind of biases are easy to recover from such as constant (like outliers). While presense of linear bias, of the order of model parameters, and periodic bias, at even small magnitudes, make it more difficult to recover true model from.
+
+* Experiment 6 fixes $m = 2$ (linear model), $\varepsilon = 0.3$, and $k = 70$ at 10 times the theoretically required $k$ of 7. The size of the data (inliers) is varied from $2$ to $2^{13}$. In theory RANSAC should be able to find the true underlying model for $k = 7$ without at $N = 2$. What I find is that at $N < 8$, RANSAC is unlikely to recover the true model and to be sure that the true model is recovered, with at least 80 percent likelihood, we need $N = 2^{5}$.
+
+For experiments 1 - 5, I use $N = 1000$ and for modelling spread each experiment is repeating $100$ times and each model error recorded. For experiment 6, I vary $N$, but I still experiment is repeating $100$ times for each $N$ and each model error recorded.
+
 
 ## Table of Content
-
-- [Research Paper](#research-paper)
-  - [Table of Content](#table-of-content)
   - [Executive Summary](#executive-summary)
+  - [Table of Content](#table-of-content)
   - [Repository Structure](#repository-structure)
   - [Introduction](#introduction)
     - [Motivating Problem: Stitching Two Overlapping Graphs](#motivating-problem-stitching-two-overlapping-graphs)
@@ -53,20 +78,6 @@
   - [Disclosures](#disclosures)
   - [References](#references)
 
-
-## Executive Summary
-
-This paper studies the RANSAC algorithm for polynomial model fitting. The implementation supports models of arbitrary degree and is tested on synthetic data with known parameters, so recovery accuracy can be measured directly. For all experiments I use $N = 1000$ and for modelling spread each experiment is repeating $100$ times and each model error recorded.
-
-A motivating example with $N = 60$, demonstrates the stitching application directly. I created two overlapping graphs of noisy data with $6$ outliers each generated from the same true linear model. Then I fit these separately using RANSAC and then combined via `stitch_models`. I do the same using Ordinary Least Squared (OLS). I compare the goodness of fit of RANSAC stitching with OLS on the combined dataset. I show that stitched RANSAC is much more accurate than OLS on combined data. I also show that the stitched RANSAC model is more accurate that each model alone. Compare this to OLS where the combined model is worse than the individual models.
-
-Experiments 1 through 3 characterize the computational properties of RANSAC. Experiment 1 measures wall-clock time as a function of the iteration count $k$ when other parameters are fixed. Experiment 2 measures wall-clock time as a function of the outlier fraction $\varepsilon$, with other parameters fixed. Experiment 3 measures wall-clock time as a function of the inlier threshold $t$, expressed as a multiplier of the noise standard deviation, with both $k$ and $\varepsilon$ fixed. I find that the wall-clock time shows behaviour as expected by theory. 
-
-Experiments 4 and 6 characterize the accuracy limits of RANSAC. Experiment 4 varies the outlier fraction $\varepsilon$ from 0.05 to 0.95 with $k$ fixed, measuring model error for both the linear ($m=2$) and quadratic ($m=3$) models. I find that for $m = 2$ RANSAC is very robust up to $\varepsilon$ close to 0.6. For $m = 3$ RANSAC is robust for moderate for $\varepsilon$ close to 0.3.
-
-Experiment 5 fixes $\varepsilon = 0.1$ and varies the structural bias probability $pr$ from 0.0 to 1.0 across three bias types — constant, linear, and periodic — again for both models. I find that some kind of biases are easy to recover from such as constant (like outliers). While presense of linear bias, of the order of model parameters, and periodic bias, at even small magnitudes, make it more difficult to recover true model from.
-
-Experiment 6 fixes $m = 2$ (linear model), $\varepsilon = 0.3$, and $k = 70$ at 10 times the theoretically required $k$ of 7. The size of the data (inliers) is varied from $2$ to $2^{13}$. In theory RANSAC should be able to find the true underlying model for $k = 7$ without at $N = 2$. What I find is that at $N < 8$, RANSAC is unlikely to recover the true model and to be sure that the true model is recovered, with at least 80 percent likelihood, we need $N = 2^{5}$.
 
 ## Repository Structure
 
