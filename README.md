@@ -601,7 +601,7 @@ The x-axis runs from $pr=0$ (no bias) to $pr=1.0$ (all outliers are biased), and
 
 The red dashed horizontal line marks the breakdown threshold, defined as the mean error at $pr=0$ plus two standard deviations (only due to noise) — the point at which error can no longer be attributed to noise alone. A subplot where the mean error crosses this threshold indicates that the corresponding bias type has overwhelmed RANSAC's ability to distinguish inliers from biased outliers, and the returned model is no longer reliable.
 
-The graph shows that constant bias of 2 is are tolerated for upto 0.5 for linear model and about 0.2 for quadratic model. Linear bias of size 5.0 breaks RANSAC at even lower probabilities. Periodic bias breaks down RANSAC at probability of about 0.5 in both models even though the size of periodic bias is small.
+The graph shows that constant bias of 2 is tolerated for upto 0.5 for linear model and about 0.2 for quadratic model. Linear bias of size 5.0 breaks RANSAC at even lower probabilities. Periodic bias breaks down RANSAC at probability of about 0.5 in both models even though the size of periodic bias is small.
 
 ![Exp5](figures/exp5.png)
 
