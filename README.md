@@ -1,6 +1,7 @@
-# Research Paper
-* Name: Arsh Singh
-* Topic: Random Sample Consensus (RANSAC) Algorithm
+# Random Sample Consensus (RANSAC) Algorithm
+
+## Author: Arsh Singh 
+## Affiliation: Student, MSCS, Khoury College of Sciences, Northeastern University
 
 ## Table of Content
 
