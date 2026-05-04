@@ -457,7 +457,7 @@ The first approach uses the residual distribution: fit a rough model to all the 
 
 I implement the first approach as `estimate_epsilon` in `ransac.c` and its limitations are documented.
 
-As $\varepsilon$ increases we expect $d$ to be lower, which means RANSAC's early stopping will be triggered if randomly we reach a model that has $d$ or less inliers. This means that with increasing $d$ we expect the RANSAC to return model that are further away from the true model, but we also expect the RANSAC to run much faster. I test this hypothesis in Experiment 2 by fixing other parameters and varying values of $\varepsilon$. Since true $\varepsilon$ is known from synthetic generation it is used directly for inference in experiments.
+As $\varepsilon$ increases we expect $d$ to be lower, which means RANSAC's early stopping will be triggered if randomly we reach a model that has $d$ or less inliers. This means that with increasing $\varepsilon$ we expect the RANSAC to return model that are further away from the true model, but we also expect the RANSAC to run much faster. I test this hypothesis in Experiment 2 by fixing other parameters and varying values of $\varepsilon$. Since true $\varepsilon$ is known from synthetic generation it is used directly for inference in experiments.
 
 
 ### Threshold distance $t$
